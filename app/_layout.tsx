@@ -13,6 +13,7 @@ import {
   Inter_600SemiBold,
   Inter_700Bold,
 } from '@expo-google-fonts/inter';
+import { DatabaseProvider } from '@/src/db/provider';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -51,15 +52,17 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: {
-            backgroundColor: colorScheme === 'dark' ? '#1A1918' : '#FFFDE1',
-          },
-        }}
-      />
+      <DatabaseProvider>
+        <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: {
+              backgroundColor: colorScheme === 'dark' ? '#1A1918' : '#FFFDE1',
+            },
+          }}
+        />
+      </DatabaseProvider>
     </SafeAreaProvider>
   );
 }
