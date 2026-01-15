@@ -1,4 +1,4 @@
-import { View, Text, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from 'react-native';
 import { useState } from 'react';
 import { deleteReceiptFile, isPdfFile } from '@/src/services/storage';
+import { recognizeText } from '@/src/services/ocr';
 import { Button } from '@/src/components/ui';
 
 export default function ScanPreviewScreen() {
@@ -38,17 +39,42 @@ export default function ScanPreviewScreen() {
   };
 
   const handleProcess = async () => {
+    if (!uri) return;
+
     setIsProcessing(true);
-    // TODO: Navigate to review screen with OCR processing
-    // For now, just simulate a delay
-    setTimeout(() => {
+
+    try {
+      if (isPdf) {
+        // PDF processing will be implemented later
+        // For now, navigate to review with empty text
+        router.push({
+          pathname: '/scan/review',
+          params: { uri, source, ocrText: '', isPdf: 'true' },
+        });
+      } else {
+        // Perform OCR on image
+        const result = await recognizeText(uri);
+
+        if (result.success) {
+          router.push({
+            pathname: '/scan/review',
+            params: {
+              uri,
+              source,
+              ocrText: result.text,
+              ocrLines: JSON.stringify(result.lines),
+            },
+          });
+        } else {
+          Alert.alert(t('common.error'), t('errors.ocrFailed'));
+        }
+      }
+    } catch (error) {
+      console.error('Processing error:', error);
+      Alert.alert(t('common.error'), t('errors.ocrFailed'));
+    } finally {
       setIsProcessing(false);
-      // Will navigate to review screen once OCR is implemented
-      router.push({
-        pathname: '/scan/review',
-        params: { uri, source },
-      });
-    }, 1000);
+    }
   };
 
   if (!uri) {

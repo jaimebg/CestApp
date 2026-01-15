@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.CestApp",
+      "bundleIdentifier": "com.jbgsoft.CestApp",
       "infoPlist": {
         "NSCameraUsageDescription": "CestApp needs access to your camera to capture receipt photos.",
         "NSPhotoLibraryUsageDescription": "CestApp needs access to your photos to select receipt images."
@@ -32,6 +32,14 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "15.5"
+          }
+        }
+      ],
       "expo-router",
       [
         "expo-splash-screen",
@@ -59,7 +67,15 @@
         }
       ],
       "expo-sqlite",
-      "expo-localization"
+      "expo-localization",
+      [
+        "rn-mlkit-ocr",
+        {
+          "ocrModels": [
+            "latin"
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

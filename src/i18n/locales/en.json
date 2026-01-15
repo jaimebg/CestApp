@@ -55,7 +55,16 @@
     "fromGalleryLabel": "Selected from gallery",
     "fromPdfLabel": "Imported PDF document",
     "reviewTitle": "Review Receipt",
-    "reviewPlaceholder": "OCR processing will be implemented in the next phase. The extracted data will appear here for review."
+    "reviewPlaceholder": "OCR processing will be implemented in the next phase. The extracted data will appear here for review.",
+    "ocrSuccess": "Text Extracted Successfully",
+    "linesDetected": "{{count}} lines detected",
+    "extractedText": "Extracted Text",
+    "parsedData": "Parsed Data",
+    "parsingPending": "Receipt parsing will be implemented in the next phase",
+    "noTextDetected": "No Text Detected",
+    "noTextDetectedDesc": "Could not extract text from the image. Try taking a clearer photo.",
+    "pdfOcrPending": "PDF Processing",
+    "pdfOcrPendingDesc": "PDF text extraction will be available in a future update"
   },
   "history": {
     "title": "History",

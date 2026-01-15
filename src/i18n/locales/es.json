@@ -55,7 +55,16 @@
     "fromGalleryLabel": "Seleccionado de la galeria",
     "fromPdfLabel": "Documento PDF importado",
     "reviewTitle": "Revisar Recibo",
-    "reviewPlaceholder": "El procesamiento OCR se implementara en la siguiente fase. Los datos extraidos apareceran aqui para revision."
+    "reviewPlaceholder": "El procesamiento OCR se implementara en la siguiente fase. Los datos extraidos apareceran aqui para revision.",
+    "ocrSuccess": "Texto Extraido Exitosamente",
+    "linesDetected": "{{count}} lineas detectadas",
+    "extractedText": "Texto Extraido",
+    "parsedData": "Datos Procesados",
+    "parsingPending": "El analisis del recibo se implementara en la siguiente fase",
+    "noTextDetected": "No se Detecto Texto",
+    "noTextDetectedDesc": "No se pudo extraer texto de la imagen. Intenta tomar una foto mas clara.",
+    "pdfOcrPending": "Procesamiento de PDF",
+    "pdfOcrPendingDesc": "La extraccion de texto de PDF estara disponible en una futura actualizacion"
   },
   "history": {
     "title": "Historial",
