@@ -1,6 +1,7 @@
 import { View, Text, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { Card } from '@/src/components/ui';
 
 export default function ScanScreen() {
   const insets = useSafeAreaInsets();
@@ -34,34 +35,38 @@ export default function ScanScreen() {
             </View>
           </Pressable>
 
-          {/* Secondary actions - light bg with dark text */}
-          <Pressable className="bg-surface dark:bg-surface-dark rounded-2xl p-6 flex-row items-center border border-border dark:border-border-dark active:bg-border dark:active:bg-border-dark">
-            <View className="bg-primary/20 rounded-full p-3 mr-4">
-              <Ionicons name="images-outline" size={28} color="#3D6B23" />
+          {/* Secondary actions using Card component */}
+          <Card variant="outlined" padding="lg" onPress={() => {}}>
+            <View className="flex-row items-center">
+              <View className="bg-primary/20 rounded-full p-3 mr-4">
+                <Ionicons name="images-outline" size={28} color="#3D6B23" />
+              </View>
+              <View className="flex-1">
+                <Text className="text-text dark:text-text-dark text-lg" style={{ fontFamily: 'Inter_600SemiBold' }}>
+                  From Gallery
+                </Text>
+                <Text className="text-text-secondary dark:text-text-dark-secondary text-sm mt-1" style={{ fontFamily: 'Inter_400Regular' }}>
+                  Select an existing photo
+                </Text>
+              </View>
             </View>
-            <View className="flex-1">
-              <Text className="text-text dark:text-text-dark text-lg" style={{ fontFamily: 'Inter_600SemiBold' }}>
-                From Gallery
-              </Text>
-              <Text className="text-text-secondary dark:text-text-dark-secondary text-sm mt-1" style={{ fontFamily: 'Inter_400Regular' }}>
-                Select an existing photo
-              </Text>
-            </View>
-          </Pressable>
+          </Card>
 
-          <Pressable className="bg-surface dark:bg-surface-dark rounded-2xl p-6 flex-row items-center border border-border dark:border-border-dark active:bg-border dark:active:bg-border-dark">
-            <View className="bg-primary/20 rounded-full p-3 mr-4">
-              <Ionicons name="document-outline" size={28} color="#3D6B23" />
+          <Card variant="outlined" padding="lg" onPress={() => {}}>
+            <View className="flex-row items-center">
+              <View className="bg-primary/20 rounded-full p-3 mr-4">
+                <Ionicons name="document-outline" size={28} color="#3D6B23" />
+              </View>
+              <View className="flex-1">
+                <Text className="text-text dark:text-text-dark text-lg" style={{ fontFamily: 'Inter_600SemiBold' }}>
+                  Import PDF
+                </Text>
+                <Text className="text-text-secondary dark:text-text-dark-secondary text-sm mt-1" style={{ fontFamily: 'Inter_400Regular' }}>
+                  Upload a PDF receipt
+                </Text>
+              </View>
             </View>
-            <View className="flex-1">
-              <Text className="text-text dark:text-text-dark text-lg" style={{ fontFamily: 'Inter_600SemiBold' }}>
-                Import PDF
-              </Text>
-              <Text className="text-text-secondary dark:text-text-dark-secondary text-sm mt-1" style={{ fontFamily: 'Inter_400Regular' }}>
-                Upload a PDF receipt
-              </Text>
-            </View>
-          </Pressable>
+          </Card>
         </View>
       </View>
     </View>
