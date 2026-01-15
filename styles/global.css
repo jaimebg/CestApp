@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Brand Colors */
+  --color-cream: 255 253 225;
+  --color-golden: 251 229 128;
+  --color-fresh: 147 189 87;
+  --color-burgundy: 152 4 4;
+
+  /* Light Theme */
+  --color-background: 255 253 225;
+  --color-surface: 255 255 255;
+  --color-surface-elevated: 255 255 255;
+  --color-primary: 147 189 87;
+  --color-primary-light: 168 206 111;
+  --color-primary-dark: 122 160 66;
+  --color-accent: 251 229 128;
+  --color-error: 152 4 4;
+  --color-text: 45 42 38;
+  --color-text-secondary: 107 101 96;
+  --color-text-tertiary: 141 134 128;
+  --color-border: 232 228 217;
+}
+
+.dark {
+  --color-background: 26 25 24;
+  --color-surface: 45 42 38;
+  --color-surface-elevated: 61 58 54;
+  --color-primary: 147 189 87;
+  --color-primary-light: 168 206 111;
+  --color-primary-dark: 122 160 66;
+  --color-accent: 251 229 128;
+  --color-error: 201 68 68;
+  --color-text: 255 253 225;
+  --color-text-secondary: 184 180 169;
+  --color-text-tertiary: 141 134 128;
+  --color-border: 74 70 64;
+}
