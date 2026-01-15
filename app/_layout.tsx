@@ -1,4 +1,5 @@
 import '../styles/global.css';
+import '@/src/i18n'; // Initialize i18n
 import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { useColorScheme, View, ActivityIndicator } from 'react-native';

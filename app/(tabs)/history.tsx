@@ -1,9 +1,11 @@
 import { View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function HistoryScreen() {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
 
   return (
     <View
@@ -12,10 +14,10 @@ export default function HistoryScreen() {
     >
       <View className="flex-1 px-6 pt-4">
         <Text className="text-3xl text-text dark:text-text-dark" style={{ fontFamily: 'Inter_700Bold' }}>
-          History
+          {t('history.title')}
         </Text>
         <Text className="text-base text-text-secondary dark:text-text-dark-secondary mt-2" style={{ fontFamily: 'Inter_400Regular' }}>
-          All your scanned receipts
+          {t('history.subtitle')}
         </Text>
 
         <View className="flex-1 justify-center items-center">
@@ -23,10 +25,10 @@ export default function HistoryScreen() {
             <Ionicons name="receipt-outline" size={48} color="#3D6B23" />
           </View>
           <Text className="text-lg text-text dark:text-text-dark text-center" style={{ fontFamily: 'Inter_600SemiBold' }}>
-            No receipts yet
+            {t('history.noReceipts')}
           </Text>
           <Text className="text-base text-text-secondary dark:text-text-dark-secondary text-center mt-2 px-8" style={{ fontFamily: 'Inter_400Regular' }}>
-            Scan your first receipt to start tracking your spending
+            {t('history.noReceiptsDesc')}
           </Text>
         </View>
       </View>

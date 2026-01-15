@@ -1,10 +1,12 @@
 import { View, Text, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { Card } from '@/src/components/ui';
 
 export default function ScanScreen() {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
 
   return (
     <View
@@ -13,29 +15,27 @@ export default function ScanScreen() {
     >
       <View className="flex-1 px-6 pt-4">
         <Text className="text-3xl text-text dark:text-text-dark" style={{ fontFamily: 'Inter_700Bold' }}>
-          Scan Receipt
+          {t('scan.title')}
         </Text>
         <Text className="text-base text-text-secondary dark:text-text-dark-secondary mt-2" style={{ fontFamily: 'Inter_400Regular' }}>
-          Choose how to add your receipt
+          {t('scan.subtitle')}
         </Text>
 
         <View className="flex-1 justify-center gap-4">
-          {/* Primary action - dark green bg with white text for good contrast */}
           <Pressable className="bg-primary-deep rounded-2xl p-6 flex-row items-center active:bg-primary-dark">
             <View className="bg-white/20 rounded-full p-3 mr-4">
               <Ionicons name="camera-outline" size={28} color="#FFFFFF" />
             </View>
             <View className="flex-1">
               <Text className="text-white text-lg" style={{ fontFamily: 'Inter_600SemiBold' }}>
-                Take Photo
+                {t('scan.takePhoto')}
               </Text>
               <Text className="text-white/80 text-sm mt-1" style={{ fontFamily: 'Inter_400Regular' }}>
-                Capture a receipt with your camera
+                {t('scan.takePhotoDesc')}
               </Text>
             </View>
           </Pressable>
 
-          {/* Secondary actions using Card component */}
           <Card variant="outlined" padding="lg" onPress={() => {}}>
             <View className="flex-row items-center">
               <View className="bg-primary/20 rounded-full p-3 mr-4">
@@ -43,10 +43,10 @@ export default function ScanScreen() {
               </View>
               <View className="flex-1">
                 <Text className="text-text dark:text-text-dark text-lg" style={{ fontFamily: 'Inter_600SemiBold' }}>
-                  From Gallery
+                  {t('scan.fromGallery')}
                 </Text>
                 <Text className="text-text-secondary dark:text-text-dark-secondary text-sm mt-1" style={{ fontFamily: 'Inter_400Regular' }}>
-                  Select an existing photo
+                  {t('scan.fromGalleryDesc')}
                 </Text>
               </View>
             </View>
@@ -59,10 +59,10 @@ export default function ScanScreen() {
               </View>
               <View className="flex-1">
                 <Text className="text-text dark:text-text-dark text-lg" style={{ fontFamily: 'Inter_600SemiBold' }}>
-                  Import PDF
+                  {t('scan.importPdf')}
                 </Text>
                 <Text className="text-text-secondary dark:text-text-dark-secondary text-sm mt-1" style={{ fontFamily: 'Inter_400Regular' }}>
-                  Upload a PDF receipt
+                  {t('scan.importPdfDesc')}
                 </Text>
               </View>
             </View>
