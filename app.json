@@ -10,7 +10,11 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.CestApp"
+      "bundleIdentifier": "com.anonymous.CestApp",
+      "infoPlist": {
+        "NSCameraUsageDescription": "CestApp needs access to your camera to capture receipt photos.",
+        "NSPhotoLibraryUsageDescription": "CestApp needs access to your photos to select receipt images."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -39,6 +43,19 @@
           "dark": {
             "backgroundColor": "#000000"
           }
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "CestApp needs access to your camera to capture receipt photos.",
+          "photosPermission": "CestApp needs access to your photos to select receipt images."
+        }
+      ],
+      [
+        "expo-document-picker",
+        {
+          "iCloudContainerEnvironment": "Production"
         }
       ],
       "expo-sqlite",

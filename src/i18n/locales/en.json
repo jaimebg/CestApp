@@ -46,7 +46,16 @@
     "importPdfDesc": "Upload a PDF receipt",
     "processing": "Processing...",
     "analyzing": "Analyzing receipt...",
-    "extracting": "Extracting items..."
+    "extracting": "Extracting items...",
+    "preview": "Preview",
+    "processReceipt": "Process Receipt",
+    "pdfSelected": "PDF Document Selected",
+    "pdfReadyToProcess": "Your PDF is ready to be processed",
+    "fromCamera": "Captured with camera",
+    "fromGalleryLabel": "Selected from gallery",
+    "fromPdfLabel": "Imported PDF document",
+    "reviewTitle": "Review Receipt",
+    "reviewPlaceholder": "OCR processing will be implemented in the next phase. The extracted data will appear here for review."
   },
   "history": {
     "title": "History",

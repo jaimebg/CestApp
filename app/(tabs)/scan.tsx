@@ -1,12 +1,70 @@
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import { Card } from '@/src/components/ui';
+import {
+  captureFromCamera,
+  selectFromGallery,
+  selectPdf,
+  CaptureResult,
+} from '@/src/services/capture';
 
 export default function ScanScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState<'camera' | 'gallery' | 'pdf' | null>(null);
+
+  const handleCaptureResult = (result: CaptureResult) => {
+    if (result.success && result.localUri) {
+      router.push({
+        pathname: '/scan/preview',
+        params: { uri: result.localUri, source: result.source },
+      });
+    } else if (result.error && result.error !== 'cancelled') {
+      // Show error alert
+      const errorKey = result.error === 'cameraPermission'
+        ? 'errors.cameraPermission'
+        : result.error === 'galleryPermission'
+        ? 'errors.galleryPermission'
+        : 'errors.unknownError';
+
+      Alert.alert(t('common.error'), t(errorKey));
+    }
+  };
+
+  const handleCamera = async () => {
+    setIsLoading('camera');
+    try {
+      const result = await captureFromCamera();
+      handleCaptureResult(result);
+    } finally {
+      setIsLoading(null);
+    }
+  };
+
+  const handleGallery = async () => {
+    setIsLoading('gallery');
+    try {
+      const result = await selectFromGallery();
+      handleCaptureResult(result);
+    } finally {
+      setIsLoading(null);
+    }
+  };
+
+  const handlePdf = async () => {
+    setIsLoading('pdf');
+    try {
+      const result = await selectPdf();
+      handleCaptureResult(result);
+    } finally {
+      setIsLoading(null);
+    }
+  };
 
   return (
     <View
@@ -22,9 +80,18 @@ export default function ScanScreen() {
         </Text>
 
         <View className="flex-1 justify-center gap-4">
-          <Pressable className="bg-primary-deep rounded-2xl p-6 flex-row items-center active:bg-primary-dark">
+          <Pressable
+            className="bg-primary-deep rounded-2xl p-6 flex-row items-center active:bg-primary-dark"
+            onPress={handleCamera}
+            disabled={isLoading !== null}
+            style={{ opacity: isLoading !== null && isLoading !== 'camera' ? 0.5 : 1 }}
+          >
             <View className="bg-white/20 rounded-full p-3 mr-4">
-              <Ionicons name="camera-outline" size={28} color="#FFFFFF" />
+              <Ionicons
+                name={isLoading === 'camera' ? 'hourglass-outline' : 'camera-outline'}
+                size={28}
+                color="#FFFFFF"
+              />
             </View>
             <View className="flex-1">
               <Text className="text-white text-lg" style={{ fontFamily: 'Inter_600SemiBold' }}>
@@ -36,10 +103,20 @@ export default function ScanScreen() {
             </View>
           </Pressable>
 
-          <Card variant="outlined" padding="lg" onPress={() => {}}>
+          <Card
+            variant="outlined"
+            padding="lg"
+            onPress={handleGallery}
+            disabled={isLoading !== null}
+            style={{ opacity: isLoading !== null && isLoading !== 'gallery' ? 0.5 : 1 }}
+          >
             <View className="flex-row items-center">
               <View className="bg-primary/20 rounded-full p-3 mr-4">
-                <Ionicons name="images-outline" size={28} color="#3D6B23" />
+                <Ionicons
+                  name={isLoading === 'gallery' ? 'hourglass-outline' : 'images-outline'}
+                  size={28}
+                  color="#3D6B23"
+                />
               </View>
               <View className="flex-1">
                 <Text className="text-text dark:text-text-dark text-lg" style={{ fontFamily: 'Inter_600SemiBold' }}>
@@ -52,10 +129,20 @@ export default function ScanScreen() {
             </View>
           </Card>
 
-          <Card variant="outlined" padding="lg" onPress={() => {}}>
+          <Card
+            variant="outlined"
+            padding="lg"
+            onPress={handlePdf}
+            disabled={isLoading !== null}
+            style={{ opacity: isLoading !== null && isLoading !== 'pdf' ? 0.5 : 1 }}
+          >
             <View className="flex-row items-center">
               <View className="bg-primary/20 rounded-full p-3 mr-4">
-                <Ionicons name="document-outline" size={28} color="#3D6B23" />
+                <Ionicons
+                  name={isLoading === 'pdf' ? 'hourglass-outline' : 'document-outline'}
+                  size={28}
+                  color="#3D6B23"
+                />
               </View>
               <View className="flex-1">
                 <Text className="text-text dark:text-text-dark text-lg" style={{ fontFamily: 'Inter_600SemiBold' }}>

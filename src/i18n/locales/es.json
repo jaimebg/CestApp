@@ -46,7 +46,16 @@
     "importPdfDesc": "Sube un recibo en PDF",
     "processing": "Procesando...",
     "analyzing": "Analizando recibo...",
-    "extracting": "Extrayendo articulos..."
+    "extracting": "Extrayendo articulos...",
+    "preview": "Vista Previa",
+    "processReceipt": "Procesar Recibo",
+    "pdfSelected": "Documento PDF Seleccionado",
+    "pdfReadyToProcess": "Tu PDF esta listo para ser procesado",
+    "fromCamera": "Capturado con camara",
+    "fromGalleryLabel": "Seleccionado de la galeria",
+    "fromPdfLabel": "Documento PDF importado",
+    "reviewTitle": "Revisar Recibo",
+    "reviewPlaceholder": "El procesamiento OCR se implementara en la siguiente fase. Los datos extraidos apareceran aqui para revision."
   },
   "history": {
     "title": "Historial",

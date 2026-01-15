@@ -1,4 +1,4 @@
-import { View, Pressable } from 'react-native';
+import { View, Pressable, StyleProp, ViewStyle } from 'react-native';
 import type { ViewProps, PressableProps } from 'react-native';
 
 type CardVariant = 'elevated' | 'outlined' | 'filled';
@@ -8,6 +8,8 @@ interface CardProps extends ViewProps {
   variant?: CardVariant;
   padding?: CardPadding;
   onPress?: PressableProps['onPress'];
+  disabled?: boolean;
+  style?: StyleProp<ViewStyle>;
 }
 
 const variantClasses: Record<CardVariant, string> = {
@@ -27,6 +29,8 @@ export function Card({
   variant = 'elevated',
   padding = 'md',
   onPress,
+  disabled,
+  style,
   className,
   children,
   ...props
@@ -42,7 +46,9 @@ export function Card({
     return (
       <Pressable
         onPress={onPress}
+        disabled={disabled}
         className={`${baseClasses} active:opacity-80`}
+        style={style}
         {...(props as PressableProps)}
       >
         {children}
@@ -51,7 +57,7 @@ export function Card({
   }
 
   return (
-    <View className={baseClasses} {...props}>
+    <View className={baseClasses} style={style} {...props}>
       {children}
     </View>
   );
