@@ -431,27 +431,46 @@ function extractTextFromTextBlock(block: string, unicodeMap: UnicodeMap): string
   }
 
   // Match TJ operator: [(text) num (text) ...] TJ - handles both string and hex
+  // The numbers represent kerning - large negative values indicate word spacing
   const tjArrayRegex = /\[((?:[^[\]]*|\[[^\]]*\])*)\]\s*TJ/gi;
   while ((match = tjArrayRegex.exec(block)) !== null) {
     const arrayContent = match[1];
-    const lineParts: string[] = [];
+    let lineText = '';
 
-    // Extract both parenthesized strings and hex strings from the array
-    const elementRegex = /\(([^)]*)\)|<([0-9A-Fa-f]+)>/g;
+    // Parse TJ array elements: strings, hex strings, and numbers
+    // Numbers < -100 typically indicate word spacing
+    const elementRegex = /\(([^)]*)\)|<([0-9A-Fa-f]+)>|(-?\d+\.?\d*)/g;
     let elemMatch;
+    let lastWasSpace = false;
+
     while ((elemMatch = elementRegex.exec(arrayContent)) !== null) {
       if (elemMatch[1] !== undefined) {
         // Parenthesized string
         const decoded = decodePdfString(elemMatch[1], unicodeMap);
-        if (decoded) lineParts.push(decoded);
+        if (decoded) {
+          lineText += decoded;
+          lastWasSpace = false;
+        }
       } else if (elemMatch[2] !== undefined) {
         // Hex string
         const decoded = decodeHexStringWithMap(elemMatch[2], unicodeMap);
-        if (decoded) lineParts.push(decoded);
+        if (decoded) {
+          lineText += decoded;
+          lastWasSpace = false;
+        }
+      } else if (elemMatch[3] !== undefined) {
+        // Kerning number - large negative values indicate word spacing
+        const kerning = parseFloat(elemMatch[3]);
+        // Threshold: if kerning is less than -100, it's likely a word space
+        if (kerning < -100 && !lastWasSpace && lineText.length > 0) {
+          lineText += ' ';
+          lastWasSpace = true;
+        }
       }
     }
-    if (lineParts.length > 0) {
-      parts.push(lineParts.join(''));
+
+    if (lineText.length > 0) {
+      parts.push(lineText);
     }
   }
 
