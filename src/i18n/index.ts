@@ -35,7 +35,7 @@ export const changeLanguage = (lng: 'en' | 'es') => {
 
 export const SUPPORTED_LANGUAGES = [
   { code: 'en', name: 'English', nativeName: 'English' },
-  { code: 'es', name: 'Spanish', nativeName: 'Espanol' },
+  { code: 'es', name: 'Spanish', nativeName: 'Español' },
 ] as const;
 
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number]['code'];

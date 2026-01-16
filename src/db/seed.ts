@@ -387,7 +387,7 @@ export const DEFAULT_CATEGORIES = [
       'crema',
       'jabon',
       'acondicionador',
-      'gel de bano',
+      'gel de baño',
       'protector solar',
       'maquillaje',
       'higiene',
