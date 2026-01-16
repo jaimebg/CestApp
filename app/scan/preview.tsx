@@ -1,4 +1,5 @@
-import { View, Text, Pressable, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator } from 'react-native';
+import { showErrorToast } from '@/src/utils/toast';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -66,12 +67,12 @@ export default function ScanPreviewScreen() {
             },
           });
         } else {
-          Alert.alert(t('common.error'), t('errors.ocrFailed'));
+          showErrorToast(t('common.error'), t('errors.ocrFailed'));
         }
       }
     } catch (error) {
       console.error('Processing error:', error);
-      Alert.alert(t('common.error'), t('errors.ocrFailed'));
+      showErrorToast(t('common.error'), t('errors.ocrFailed'));
     } finally {
       setIsProcessing(false);
     }

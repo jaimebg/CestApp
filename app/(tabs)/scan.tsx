@@ -1,4 +1,5 @@
-import { View, Text, Pressable, Alert } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
+import { showErrorToast } from '@/src/utils/toast';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,14 +26,14 @@ export default function ScanScreen() {
         params: { uri: result.localUri, source: result.source },
       });
     } else if (result.error && result.error !== 'cancelled') {
-      // Show error alert
+      // Show error toast
       const errorKey = result.error === 'cameraPermission'
         ? 'errors.cameraPermission'
         : result.error === 'galleryPermission'
         ? 'errors.galleryPermission'
         : 'errors.unknownError';
 
-      Alert.alert(t('common.error'), t(errorKey));
+      showErrorToast(t('common.error'), t(errorKey));
     }
   };
 

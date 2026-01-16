@@ -125,3 +125,127 @@ export async function getRecentReceipts(limit = 5) {
     .orderBy(desc(receipts.createdAt))
     .limit(limit);
 }
+
+// Get receipts with item counts for list display
+export async function getReceiptsWithItemCount(limit = 50, offset = 0) {
+  const result = await db
+    .select({
+      receipt: receipts,
+      store: stores,
+      itemCount: sql<number>`(
+        SELECT COUNT(*) FROM items WHERE items.receipt_id = receipts.id
+      )`,
+    })
+    .from(receipts)
+    .leftJoin(stores, eq(receipts.storeId, stores.id))
+    .orderBy(desc(receipts.dateTime))
+    .limit(limit)
+    .offset(offset);
+
+  return result;
+}
+
+// Search receipts by store name or item name
+export async function searchReceipts(searchTerm: string, limit = 50) {
+  const searchPattern = `%${searchTerm.toLowerCase()}%`;
+
+  return db
+    .select({
+      receipt: receipts,
+      store: stores,
+      itemCount: sql<number>`(
+        SELECT COUNT(*) FROM items WHERE items.receipt_id = receipts.id
+      )`,
+    })
+    .from(receipts)
+    .leftJoin(stores, eq(receipts.storeId, stores.id))
+    .where(
+      sql`(
+        LOWER(${stores.name}) LIKE ${searchPattern}
+        OR EXISTS (
+          SELECT 1 FROM items
+          WHERE items.receipt_id = receipts.id
+          AND LOWER(items.name) LIKE ${searchPattern}
+        )
+      )`
+    )
+    .orderBy(desc(receipts.dateTime))
+    .limit(limit);
+}
+
+// Filter receipts with multiple criteria
+export interface ReceiptFilters {
+  storeId?: number | null;
+  startDate?: Date | null;
+  endDate?: Date | null;
+  searchTerm?: string | null;
+}
+
+export async function getFilteredReceipts(filters: ReceiptFilters, limit = 50, offset = 0) {
+  const conditions: ReturnType<typeof sql>[] = [];
+
+  if (filters.storeId) {
+    conditions.push(sql`${receipts.storeId} = ${filters.storeId}`);
+  }
+
+  if (filters.startDate) {
+    conditions.push(sql`${receipts.dateTime} >= ${filters.startDate}`);
+  }
+
+  if (filters.endDate) {
+    conditions.push(sql`${receipts.dateTime} <= ${filters.endDate}`);
+  }
+
+  if (filters.searchTerm) {
+    const searchPattern = `%${filters.searchTerm.toLowerCase()}%`;
+    conditions.push(
+      sql`(
+        LOWER(${stores.name}) LIKE ${searchPattern}
+        OR EXISTS (
+          SELECT 1 FROM items
+          WHERE items.receipt_id = receipts.id
+          AND LOWER(items.name) LIKE ${searchPattern}
+        )
+      )`
+    );
+  }
+
+  const baseQuery = db
+    .select({
+      receipt: receipts,
+      store: stores,
+      itemCount: sql<number>`(
+        SELECT COUNT(*) FROM items WHERE items.receipt_id = receipts.id
+      )`,
+    })
+    .from(receipts)
+    .leftJoin(stores, eq(receipts.storeId, stores.id));
+
+  if (conditions.length > 0) {
+    const combinedCondition = conditions.reduce((acc, cond, idx) =>
+      idx === 0 ? cond : sql`${acc} AND ${cond}`
+    );
+    return baseQuery
+      .where(combinedCondition)
+      .orderBy(desc(receipts.dateTime))
+      .limit(limit)
+      .offset(offset);
+  }
+
+  return baseQuery
+    .orderBy(desc(receipts.dateTime))
+    .limit(limit)
+    .offset(offset);
+}
+
+// Get stores that have receipts (for filter dropdown)
+export async function getStoresWithReceipts() {
+  return db
+    .selectDistinct({
+      id: stores.id,
+      name: stores.name,
+    })
+    .from(stores)
+    .innerJoin(receipts, eq(receipts.storeId, stores.id))
+    .orderBy(stores.name);
+}

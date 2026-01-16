@@ -5,6 +5,7 @@ import { Stack, Redirect, useSegments, useRootNavigationState } from 'expo-route
 import { useColorScheme, View, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Toaster } from 'sonner-native';
 import * as SplashScreen from 'expo-splash-screen';
 import {
   useFonts,
@@ -81,6 +82,7 @@ export default function RootLayout() {
         {isNavigationReady && !hasCompletedOnboarding && !isOnOnboardingScreen && (
           <Redirect href="/onboarding" />
         )}
+        <Toaster />
       </DatabaseProvider>
     </SafeAreaProvider>
   );

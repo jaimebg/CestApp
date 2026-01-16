@@ -5,12 +5,12 @@ import {
   ScrollView,
   Pressable,
   TextInput,
-  Alert,
   Modal,
   FlatList,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { showSuccessToast, showErrorToast } from '@/src/utils/toast';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -215,12 +215,11 @@ export default function ScanReviewScreen() {
       }
 
       // 5. Success - navigate to dashboard
-      Alert.alert(t('common.success'), t('scan.receiptSaved'), [
-        { text: t('common.ok'), onPress: handleDone },
-      ]);
+      showSuccessToast(t('common.success'), t('scan.receiptSaved'));
+      handleDone();
     } catch (error) {
       console.error('Save error:', error);
-      Alert.alert(t('common.error'), t('errors.saveFailed'));
+      showErrorToast(t('common.error'), t('errors.saveFailed'));
     } finally {
       setIsSaving(false);
     }
