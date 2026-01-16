@@ -70,9 +70,7 @@
       [
         "rn-mlkit-ocr",
         {
-          "ocrModels": [
-            "latin"
-          ]
+          "ocrModels": ["latin"]
         }
       ],
       "@react-native-community/datetimepicker"

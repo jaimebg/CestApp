@@ -1,11 +1,10 @@
-import { View, Text, Pressable, ActivityIndicator } from 'react-native';
-import { showErrorToast, showInfoToast } from '@/src/utils/toast';
+import { View, Text, Pressable, ActivityIndicator, useColorScheme } from 'react-native';
+import { showErrorToast } from '@/src/utils/toast';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import { useColorScheme } from 'react-native';
 import { useState } from 'react';
 import { deleteReceiptFile, isPdfFile } from '@/src/services/storage';
 import { recognizeText } from '@/src/services/ocr';
@@ -33,7 +32,6 @@ export default function ScanPreviewScreen() {
   };
 
   const handleCancel = async () => {
-    // Delete the saved file since user cancelled
     if (uri) {
       await deleteReceiptFile(uri);
     }
@@ -47,7 +45,6 @@ export default function ScanPreviewScreen() {
 
     try {
       if (isPdf) {
-        // Extract text from PDF
         const result = await extractTextFromPdf(uri);
 
         if (result.success && result.text.length > 0) {
@@ -62,13 +59,11 @@ export default function ScanPreviewScreen() {
             },
           });
         } else if (result.error === 'no_text_content') {
-          // PDF has no extractable text (likely a scanned image)
           showErrorToast(t('scan.pdfOcrPending'), t('scan.pdfOcrPendingDesc'));
         } else {
           showErrorToast(t('common.error'), t('errors.ocrFailed'));
         }
       } else {
-        // Perform OCR on image
         const result = await recognizeText(uri);
 
         if (result.success) {
@@ -107,23 +102,13 @@ export default function ScanPreviewScreen() {
   }
 
   return (
-    <View
-      className="flex-1"
-      style={{ backgroundColor: colors.background, paddingTop: insets.top }}
-    >
+    <View className="flex-1" style={{ backgroundColor: colors.background, paddingTop: insets.top }}>
       {/* Header */}
       <View className="flex-row items-center justify-between px-4 py-3">
-        <Pressable
-          onPress={handleCancel}
-          className="flex-row items-center"
-          hitSlop={8}
-        >
+        <Pressable onPress={handleCancel} className="flex-row items-center" hitSlop={8}>
           <Ionicons name="close" size={24} color={colors.text} />
         </Pressable>
-        <Text
-          className="text-lg"
-          style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
-        >
+        <Text className="text-lg" style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}>
           {t('scan.preview')}
         </Text>
         <View style={{ width: 24 }} />
@@ -132,7 +117,6 @@ export default function ScanPreviewScreen() {
       {/* Preview Area */}
       <View className="flex-1 px-4">
         {isPdf ? (
-          // PDF Preview
           <View
             className="flex-1 rounded-2xl justify-center items-center"
             style={{ backgroundColor: colors.surface }}
@@ -154,14 +138,8 @@ export default function ScanPreviewScreen() {
             </Text>
           </View>
         ) : (
-          // Image Preview
           <View className="flex-1 rounded-2xl overflow-hidden">
-            <Image
-              source={{ uri }}
-              style={{ flex: 1 }}
-              contentFit="contain"
-              transition={200}
-            />
+            <Image source={{ uri }} style={{ flex: 1 }} contentFit="contain" transition={200} />
           </View>
         )}
       </View>
@@ -183,19 +161,11 @@ export default function ScanPreviewScreen() {
         className="px-4 pb-4 gap-3"
         style={{ paddingBottom: insets.bottom > 0 ? insets.bottom : 16 }}
       >
-        <Button
-          variant="primary"
-          size="lg"
-          onPress={handleProcess}
-          disabled={isProcessing}
-        >
+        <Button variant="primary" size="lg" onPress={handleProcess} disabled={isProcessing}>
           {isProcessing ? (
             <View className="flex-row items-center gap-2">
               <ActivityIndicator color="#FFFFFF" size="small" />
-              <Text
-                className="text-white"
-                style={{ fontFamily: 'Inter_600SemiBold' }}
-              >
+              <Text className="text-white" style={{ fontFamily: 'Inter_600SemiBold' }}>
                 {t('scan.processing')}
               </Text>
             </View>

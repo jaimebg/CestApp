@@ -18,17 +18,17 @@ export function ReceiptCard({ receipt, store, itemCount = 0, onPress }: ReceiptC
 
   const formattedDate = receipt.dateTime
     ? new Date(receipt.dateTime).toLocaleDateString(undefined, {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-    })
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+      })
     : t('scan.noDateFound');
 
   const formattedTime = receipt.dateTime
     ? new Date(receipt.dateTime).toLocaleTimeString(undefined, {
-      hour: '2-digit',
-      minute: '2-digit',
-    })
+        hour: '2-digit',
+        minute: '2-digit',
+      })
     : '';
 
   const storeName = store?.name || t('scan.unknownStore');
@@ -48,11 +48,7 @@ export function ReceiptCard({ receipt, store, itemCount = 0, onPress }: ReceiptC
             {storeName}
           </Text>
           <View className="flex-row items-center">
-            <Ionicons
-              name="calendar-outline"
-              size={14}
-              color="#8D8680"
-            />
+            <Ionicons name="calendar-outline" size={14} color="#8D8680" />
             <Text className="text-text-secondary dark:text-text-dark-secondary text-sm ml-1">
               {formattedDate}
             </Text>

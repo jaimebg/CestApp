@@ -9,27 +9,22 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
+  useColorScheme,
 } from 'react-native';
 import { showSuccessToast, showErrorToast } from '@/src/utils/toast';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-import { useColorScheme } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-// Custom date picker - avoiding native DateTimePicker to prevent modal conflicts
 import { Button, Card, Badge } from '@/src/components/ui';
 import { parseReceipt, ParsedReceipt, ParsedItem, ParserOptions } from '@/src/services/ocr/parser';
 import { useFormatPrice, usePreferencesStore } from '@/src/store/preferences';
-import { getSupportedCurrencies, Currency } from '@/src/config/currency';
+import { getSupportedCurrencies } from '@/src/config/currency';
 import { findOrCreateStore } from '@/src/db/queries/stores';
 import { createReceipt } from '@/src/db/queries/receipts';
 import { createItems } from '@/src/db/queries/items';
 import { getCategories } from '@/src/db/queries/categories';
-import {
-  getCategoryForItem,
-  normalizeItemName,
-  recordUserCorrection,
-} from '@/src/db/seed';
+import { getCategoryForItem, normalizeItemName, recordUserCorrection } from '@/src/db/seed';
 
 type Category = {
   id: number;
@@ -39,9 +34,8 @@ type Category = {
 };
 
 export default function ScanReviewScreen() {
-  const { uri, source, ocrText, ocrLines } = useLocalSearchParams<{
+  const { uri, ocrText, ocrLines } = useLocalSearchParams<{
     uri: string;
-    source: string;
     ocrText?: string;
     ocrLines?: string;
   }>();
@@ -66,11 +60,9 @@ export default function ScanReviewScreen() {
     error: isDark ? '#C94444' : '#980404',
   };
 
-  // Parse OCR lines if available
   const lines: string[] = ocrLines ? JSON.parse(ocrLines) : [];
   const hasOcrResult = ocrText && ocrText.length > 0;
 
-  // Parse receipt data with user preferences as hints
   const parserOptions: ParserOptions = useMemo(
     () => ({
       preferredDateFormat: dateFormat,
@@ -86,31 +78,26 @@ export default function ScanReviewScreen() {
     return null;
   }, [lines, parserOptions]);
 
-  // Currency
   const setCurrency = usePreferencesStore((state) => state.setCurrency);
   const currencies = useMemo(() => getSupportedCurrencies(), []);
 
-  // Categories
   const [categoriesList, setCategoriesList] = useState<Category[]>([]);
 
   useEffect(() => {
     getCategories().then(setCategoriesList);
   }, []);
 
-  // Editable state
   const [parsedData, setParsedData] = useState<ParsedReceipt | null>(initialParsedData);
   const [showRawText, setShowRawText] = useState(false);
   const [showCurrencyModal, setShowCurrencyModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Edit modals state
   const [showStoreModal, setShowStoreModal] = useState(false);
   const [showDateModal, setShowDateModal] = useState(false);
   const [showItemModal, setShowItemModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showTotalModal, setShowTotalModal] = useState(false);
 
-  // Edit form state
   const [editStoreName, setEditStoreName] = useState('');
   const [editDay, setEditDay] = useState('');
   const [editMonth, setEditMonth] = useState('');
@@ -123,19 +110,16 @@ export default function ScanReviewScreen() {
   const [editItemCategoryId, setEditItemCategoryId] = useState<number | null>(null);
   const [editTotal, setEditTotal] = useState('');
 
-  // Calculate items sum and validation
   const itemsSum = useMemo(() => {
     if (!parsedData) return 0;
     return parsedData.items.reduce((sum, item) => sum + item.totalPrice, 0);
   }, [parsedData]);
 
   const currentTotal = parsedData?.total || 0;
-  const totalsDiffer = Math.abs(itemsSum - currentTotal) > 0.01; // Allow for small floating point differences
+  const totalsDiffer = Math.abs(itemsSum - currentTotal) > 0.01;
   const canSave = !totalsDiffer && parsedData && parsedData.items.length > 0;
 
   const handleDone = () => {
-    // Small delay to prevent SafeAreaProvider crash on Android
-    // when dismissing while view hierarchy is still updating
     setTimeout(() => {
       router.dismissAll();
     }, 100);
@@ -150,11 +134,9 @@ export default function ScanReviewScreen() {
 
     setIsSaving(true);
     try {
-      // 1. Find or create store
       const storeName = parsedData.storeName || t('scan.unknownStore');
       const storeId = await findOrCreateStore(storeName);
 
-      // 2. Build date with time if available
       let receiptDateTime = parsedData.date || new Date();
       if (parsedData.time) {
         const [hours, minutes] = parsedData.time.split(':').map(Number);
@@ -164,7 +146,6 @@ export default function ScanReviewScreen() {
         }
       }
 
-      // 3. Create receipt record
       const receipt = await createReceipt({
         storeId,
         dateTime: receiptDateTime,
@@ -179,10 +160,8 @@ export default function ScanReviewScreen() {
         confidence: parsedData.confidence,
       });
 
-      // 4. Categorize and create items
       const itemsData = await Promise.all(
         parsedData.items.map(async (item) => {
-          // If user manually set category, use it
           const manualCategoryId = (item as ParsedItem & { categoryId?: number }).categoryId;
           let categoryId: number;
           let confidence: number;
@@ -190,7 +169,6 @@ export default function ScanReviewScreen() {
           if (manualCategoryId) {
             categoryId = manualCategoryId;
             confidence = 100;
-            // Record user correction for learning
             await recordUserCorrection(item.name, categoryId, storeId);
           } else {
             const category = await getCategoryForItem(item.name, storeId);
@@ -216,7 +194,6 @@ export default function ScanReviewScreen() {
         await createItems(itemsData);
       }
 
-      // 5. Success - navigate to dashboard
       showSuccessToast(t('common.success'), t('scan.receiptSaved'));
       handleDone();
     } catch (error) {
@@ -235,7 +212,6 @@ export default function ScanReviewScreen() {
     });
   };
 
-  // Store edit handlers
   const openStoreEdit = () => {
     setEditStoreName(parsedData?.storeName || '');
     setShowStoreModal(true);
@@ -247,7 +223,6 @@ export default function ScanReviewScreen() {
     setShowStoreModal(false);
   };
 
-  // Date edit handlers
   const openDateEdit = () => {
     const date = parsedData?.date || new Date();
     setEditDay(date.getDate().toString());
@@ -272,7 +247,6 @@ export default function ScanReviewScreen() {
     setShowDateModal(false);
   };
 
-  // Total edit handlers
   const openTotalEdit = () => {
     setEditTotal((parsedData?.total || 0).toFixed(2));
     setShowTotalModal(true);
@@ -296,7 +270,6 @@ export default function ScanReviewScreen() {
     });
   };
 
-  // Item edit handlers
   const openItemEdit = (index: number | null) => {
     if (index !== null && parsedData) {
       const item = parsedData.items[index];
@@ -306,7 +279,6 @@ export default function ScanReviewScreen() {
       setEditItemQuantity(item.quantity.toString());
       setEditItemCategoryId((item as ParsedItem & { categoryId?: number }).categoryId || null);
     } else {
-      // Adding new item
       setEditingItemIndex(null);
       setEditItemName('');
       setEditItemPrice('');
@@ -329,20 +301,16 @@ export default function ScanReviewScreen() {
       unitPrice,
       totalPrice: price,
       unit: null,
-      confidence: 100, // Manual entry has 100% confidence
+      confidence: 100,
       categoryId: editItemCategoryId || undefined,
     };
 
     if (editingItemIndex !== null) {
-      // Update existing item
       setParsedData({
         ...parsedData,
-        items: parsedData.items.map((item, i) =>
-          i === editingItemIndex ? newItem : item
-        ),
+        items: parsedData.items.map((item, i) => (i === editingItemIndex ? newItem : item)),
       });
     } else {
-      // Add new item
       setParsedData({
         ...parsedData,
         items: [...parsedData.items, newItem],
@@ -352,7 +320,6 @@ export default function ScanReviewScreen() {
     setShowItemModal(false);
   };
 
-  // Category selection
   const openCategorySelect = () => {
     setShowCategoryModal(true);
   };
@@ -432,41 +399,27 @@ export default function ScanReviewScreen() {
       >
         {formatPrice(item.totalPrice)}
       </Text>
-      <Pressable
-        onPress={() => handleRemoveItem(index)}
-        hitSlop={8}
-        className="p-1"
-      >
+      <Pressable onPress={() => handleRemoveItem(index)} hitSlop={8} className="p-1">
         <Ionicons name="close-circle" size={20} color={colors.error} />
       </Pressable>
     </Pressable>
   );
 
   return (
-    <View
-      className="flex-1"
-      style={{ backgroundColor: colors.background, paddingTop: insets.top }}
-    >
+    <View className="flex-1" style={{ backgroundColor: colors.background, paddingTop: insets.top }}>
       {/* Header */}
       <View className="flex-row items-center justify-between px-4 py-3">
         <Pressable onPress={handleBack} className="flex-row items-center" hitSlop={8}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
-        <Text
-          className="text-lg"
-          style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
-        >
+        <Text className="text-lg" style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}>
           {t('scan.reviewTitle')}
         </Text>
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
-      >
+      <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
         {hasOcrResult && parsedData ? (
-          // Parsed receipt data (from image OCR or PDF text extraction)
           <>
             {/* Confidence indicator */}
             <View className="flex-row items-center justify-between mb-4">
@@ -534,10 +487,7 @@ export default function ScanReviewScreen() {
               )}
 
               {/* Date and Time - Editable */}
-              <Pressable
-                onPress={openDateEdit}
-                className="flex-row items-center justify-between"
-              >
+              <Pressable onPress={openDateEdit} className="flex-row items-center justify-between">
                 <View className="flex-row items-center">
                   <Ionicons name="calendar-outline" size={18} color={colors.textSecondary} />
                   <Text
@@ -731,7 +681,7 @@ export default function ScanReviewScreen() {
                     className="text-base mr-2"
                     style={{
                       color: totalsDiffer ? colors.error : colors.text,
-                      fontFamily: 'Inter_600SemiBold'
+                      fontFamily: 'Inter_600SemiBold',
                     }}
                   >
                     {formatPrice(parsedData.total)}
@@ -818,7 +768,6 @@ export default function ScanReviewScreen() {
             )}
           </>
         ) : (
-          // No OCR results
           <Card variant="outlined" padding="lg">
             <View className="items-center py-4">
               <View
@@ -845,10 +794,7 @@ export default function ScanReviewScreen() {
       </ScrollView>
 
       {/* Action Buttons */}
-      <View
-        className="px-4 pb-4"
-        style={{ paddingBottom: insets.bottom > 0 ? insets.bottom : 16 }}
-      >
+      <View className="px-4 pb-4" style={{ paddingBottom: insets.bottom > 0 ? insets.bottom : 16 }}>
         {hasOcrResult && parsedData ? (
           <View className="flex-row gap-3">
             <View className="flex-1">
@@ -1106,7 +1052,8 @@ export default function ScanReviewScreen() {
               >
                 <Text
                   style={{
-                    color: editItemName.trim() && editItemPrice ? colors.primary : colors.textSecondary,
+                    color:
+                      editItemName.trim() && editItemPrice ? colors.primary : colors.textSecondary,
                     fontFamily: 'Inter_600SemiBold',
                   }}
                 >

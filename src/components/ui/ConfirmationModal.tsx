@@ -1,5 +1,4 @@
-import { View, Text, Pressable, Modal } from 'react-native';
-import { useColorScheme } from 'react-native';
+import { View, Text, Pressable, Modal, useColorScheme } from 'react-native';
 
 interface ConfirmationModalProps {
   visible: boolean;
@@ -38,12 +37,7 @@ export function ConfirmationModal({
   };
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onCancel}
-    >
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <View className="flex-1 justify-center items-center px-6">
         <Pressable
           className="absolute inset-0"
@@ -76,10 +70,7 @@ export function ConfirmationModal({
             </Text>
           </View>
 
-          <View
-            className="flex-row border-t"
-            style={{ borderColor: colors.border }}
-          >
+          <View className="flex-row border-t" style={{ borderColor: colors.border }}>
             <Pressable
               onPress={onCancel}
               disabled={isLoading}

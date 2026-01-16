@@ -1,11 +1,5 @@
 import { toast } from 'sonner-native';
 
-interface ToastOptions {
-  title: string;
-  message?: string;
-  duration?: number;
-}
-
 export function showSuccessToast(title: string, message?: string) {
   toast.success(title, {
     description: message,

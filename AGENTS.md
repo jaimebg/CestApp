@@ -10,21 +10,21 @@ CestApp is a supermarket receipt scanner app built with React Native and Expo. I
 
 ## Key Technologies
 
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| React Native | 0.81.5 | Mobile framework (New Architecture enabled) |
-| Expo SDK | 54 | Development platform |
-| Expo Router | 6.0.21 | File-based navigation |
-| NativeWind | 4.2.1 | Tailwind CSS styling |
-| Drizzle ORM | 0.45.1 | Type-safe database queries |
-| expo-sqlite | 16.0.10 | Local SQLite database |
-| Zustand | 5.0.10 | State management with persistence |
-| i18next | 25.7.4 | Internationalization (EN/ES) |
-| rn-mlkit-ocr | 0.3.0 | On-device text recognition |
-| pako | 2.1.0 | PDF stream decompression |
-| React Native Reanimated | 4.1.1 | Animations |
-| react-native-gifted-charts | 1.4.70 | Analytics charts |
-| sonner-native | 0.23.0 | Toast notifications |
+| Technology                 | Version | Purpose                                     |
+| -------------------------- | ------- | ------------------------------------------- |
+| React Native               | 0.81.5  | Mobile framework (New Architecture enabled) |
+| Expo SDK                   | 54      | Development platform                        |
+| Expo Router                | 6.0.21  | File-based navigation                       |
+| NativeWind                 | 4.2.1   | Tailwind CSS styling                        |
+| Drizzle ORM                | 0.45.1  | Type-safe database queries                  |
+| expo-sqlite                | 16.0.10 | Local SQLite database                       |
+| Zustand                    | 5.0.10  | State management with persistence           |
+| i18next                    | 25.7.4  | Internationalization (EN/ES)                |
+| rn-mlkit-ocr               | 0.3.0   | On-device text recognition                  |
+| pako                       | 2.1.0   | PDF stream decompression                    |
+| React Native Reanimated    | 4.1.1   | Animations                                  |
+| react-native-gifted-charts | 1.4.70  | Analytics charts                            |
+| sonner-native              | 0.23.0  | Toast notifications                         |
 
 ## Code Style Guidelines
 
@@ -34,6 +34,8 @@ CestApp is a supermarket receipt scanner app built with React Native and Expo. I
 - Use TypeScript strict mode
 - Prefer named exports for components
 - Use `useTranslation()` hook for all user-facing text
+- **No comments** unless JSDoc or absolutely necessary - code should be self-documenting
+- **Never create new .md files** unless explicitly asked
 
 ### Styling
 
@@ -45,13 +47,13 @@ CestApp is a supermarket receipt scanner app built with React Native and Expo. I
 
 ### Color Palette
 
-| Name | Hex | Usage |
-|------|-----|-------|
-| Cream | #FFFDE1 | Light background |
-| Golden | #FBE580 | Accent |
-| Fresh Green (primary) | #93BD57 | Primary actions, dark text |
-| Deep Green (primary-deep) | #3D6B23 | White text on green |
-| Deep Burgundy | #980404 | Errors, destructive |
+| Name                      | Hex     | Usage                      |
+| ------------------------- | ------- | -------------------------- |
+| Cream                     | #FFFDE1 | Light background           |
+| Golden                    | #FBE580 | Accent                     |
+| Fresh Green (primary)     | #93BD57 | Primary actions, dark text |
+| Deep Green (primary-deep) | #3D6B23 | White text on green        |
+| Deep Burgundy             | #980404 | Errors, destructive        |
 
 ### Database
 
@@ -153,16 +155,16 @@ src/
 
 Available in `src/components/ui/`:
 
-| Component | Props | Description |
-|-----------|-------|-------------|
-| Button | `variant` (primary, secondary, ghost, destructive), `size` (sm, md, lg) | Primary action button |
-| Card | `variant` (elevated, outlined, filled), `padding` (sm, md, lg) | Content container |
-| Input | `label`, `error`, `leftIcon`, `rightIcon` | Text input field |
-| Badge | `variant` (default, success, warning, error, info), `size` (sm, md, lg) | Status indicator |
-| Skeleton | `SkeletonText`, `SkeletonCircle`, `SkeletonCard` | Loading placeholders |
-| AnimatedList | `entering`, `layout` | Animated list items |
-| ConfirmationModal | `visible`, `title`, `message`, `onConfirm`, `onCancel` | Delete confirmation |
-| EmptyState | `icon`, `title`, `description`, `action` | Empty/error states |
+| Component         | Props                                                                   | Description           |
+| ----------------- | ----------------------------------------------------------------------- | --------------------- |
+| Button            | `variant` (primary, secondary, ghost, destructive), `size` (sm, md, lg) | Primary action button |
+| Card              | `variant` (elevated, outlined, filled), `padding` (sm, md, lg)          | Content container     |
+| Input             | `label`, `error`, `leftIcon`, `rightIcon`                               | Text input field      |
+| Badge             | `variant` (default, success, warning, error, info), `size` (sm, md, lg) | Status indicator      |
+| Skeleton          | `SkeletonText`, `SkeletonCircle`, `SkeletonCard`                        | Loading placeholders  |
+| AnimatedList      | `entering`, `layout`                                                    | Animated list items   |
+| ConfirmationModal | `visible`, `title`, `message`, `onConfirm`, `onCancel`                  | Delete confirmation   |
+| EmptyState        | `icon`, `title`, `description`, `action`                                | Empty/error states    |
 
 ## Services
 
@@ -246,11 +248,13 @@ listReceiptFiles(): Promise<string[]>
 ## Auto-Categorization System
 
 Priority order:
+
 1. `userLearnedItems` table (user corrections - highest confidence)
 2. Keyword matching from `categories.keywords` (multilingual EN/ES)
 3. Default to "Other" category
 
 Key functions in `src/db/seed.ts`:
+
 - `normalizeItemName(name)`: Normalizes for matching
 - `getCategoryForItem(itemName, storeId?)`: Returns category with confidence
 - `recordUserCorrection(itemName, categoryId, storeId?)`: Records learning
@@ -261,17 +265,17 @@ Zustand store in `src/store/preferences.ts`:
 
 ```typescript
 interface PreferencesState {
-  language: 'en' | 'es'
-  currencyCode: string
-  currency: Currency
-  dateFormat: 'DMY' | 'MDY' | 'YMD'
-  decimalSeparator: '.' | ','
-  hasCompletedOnboarding: boolean
+  language: 'en' | 'es';
+  currencyCode: string;
+  currency: Currency;
+  dateFormat: 'DMY' | 'MDY' | 'YMD';
+  decimalSeparator: '.' | ',';
+  hasCompletedOnboarding: boolean;
 
   // Actions
-  setLanguage(lang: string): void
-  setCurrency(code: string): void
-  formatPrice(cents: number): string
+  setLanguage(lang: string): void;
+  setCurrency(code: string): void;
+  formatPrice(cents: number): string;
 }
 ```
 
@@ -294,6 +298,7 @@ Persisted to AsyncStorage. Auto-detects device locale on first launch.
 ## Testing
 
 Before committing:
+
 1. Run `npx tsc --noEmit` to check TypeScript
 2. Run `expo run:ios` or `expo run:android` (dev build required for ML Kit)
 3. Verify dark mode works correctly
@@ -302,12 +307,9 @@ Before committing:
 
 ## Commit Guidelines
 
-- Use conventional commits: `feat:`, `fix:`, `refactor:`, `docs:`
-- Commit after each visually testable change
-- Include co-author line for AI-assisted commits:
-  ```
-  Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
-  ```
+- **Never commit automatically** - only commit when explicitly asked
+- **New features/fixes/chores must be in a new branch** and go through PR review first
+- Use conventional commits: `feat:`, `fix:`, `refactor:`, `docs:`, `chore:`
 
 ## Common Pitfalls
 
@@ -336,10 +338,36 @@ expo run:android
 
 # Type check
 npx tsc --noEmit
-
-# Lint
-npm run lint
 ```
+
+## Code Quality Scripts
+
+| Script                 | Description                      |
+| ---------------------- | -------------------------------- |
+| `npm run lint`         | Check for ESLint issues          |
+| `npm run lint:fix`     | Auto-fix ESLint issues           |
+| `npm run format`       | Format all files with Prettier   |
+| `npm run format:check` | Check formatting without changes |
+| `npm run check`        | Run both lint and format:check   |
+
+### Pre-commit Hook
+
+Husky + lint-staged is configured to automatically run on every commit:
+
+- ESLint --fix on staged `.js/.jsx/.ts/.tsx` files
+- Prettier --write on all staged files
+
+This ensures code quality is maintained without manual effort.
+
+### Prettier Configuration
+
+See `.prettierrc`:
+
+- Single quotes
+- Semicolons
+- 2-space indentation
+- 100 char line width
+- ES5 trailing commas
 
 **Note**: This app requires a development build due to native modules (ML Kit OCR). Expo Go is not sufficient.
 

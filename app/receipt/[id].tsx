@@ -17,7 +17,12 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useDatabaseReady } from '../../src/db/provider';
 import { getReceiptById, deleteReceipt, updateReceipt } from '../../src/db/queries/receipts';
-import { getItemsByReceiptId, updateItem, deleteItem, createItem } from '../../src/db/queries/items';
+import {
+  getItemsByReceiptId,
+  updateItem,
+  deleteItem,
+  createItem,
+} from '../../src/db/queries/items';
 import { getCategories } from '../../src/db/queries/categories';
 import { findOrCreateStore } from '../../src/db/queries/stores';
 import { ReceiptSummary } from '../../src/components/receipt';
@@ -35,9 +40,9 @@ type ItemWithCategory = {
 };
 
 type EditableItem = {
-  id: number | null; // null for new items
+  id: number | null;
   name: string;
-  price: number; // in cents
+  price: number;
   quantity: number;
   categoryId: number | null;
 };
@@ -58,18 +63,14 @@ export default function ReceiptDetailScreen() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Edit mode state
   const [isEditing, setIsEditing] = useState(false);
   const [editedStoreName, setEditedStoreName] = useState('');
   const [editedItems, setEditedItems] = useState<EditableItem[]>([]);
-  const [editedTotal, setEditedTotal] = useState(0);
 
-  // Item edit modal state
   const [showItemModal, setShowItemModal] = useState(false);
   const [editingItem, setEditingItem] = useState<EditableItem | null>(null);
   const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
 
-  // Confirmation modal state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDiscardModal, setShowDiscardModal] = useState(false);
 
@@ -84,11 +85,9 @@ export default function ReceiptDetailScreen() {
         setReceipt(data.receipt);
         setStore(data.store);
 
-        // Load items with categories
         const itemsData = await getItemsByReceiptId(receiptId);
         setItems(itemsData);
 
-        // Load categories for editing
         const cats = await getCategories();
         setCategoriesState(cats);
       }
@@ -116,7 +115,6 @@ export default function ReceiptDetailScreen() {
         categoryId: item.categoryId,
       }))
     );
-    setEditedTotal(receipt.totalAmount || 0);
     setIsEditing(true);
   }, [receipt, store, items]);
 
@@ -136,36 +134,29 @@ export default function ReceiptDetailScreen() {
     try {
       const receiptId = parseInt(id, 10);
 
-      // Update store if changed
       let newStoreId = receipt.storeId;
       if (editedStoreName !== store?.name && editedStoreName.trim()) {
         newStoreId = await findOrCreateStore(editedStoreName.trim());
       }
 
-      // Calculate new total from items
       const itemsTotal = editedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-      // Update receipt
       await updateReceipt(receiptId, {
         storeId: newStoreId,
         totalAmount: itemsTotal,
       });
 
-      // Update items - delete removed, update existing, add new
       const existingItemIds = new Set(items.map(({ item }) => item.id));
       const editedItemIds = new Set(editedItems.filter((i) => i.id).map((i) => i.id));
 
-      // Delete removed items
       for (const { item } of items) {
         if (!editedItemIds.has(item.id)) {
           await deleteItem(item.id);
         }
       }
 
-      // Update existing items and add new ones
       for (const editedItem of editedItems) {
         if (editedItem.id && existingItemIds.has(editedItem.id)) {
-          // Update existing
           await updateItem(editedItem.id, {
             name: editedItem.name,
             price: editedItem.price,
@@ -173,7 +164,6 @@ export default function ReceiptDetailScreen() {
             categoryId: editedItem.categoryId,
           });
         } else {
-          // Add new
           await createItem({
             receiptId,
             name: editedItem.name,
@@ -184,7 +174,6 @@ export default function ReceiptDetailScreen() {
         }
       }
 
-      // Reload data
       await loadReceipt();
       setIsEditing(false);
       showSuccessToast(t('receipt.changesSaved'));
@@ -221,7 +210,6 @@ export default function ReceiptDetailScreen() {
       setEditingItem({ ...item });
       setEditingItemIndex(index);
     } else {
-      // New item
       setEditingItem({
         id: null,
         name: '',
@@ -249,10 +237,13 @@ export default function ReceiptDetailScreen() {
     setEditingItemIndex(null);
   }, [editingItem, editingItemIndex, editedItems]);
 
-  const deleteItemFromList = useCallback((index: number) => {
-    const newItems = editedItems.filter((_, i) => i !== index);
-    setEditedItems(newItems);
-  }, [editedItems]);
+  const deleteItemFromList = useCallback(
+    (index: number) => {
+      const newItems = editedItems.filter((_, i) => i !== index);
+      setEditedItems(newItems);
+    },
+    [editedItems]
+  );
 
   const formattedDate = receipt?.dateTime
     ? new Date(receipt.dateTime).toLocaleDateString(undefined, {
@@ -292,13 +283,8 @@ export default function ReceiptDetailScreen() {
         className="flex-1 bg-background dark:bg-background-dark justify-center items-center"
         style={{ paddingTop: insets.top }}
       >
-        <Text className="text-text-secondary dark:text-text-dark-secondary">
-          Receipt not found
-        </Text>
-        <Pressable
-          onPress={() => router.back()}
-          className="mt-4 px-4 py-2 bg-primary rounded-lg"
-        >
+        <Text className="text-text-secondary dark:text-text-dark-secondary">Receipt not found</Text>
+        <Pressable onPress={() => router.back()} className="mt-4 px-4 py-2 bg-primary rounded-lg">
           <Text className="text-white font-medium">{t('common.ok')}</Text>
         </Pressable>
       </View>
@@ -446,8 +432,8 @@ export default function ReceiptDetailScreen() {
                       receipt.paymentMethod === 'card'
                         ? 'card-outline'
                         : receipt.paymentMethod === 'digital'
-                        ? 'phone-portrait-outline'
-                        : 'cash-outline'
+                          ? 'phone-portrait-outline'
+                          : 'cash-outline'
                     }
                     size={18}
                     color="#8D8680"
@@ -537,7 +523,9 @@ export default function ReceiptDetailScreen() {
                 <View
                   key={item.id}
                   className={`flex-row items-center py-3 ${
-                    index !== items.length - 1 ? 'border-b border-border/50 dark:border-border-dark/50' : ''
+                    index !== items.length - 1
+                      ? 'border-b border-border/50 dark:border-border-dark/50'
+                      : ''
                   }`}
                 >
                   <View
@@ -679,9 +667,7 @@ export default function ReceiptDetailScreen() {
               value={editingItem?.price ? (editingItem.price / 100).toString() : ''}
               onChangeText={(text) => {
                 const num = parseFloat(text) || 0;
-                setEditingItem((prev) =>
-                  prev ? { ...prev, price: Math.round(num * 100) } : null
-                );
+                setEditingItem((prev) => (prev ? { ...prev, price: Math.round(num * 100) } : null));
               }}
               placeholder="0.00"
               placeholderTextColor="#8D8680"

@@ -13,7 +13,6 @@ export interface Currency {
   decimals: number;
 }
 
-// Supported currencies
 export const CURRENCIES: Record<string, Currency> = {
   USD: {
     code: 'USD',
@@ -161,13 +160,10 @@ export const CURRENCIES: Record<string, Currency> = {
   },
 };
 
-// Map country/region codes to default currencies
 const LOCALE_CURRENCY_MAP: Record<string, string> = {
-  // North America
   US: 'USD',
   CA: 'CAD',
   MX: 'MXN',
-  // Europe
   GB: 'GBP',
   DE: 'EUR',
   FR: 'EUR',
@@ -179,13 +175,11 @@ const LOCALE_CURRENCY_MAP: Record<string, string> = {
   PT: 'EUR',
   IE: 'EUR',
   CH: 'CHF',
-  // Asia Pacific
   JP: 'JPY',
   CN: 'CNY',
   KR: 'KRW',
   AU: 'AUD',
   IN: 'INR',
-  // Latin America
   BR: 'BRL',
   AR: 'ARS',
   CO: 'COP',
@@ -193,7 +187,6 @@ const LOCALE_CURRENCY_MAP: Record<string, string> = {
   PE: 'PEN',
 };
 
-// Language to default currency (fallback when region not available)
 const LANGUAGE_CURRENCY_MAP: Record<string, string> = {
   en: 'USD',
   es: 'MXN',
@@ -206,30 +199,21 @@ const LANGUAGE_CURRENCY_MAP: Record<string, string> = {
   ko: 'KRW',
 };
 
-/**
- * Get default currency based on device locale
- */
 export function getDefaultCurrencyFromLocale(
   regionCode: string | null,
   languageCode: string | null
 ): string {
-  // First try region code
   if (regionCode && LOCALE_CURRENCY_MAP[regionCode.toUpperCase()]) {
     return LOCALE_CURRENCY_MAP[regionCode.toUpperCase()];
   }
 
-  // Then try language code
   if (languageCode && LANGUAGE_CURRENCY_MAP[languageCode.toLowerCase()]) {
     return LANGUAGE_CURRENCY_MAP[languageCode.toLowerCase()];
   }
 
-  // Default to USD
   return 'USD';
 }
 
-/**
- * Format a price with the given currency
- */
 export function formatPrice(
   amount: number | null,
   currency: Currency,
@@ -239,44 +223,28 @@ export function formatPrice(
 
   const { symbol, symbolPosition, decimalSeparator, thousandsSeparator, decimals, code } = currency;
 
-  // Format the number
   const fixed = Math.abs(amount).toFixed(decimals);
   const [intPart, decPart] = fixed.split('.');
 
-  // Add thousands separator
   const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, thousandsSeparator);
 
-  // Combine with decimal
-  const formattedNumber = decimals > 0
-    ? `${formattedInt}${decimalSeparator}${decPart}`
-    : formattedInt;
+  const formattedNumber =
+    decimals > 0 ? `${formattedInt}${decimalSeparator}${decPart}` : formattedInt;
 
-  // Add sign for negative numbers
   const sign = amount < 0 ? '-' : '';
 
-  // Add symbol
-  const withSymbol = symbolPosition === 'before'
-    ? `${symbol}${formattedNumber}`
-    : `${formattedNumber} ${symbol}`;
+  const withSymbol =
+    symbolPosition === 'before' ? `${symbol}${formattedNumber}` : `${formattedNumber} ${symbol}`;
 
-  // Optionally add currency code
-  const result = options?.showCode
-    ? `${withSymbol} ${code}`
-    : withSymbol;
+  const result = options?.showCode ? `${withSymbol} ${code}` : withSymbol;
 
   return `${sign}${result}`;
 }
 
-/**
- * Get list of all supported currencies for selection UI
- */
 export function getSupportedCurrencies(): Currency[] {
   return Object.values(CURRENCIES).sort((a, b) => a.name.localeCompare(b.name));
 }
 
-/**
- * Get currency by code
- */
 export function getCurrency(code: string): Currency {
   return CURRENCIES[code] || CURRENCIES.USD;
 }

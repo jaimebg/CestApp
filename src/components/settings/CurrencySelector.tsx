@@ -3,9 +3,8 @@
  * Allows users to select their preferred currency
  */
 
-import { View, Text, Pressable, Modal, FlatList } from 'react-native';
+import { View, Text, Pressable, Modal, FlatList, useColorScheme } from 'react-native';
 import { useState } from 'react';
-import { useColorScheme } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { usePreferencesStore } from '@/src/store/preferences';
@@ -64,9 +63,7 @@ export function CurrencySelector({ showLabel = true }: CurrencySelectorProps) {
             {item.code}
           </Text>
         </View>
-        {isSelected && (
-          <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
-        )}
+        {isSelected && <Ionicons name="checkmark-circle" size={24} color={colors.primary} />}
       </Pressable>
     );
   };

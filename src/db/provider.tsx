@@ -27,10 +27,7 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
   useEffect(() => {
     async function init() {
       try {
-        // Initialize database tables
         initializeDatabase();
-
-        // Seed default categories
         await seedCategories();
 
         setIsReady(true);
@@ -43,9 +40,5 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
     init();
   }, []);
 
-  return (
-    <DatabaseContext.Provider value={{ isReady, error }}>
-      {children}
-    </DatabaseContext.Provider>
-  );
+  return <DatabaseContext.Provider value={{ isReady, error }}>{children}</DatabaseContext.Provider>;
 }

@@ -13,46 +13,70 @@ import {
   getDefaultCurrencyFromLocale,
   formatPrice as formatPriceUtil,
 } from '../config/currency';
-import { changeLanguage as i18nChangeLanguage, SUPPORTED_LANGUAGES, SupportedLanguage } from '../i18n';
+import {
+  changeLanguage as i18nChangeLanguage,
+  SUPPORTED_LANGUAGES,
+  SupportedLanguage,
+} from '../i18n';
 
 export type DateFormat = 'DMY' | 'MDY' | 'YMD';
 export type DecimalSeparator = '.' | ',';
 
 interface PreferencesState {
-  // Locale preferences
   language: SupportedLanguage;
   currencyCode: string;
   currency: Currency;
   dateFormat: DateFormat;
   decimalSeparator: DecimalSeparator;
 
-  // Onboarding state
   hasCompletedOnboarding: boolean;
 
-  // Actions
   setLanguage: (lang: SupportedLanguage) => void;
   setCurrency: (code: string) => void;
   setDateFormat: (format: DateFormat) => void;
   setDecimalSeparator: (sep: DecimalSeparator) => void;
   completeOnboarding: () => void;
-  resetOnboarding: () => void; // For testing
+  resetOnboarding: () => void;
 
-  // Currency helpers
   formatPrice: (amount: number | null, options?: { showCode?: boolean }) => string;
 }
 
-// Regions that use MDY date format
 const MDY_REGIONS = ['US', 'FM', 'PW', 'PH', 'MH'];
 
-// Regions that use YMD date format
 const YMD_REGIONS = ['CN', 'JP', 'KR', 'TW', 'HU', 'LT', 'CA'];
 
-// Regions that use comma as decimal separator
 const COMMA_DECIMAL_REGIONS = [
-  'DE', 'FR', 'ES', 'IT', 'PT', 'NL', 'BE', 'AT', 'CH', // Europe
-  'BR', 'AR', 'CL', 'CO', 'PE', 'VE', 'EC', 'UY', 'PY', // South America
-  'PL', 'CZ', 'SK', 'HU', 'RO', 'BG', 'HR', 'SI', 'RS', // Eastern Europe
-  'GR', 'TR', 'RU', 'UA', // Others
+  'DE',
+  'FR',
+  'ES',
+  'IT',
+  'PT',
+  'NL',
+  'BE',
+  'AT',
+  'CH',
+  'BR',
+  'AR',
+  'CL',
+  'CO',
+  'PE',
+  'VE',
+  'EC',
+  'UY',
+  'PY',
+  'PL',
+  'CZ',
+  'SK',
+  'HU',
+  'RO',
+  'BG',
+  'HR',
+  'SI',
+  'RS',
+  'GR',
+  'TR',
+  'RU',
+  'UA',
 ];
 
 /**
@@ -68,16 +92,13 @@ function getInitialPreferences(): {
   const regionCode = locale?.regionCode?.toUpperCase() || '';
   const languageCode = locale?.languageCode?.toLowerCase() || 'en';
 
-  // Language: Use device language if supported, otherwise English
-  const supportedLangs = SUPPORTED_LANGUAGES.map(l => l.code);
+  const supportedLangs = SUPPORTED_LANGUAGES.map((l) => l.code);
   const language: SupportedLanguage = supportedLangs.includes(languageCode as SupportedLanguage)
     ? (languageCode as SupportedLanguage)
     : 'en';
 
-  // Currency: Use existing logic
   const currencyCode = getDefaultCurrencyFromLocale(regionCode, languageCode);
 
-  // Date format: MDY for US-like regions, YMD for Asian regions, DMY for rest
   let dateFormat: DateFormat = 'DMY';
   if (MDY_REGIONS.includes(regionCode)) {
     dateFormat = 'MDY';
@@ -85,7 +106,6 @@ function getInitialPreferences(): {
     dateFormat = 'YMD';
   }
 
-  // Decimal separator: Comma for European/South American regions, dot for rest
   const decimalSeparator: DecimalSeparator = COMMA_DECIMAL_REGIONS.includes(regionCode) ? ',' : '.';
 
   return { language, currencyCode, dateFormat, decimalSeparator };
@@ -96,7 +116,6 @@ const initialPrefs = getInitialPreferences();
 export const usePreferencesStore = create<PreferencesState>()(
   persist(
     (set, get) => ({
-      // Initial values from device locale
       language: initialPrefs.language,
       currencyCode: initialPrefs.currencyCode,
       currency: getCurrency(initialPrefs.currencyCode),
@@ -147,9 +166,7 @@ export const usePreferencesStore = create<PreferencesState>()(
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {
-          // Reconstruct derived currency object
           state.currency = getCurrency(state.currencyCode);
-          // Sync i18n with persisted language
           i18nChangeLanguage(state.language);
         }
       },
@@ -157,15 +174,12 @@ export const usePreferencesStore = create<PreferencesState>()(
   )
 );
 
-// Backward compatibility: Export hook for price formatting (same as old currency store)
 export function useFormatPrice() {
   const formatPrice = usePreferencesStore((state) => state.formatPrice);
   const currency = usePreferencesStore((state) => state.currency);
   return { formatPrice, currency };
 }
 
-// Backward compatibility: Export useCurrencyStore pointing to preferences store
 export const useCurrencyStore = usePreferencesStore;
 
-// Export the initial preferences detection for use in onboarding
 export { getInitialPreferences };

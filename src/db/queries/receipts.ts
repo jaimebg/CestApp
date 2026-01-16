@@ -1,8 +1,7 @@
 import { db } from '../client';
-import { receipts, items, stores, type NewReceipt, type Receipt } from '../schema';
+import { receipts, items, stores, type NewReceipt } from '../schema';
 import { eq, desc, and, gte, lte, sql } from 'drizzle-orm';
 
-// Get all receipts with store info
 export async function getReceipts(limit = 50, offset = 0) {
   return db
     .select({
@@ -16,7 +15,6 @@ export async function getReceipts(limit = 50, offset = 0) {
     .offset(offset);
 }
 
-// Get receipt by ID with items
 export async function getReceiptById(id: number) {
   const receipt = await db
     .select({
@@ -30,10 +28,7 @@ export async function getReceiptById(id: number) {
 
   if (receipt.length === 0) return null;
 
-  const receiptItems = await db
-    .select()
-    .from(items)
-    .where(eq(items.receiptId, id));
+  const receiptItems = await db.select().from(items).where(eq(items.receiptId, id));
 
   return {
     ...receipt[0],
@@ -41,7 +36,6 @@ export async function getReceiptById(id: number) {
   };
 }
 
-// Get receipts by date range
 export async function getReceiptsByDateRange(startDate: Date, endDate: Date) {
   return db
     .select({
@@ -50,16 +44,10 @@ export async function getReceiptsByDateRange(startDate: Date, endDate: Date) {
     })
     .from(receipts)
     .leftJoin(stores, eq(receipts.storeId, stores.id))
-    .where(
-      and(
-        gte(receipts.dateTime, startDate),
-        lte(receipts.dateTime, endDate)
-      )
-    )
+    .where(and(gte(receipts.dateTime, startDate), lte(receipts.dateTime, endDate)))
     .orderBy(desc(receipts.dateTime));
 }
 
-// Get receipts by store
 export async function getReceiptsByStore(storeId: number) {
   return db
     .select()
@@ -68,13 +56,11 @@ export async function getReceiptsByStore(storeId: number) {
     .orderBy(desc(receipts.dateTime));
 }
 
-// Create receipt
 export async function createReceipt(data: NewReceipt) {
   const result = await db.insert(receipts).values(data).returning();
   return result[0];
 }
 
-// Update receipt
 export async function updateReceipt(id: number, data: Partial<NewReceipt>) {
   const result = await db
     .update(receipts)
@@ -84,12 +70,10 @@ export async function updateReceipt(id: number, data: Partial<NewReceipt>) {
   return result[0];
 }
 
-// Delete receipt
 export async function deleteReceipt(id: number) {
   await db.delete(receipts).where(eq(receipts.id, id));
 }
 
-// Get monthly spending
 export async function getMonthlySpending(year: number, month: number) {
   const startDate = new Date(year, month - 1, 1);
   const endDate = new Date(year, month, 0, 23, 59, 59);
@@ -100,12 +84,7 @@ export async function getMonthlySpending(year: number, month: number) {
       count: sql<number>`COUNT(*)`,
     })
     .from(receipts)
-    .where(
-      and(
-        gte(receipts.dateTime, startDate),
-        lte(receipts.dateTime, endDate)
-      )
-    );
+    .where(and(gte(receipts.dateTime, startDate), lte(receipts.dateTime, endDate)));
 
   return {
     total: result[0]?.total || 0,
@@ -113,7 +92,6 @@ export async function getMonthlySpending(year: number, month: number) {
   };
 }
 
-// Get recent receipts
 export async function getRecentReceipts(limit = 5) {
   return db
     .select({
@@ -126,7 +104,6 @@ export async function getRecentReceipts(limit = 5) {
     .limit(limit);
 }
 
-// Get receipts with item counts for list display
 export async function getReceiptsWithItemCount(limit = 50, offset = 0) {
   const result = await db
     .select({
@@ -145,7 +122,6 @@ export async function getReceiptsWithItemCount(limit = 50, offset = 0) {
   return result;
 }
 
-// Search receipts by store name or item name
 export async function searchReceipts(searchTerm: string, limit = 50) {
   const searchPattern = `%${searchTerm.toLowerCase()}%`;
 
@@ -173,7 +149,6 @@ export async function searchReceipts(searchTerm: string, limit = 50) {
     .limit(limit);
 }
 
-// Filter receipts with multiple criteria
 export interface ReceiptFilters {
   storeId?: number | null;
   startDate?: Date | null;
@@ -232,13 +207,9 @@ export async function getFilteredReceipts(filters: ReceiptFilters, limit = 50, o
       .offset(offset);
   }
 
-  return baseQuery
-    .orderBy(desc(receipts.dateTime))
-    .limit(limit)
-    .offset(offset);
+  return baseQuery.orderBy(desc(receipts.dateTime)).limit(limit).offset(offset);
 }
 
-// Get stores that have receipts (for filter dropdown)
 export async function getStoresWithReceipts() {
   return db
     .selectDistinct({

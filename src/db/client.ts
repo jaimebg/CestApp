@@ -4,13 +4,10 @@ import * as schema from './schema';
 
 const DATABASE_NAME = 'cestapp.db';
 
-// Open database synchronously
 const expoDb = openDatabaseSync(DATABASE_NAME);
 
-// Create drizzle instance
 export const db = drizzle(expoDb, { schema });
 
-// SQL for creating tables (used for initial setup)
 export const createTablesSQL = `
   CREATE TABLE IF NOT EXISTS stores (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -88,7 +85,6 @@ export const createTablesSQL = `
   CREATE UNIQUE INDEX IF NOT EXISTS user_learned_items_unique_idx ON user_learned_items(normalized_name, store_id);
 `;
 
-// Initialize database with tables
 export function initializeDatabase() {
   expoDb.execSync(createTablesSQL);
 }

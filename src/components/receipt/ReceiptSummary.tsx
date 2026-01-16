@@ -43,12 +43,8 @@ export function ReceiptSummary({ subtotal, tax, discount, total }: ReceiptSummar
 
           {discount != null && discount > 0 && (
             <View className="flex-row justify-between py-2">
-              <Text className="text-primary text-base">
-                {t('receipt.discount')}
-              </Text>
-              <Text className="text-primary text-base">
-                -{formatPrice(discount / 100)}
-              </Text>
+              <Text className="text-primary text-base">{t('receipt.discount')}</Text>
+              <Text className="text-primary text-base">-{formatPrice(discount / 100)}</Text>
             </View>
           )}
 

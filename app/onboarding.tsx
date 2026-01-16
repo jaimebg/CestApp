@@ -3,14 +3,12 @@
  * Collects user locale preferences on first launch
  */
 
-import { View, Text, Pressable, ScrollView, Modal, FlatList } from 'react-native';
+import { View, Text, Pressable, ScrollView, Modal, FlatList, useColorScheme } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { useColorScheme } from 'react-native';
-import { Card } from '@/src/components/ui';
 import {
   usePreferencesStore,
   DateFormat,
@@ -27,17 +25,16 @@ export default function OnboardingScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
-  // Get initial values from device locale
   const initialPrefs = getInitialPreferences();
 
-  // Local state for selections (start with device defaults)
   const [language, setLanguage] = useState<SupportedLanguage>(initialPrefs.language);
   const [currencyCode, setCurrencyCode] = useState(initialPrefs.currencyCode);
   const [dateFormat, setDateFormat] = useState<DateFormat>(initialPrefs.dateFormat);
-  const [decimalSeparator, setDecimalSeparator] = useState<DecimalSeparator>(initialPrefs.decimalSeparator);
+  const [decimalSeparator, setDecimalSeparator] = useState<DecimalSeparator>(
+    initialPrefs.decimalSeparator
+  );
   const [showCurrencyModal, setShowCurrencyModal] = useState(false);
 
-  // Store actions
   const {
     setLanguage: saveLanguage,
     setCurrency: saveCurrency,
@@ -57,17 +54,15 @@ export default function OnboardingScreen() {
   };
 
   const currencies = getSupportedCurrencies();
-  const selectedCurrency = currencies.find(c => c.code === currencyCode) || currencies[0];
+  const selectedCurrency = currencies.find((c) => c.code === currencyCode) || currencies[0];
 
   const handleGetStarted = () => {
-    // Save all preferences to store
     saveLanguage(language);
     saveCurrency(currencyCode);
     saveDateFormat(dateFormat);
     saveDecimalSeparator(decimalSeparator);
     completeOnboarding();
 
-    // Navigate to main app
     router.replace('/(tabs)');
   };
 
@@ -91,10 +86,7 @@ export default function OnboardingScreen() {
         style={{ borderColor: selected ? colors.primary : colors.border }}
       >
         {selected && (
-          <View
-            className="w-3 h-3 rounded-full"
-            style={{ backgroundColor: colors.primary }}
-          />
+          <View className="w-3 h-3 rounded-full" style={{ backgroundColor: colors.primary }} />
         )}
       </View>
       <View className="flex-1">
@@ -148,18 +140,13 @@ export default function OnboardingScreen() {
             {item.code}
           </Text>
         </View>
-        {isSelected && (
-          <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
-        )}
+        {isSelected && <Ionicons name="checkmark-circle" size={24} color={colors.primary} />}
       </Pressable>
     );
   };
 
   return (
-    <View
-      className="flex-1"
-      style={{ backgroundColor: colors.background, paddingTop: insets.top }}
-    >
+    <View className="flex-1" style={{ backgroundColor: colors.background, paddingTop: insets.top }}>
       <ScrollView
         className="flex-1 px-6"
         contentContainerStyle={{ paddingBottom: 120 }}
@@ -201,14 +188,11 @@ export default function OnboardingScreen() {
           >
             {t('onboarding.languageDesc')}
           </Text>
-          {SUPPORTED_LANGUAGES.map((lang) => (
-            renderRadioOption(
-              language === lang.code,
-              lang.nativeName,
-              lang.name,
-              () => setLanguage(lang.code as SupportedLanguage)
+          {SUPPORTED_LANGUAGES.map((lang) =>
+            renderRadioOption(language === lang.code, lang.nativeName, lang.name, () =>
+              setLanguage(lang.code as SupportedLanguage)
             )
-          ))}
+          )}
         </View>
 
         {/* Currency Section */}
@@ -265,17 +249,11 @@ export default function OnboardingScreen() {
           >
             {t('onboarding.dateFormatDesc')}
           </Text>
-          {renderRadioOption(
-            dateFormat === 'DMY',
-            t('onboarding.dmy'),
-            '31/12/2024',
-            () => setDateFormat('DMY')
+          {renderRadioOption(dateFormat === 'DMY', t('onboarding.dmy'), '31/12/2024', () =>
+            setDateFormat('DMY')
           )}
-          {renderRadioOption(
-            dateFormat === 'MDY',
-            t('onboarding.mdy'),
-            '12/31/2024',
-            () => setDateFormat('MDY')
+          {renderRadioOption(dateFormat === 'MDY', t('onboarding.mdy'), '12/31/2024', () =>
+            setDateFormat('MDY')
           )}
         </View>
 
@@ -321,10 +299,7 @@ export default function OnboardingScreen() {
           className="rounded-2xl py-4 items-center"
           style={{ backgroundColor: colors.primaryDeep }}
         >
-          <Text
-            className="text-white text-lg"
-            style={{ fontFamily: 'Inter_600SemiBold' }}
-          >
+          <Text className="text-white text-lg" style={{ fontFamily: 'Inter_600SemiBold' }}>
             {t('onboarding.getStarted')}
           </Text>
         </Pressable>

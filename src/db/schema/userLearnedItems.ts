@@ -11,17 +11,12 @@ export const userLearnedItems = sqliteTable(
   'user_learned_items',
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
-    // The normalized item name (lowercase, trimmed, common variations unified)
     normalizedName: text('normalized_name').notNull(),
-    // The category the user assigned to this item
     categoryId: integer('category_id')
       .notNull()
       .references(() => categories.id, { onDelete: 'cascade' }),
-    // Optional: store-specific learning (null means applies to all stores)
     storeId: integer('store_id').references(() => stores.id, { onDelete: 'set null' }),
-    // Number of times user has made this correction (higher = more confident)
     correctionCount: integer('correction_count').notNull().default(1),
-    // Last time this item-category mapping was used/updated
     lastUsedAt: integer('last_used_at', { mode: 'timestamp' })
       .notNull()
       .$defaultFn(() => new Date()),
@@ -29,13 +24,7 @@ export const userLearnedItems = sqliteTable(
       .notNull()
       .$defaultFn(() => new Date()),
   },
-  (table) => [
-    // Unique constraint: one category per item name per store (or global)
-    uniqueIndex('user_learned_items_unique_idx').on(
-      table.normalizedName,
-      table.storeId
-    ),
-  ]
+  (table) => [uniqueIndex('user_learned_items_unique_idx').on(table.normalizedName, table.storeId)]
 );
 
 export type UserLearnedItem = typeof userLearnedItems.$inferSelect;

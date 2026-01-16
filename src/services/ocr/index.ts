@@ -1,4 +1,8 @@
-import MlkitOcr, { OcrResult as MlkitOcrResult, OcrBlock as MlkitOcrBlock, OcrLine as MlkitOcrLine } from 'rn-mlkit-ocr';
+import MlkitOcr, {
+  OcrResult as MlkitOcrResult,
+  OcrBlock as MlkitOcrBlock,
+  OcrLine as MlkitOcrLine,
+} from 'rn-mlkit-ocr';
 
 export interface OcrBlock {
   text: string;
@@ -38,7 +42,6 @@ export async function recognizeText(imageUri: string): Promise<OcrResult> {
   try {
     const result: MlkitOcrResult = await MlkitOcr.recognizeText(imageUri);
 
-    // Extract all text blocks
     const blocks: OcrBlock[] = result.blocks.map((block: MlkitOcrBlock) => ({
       text: block.text,
       lines: block.lines.map((line: MlkitOcrLine) => ({
@@ -58,7 +61,6 @@ export async function recognizeText(imageUri: string): Promise<OcrResult> {
       },
     }));
 
-    // Extract all lines as simple text array
     const lines: string[] = [];
     result.blocks.forEach((block: MlkitOcrBlock) => {
       block.lines.forEach((line: MlkitOcrLine) => {
@@ -66,7 +68,6 @@ export async function recognizeText(imageUri: string): Promise<OcrResult> {
       });
     });
 
-    // Use the full text from result
     const fullText = result.text;
 
     return {
@@ -133,11 +134,10 @@ export function findTotalLine(lines: string[]): string | null {
  * Looks for common date patterns
  */
 export function findDateLine(lines: string[]): string | null {
-  // Common date patterns
   const datePatterns = [
-    /\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}/, // MM/DD/YYYY or DD/MM/YYYY
-    /\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2}/, // YYYY/MM/DD
-    /(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\s+\d{1,2}/i, // Month DD
+    /\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}/,
+    /\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2}/,
+    /(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\s+\d{1,2}/i,
   ];
 
   for (const line of lines) {

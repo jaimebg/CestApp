@@ -26,12 +26,12 @@ export default function ScanScreen() {
         params: { uri: result.localUri, source: result.source },
       });
     } else if (result.error && result.error !== 'cancelled') {
-      // Show error toast
-      const errorKey = result.error === 'cameraPermission'
-        ? 'errors.cameraPermission'
-        : result.error === 'galleryPermission'
-        ? 'errors.galleryPermission'
-        : 'errors.unknownError';
+      const errorKey =
+        result.error === 'cameraPermission'
+          ? 'errors.cameraPermission'
+          : result.error === 'galleryPermission'
+            ? 'errors.galleryPermission'
+            : 'errors.unknownError';
 
       showErrorToast(t('common.error'), t(errorKey));
     }
@@ -73,10 +73,16 @@ export default function ScanScreen() {
       style={{ paddingTop: insets.top }}
     >
       <View className="flex-1 px-6 pt-4">
-        <Text className="text-3xl text-text dark:text-text-dark" style={{ fontFamily: 'Inter_700Bold' }}>
+        <Text
+          className="text-3xl text-text dark:text-text-dark"
+          style={{ fontFamily: 'Inter_700Bold' }}
+        >
           {t('scan.title')}
         </Text>
-        <Text className="text-base text-text-secondary dark:text-text-dark-secondary mt-2" style={{ fontFamily: 'Inter_400Regular' }}>
+        <Text
+          className="text-base text-text-secondary dark:text-text-dark-secondary mt-2"
+          style={{ fontFamily: 'Inter_400Regular' }}
+        >
           {t('scan.subtitle')}
         </Text>
 
@@ -98,7 +104,10 @@ export default function ScanScreen() {
               <Text className="text-white text-lg" style={{ fontFamily: 'Inter_600SemiBold' }}>
                 {t('scan.takePhoto')}
               </Text>
-              <Text className="text-white/80 text-sm mt-1" style={{ fontFamily: 'Inter_400Regular' }}>
+              <Text
+                className="text-white/80 text-sm mt-1"
+                style={{ fontFamily: 'Inter_400Regular' }}
+              >
                 {t('scan.takePhotoDesc')}
               </Text>
             </View>
@@ -120,10 +129,16 @@ export default function ScanScreen() {
                 />
               </View>
               <View className="flex-1">
-                <Text className="text-text dark:text-text-dark text-lg" style={{ fontFamily: 'Inter_600SemiBold' }}>
+                <Text
+                  className="text-text dark:text-text-dark text-lg"
+                  style={{ fontFamily: 'Inter_600SemiBold' }}
+                >
                   {t('scan.fromGallery')}
                 </Text>
-                <Text className="text-text-secondary dark:text-text-dark-secondary text-sm mt-1" style={{ fontFamily: 'Inter_400Regular' }}>
+                <Text
+                  className="text-text-secondary dark:text-text-dark-secondary text-sm mt-1"
+                  style={{ fontFamily: 'Inter_400Regular' }}
+                >
                   {t('scan.fromGalleryDesc')}
                 </Text>
               </View>
@@ -146,10 +161,16 @@ export default function ScanScreen() {
                 />
               </View>
               <View className="flex-1">
-                <Text className="text-text dark:text-text-dark text-lg" style={{ fontFamily: 'Inter_600SemiBold' }}>
+                <Text
+                  className="text-text dark:text-text-dark text-lg"
+                  style={{ fontFamily: 'Inter_600SemiBold' }}
+                >
                   {t('scan.importPdf')}
                 </Text>
-                <Text className="text-text-secondary dark:text-text-dark-secondary text-sm mt-1" style={{ fontFamily: 'Inter_400Regular' }}>
+                <Text
+                  className="text-text-secondary dark:text-text-dark-secondary text-sm mt-1"
+                  style={{ fontFamily: 'Inter_400Regular' }}
+                >
                   {t('scan.importPdfDesc')}
                 </Text>
               </View>

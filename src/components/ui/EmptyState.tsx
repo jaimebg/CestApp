@@ -12,13 +12,7 @@ interface EmptyStateProps {
   onAction?: () => void;
 }
 
-export function EmptyState({
-  icon,
-  title,
-  description,
-  actionLabel,
-  onAction,
-}: EmptyStateProps) {
+export function EmptyState({ icon, title, description, actionLabel, onAction }: EmptyStateProps) {
   return (
     <View className="flex-1 justify-center items-center px-8 py-12">
       <Animated.View
@@ -47,10 +41,7 @@ export function EmptyState({
             onPress={onAction}
             className="mt-6 px-6 py-3 bg-primary rounded-xl active:opacity-80"
           >
-            <Text
-              className="text-white text-base"
-              style={{ fontFamily: 'Inter_600SemiBold' }}
-            >
+            <Text className="text-white text-base" style={{ fontFamily: 'Inter_600SemiBold' }}>
               {actionLabel}
             </Text>
           </Pressable>
@@ -60,7 +51,6 @@ export function EmptyState({
   );
 }
 
-// Error state variant
 interface ErrorStateProps {
   title: string;
   description: string;
@@ -68,12 +58,7 @@ interface ErrorStateProps {
   retryLabel?: string;
 }
 
-export function ErrorState({
-  title,
-  description,
-  onRetry,
-  retryLabel = 'Retry',
-}: ErrorStateProps) {
+export function ErrorState({ title, description, onRetry, retryLabel = 'Retry' }: ErrorStateProps) {
   return (
     <View className="flex-1 justify-center items-center px-8 py-12">
       <Animated.View
@@ -102,10 +87,7 @@ export function ErrorState({
             onPress={onRetry}
             className="mt-6 px-6 py-3 bg-error rounded-xl active:opacity-80"
           >
-            <Text
-              className="text-white text-base"
-              style={{ fontFamily: 'Inter_600SemiBold' }}
-            >
+            <Text className="text-white text-base" style={{ fontFamily: 'Inter_600SemiBold' }}>
               {retryLabel}
             </Text>
           </Pressable>

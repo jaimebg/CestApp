@@ -15,7 +15,8 @@ interface ButtonProps extends Omit<PressableProps, 'children'> {
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary: 'bg-primary-deep active:bg-primary-dark',
-  secondary: 'bg-surface dark:bg-surface-dark border border-border dark:border-border-dark active:bg-border dark:active:bg-border-dark',
+  secondary:
+    'bg-surface dark:bg-surface-dark border border-border dark:border-border-dark active:bg-border dark:active:bg-border-dark',
   ghost: 'bg-transparent active:bg-primary/10',
   destructive: 'bg-error active:bg-error-light',
 };

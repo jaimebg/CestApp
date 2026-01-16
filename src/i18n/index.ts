@@ -10,7 +10,6 @@ const resources = {
   es: { translation: es },
 };
 
-// Get device language, fallback to English
 const deviceLanguage = Localization.getLocales()[0]?.languageCode || 'en';
 const supportedLanguages = ['en', 'es'];
 const defaultLanguage = supportedLanguages.includes(deviceLanguage) ? deviceLanguage : 'en';
@@ -30,15 +29,13 @@ i18n.use(initReactI18next).init({
 
 export default i18n;
 
-// Export helper to change language
 export const changeLanguage = (lng: 'en' | 'es') => {
   i18n.changeLanguage(lng);
 };
 
-// Export supported languages
 export const SUPPORTED_LANGUAGES = [
   { code: 'en', name: 'English', nativeName: 'English' },
   { code: 'es', name: 'Spanish', nativeName: 'Espanol' },
 ] as const;
 
-export type SupportedLanguage = typeof SUPPORTED_LANGUAGES[number]['code'];
+export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number]['code'];

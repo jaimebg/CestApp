@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Card, Badge, Skeleton, SkeletonCard } from '@/src/components/ui';
+import { Card, Badge, Skeleton } from '@/src/components/ui';
 import { ReceiptCard, ReceiptCardSkeleton } from '@/src/components/receipt';
 import { useDatabaseReady } from '@/src/db/provider';
 import { getReceiptsWithItemCount } from '@/src/db/queries/receipts';
@@ -191,10 +191,7 @@ export default function DashboardScreen() {
                 <Ionicons name="scan-outline" size={24} color="#FFFFFF" />
               </View>
               <View className="flex-1">
-                <Text
-                  className="text-white text-lg"
-                  style={{ fontFamily: 'Inter_600SemiBold' }}
-                >
+                <Text className="text-white text-lg" style={{ fontFamily: 'Inter_600SemiBold' }}>
                   {t('dashboard.scanFirst')}
                 </Text>
                 <Text
@@ -210,10 +207,7 @@ export default function DashboardScreen() {
         )}
 
         {/* Recent Receipts */}
-        <Animated.View
-          entering={FadeInUp.delay(400).duration(500).springify()}
-          className="mt-8"
-        >
+        <Animated.View entering={FadeInUp.delay(400).duration(500).springify()} className="mt-8">
           <View className="flex-row items-center justify-between mb-4">
             <Text
               className="text-lg text-text dark:text-text-dark"
@@ -233,7 +227,9 @@ export default function DashboardScreen() {
             recentReceipts.map((item, index) => (
               <Animated.View
                 key={item.receipt.id}
-                entering={FadeInDown.delay(500 + index * 100).duration(400).springify()}
+                entering={FadeInDown.delay(500 + index * 100)
+                  .duration(400)
+                  .springify()}
               >
                 <ReceiptCard
                   receipt={item.receipt}

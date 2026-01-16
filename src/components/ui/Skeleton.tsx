@@ -16,22 +16,13 @@ interface SkeletonProps {
   className?: string;
 }
 
-export function Skeleton({
-  width,
-  height,
-  borderRadius = 8,
-  className,
-}: SkeletonProps) {
+export function Skeleton({ width, height, borderRadius = 8, className }: SkeletonProps) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const shimmer = useSharedValue(0);
 
   useEffect(() => {
-    shimmer.value = withRepeat(
-      withTiming(1, { duration: 1200 }),
-      -1,
-      false
-    );
+    shimmer.value = withRepeat(withTiming(1, { duration: 1200 }), -1, false);
   }, [shimmer]);
 
   const animatedStyle = useAnimatedStyle(() => {
@@ -64,14 +55,7 @@ export function Skeleton({
   );
 }
 
-// Preset skeleton shapes
-export function SkeletonText({
-  lines = 1,
-  className,
-}: {
-  lines?: number;
-  className?: string;
-}) {
+export function SkeletonText({ lines = 1, className }: { lines?: number; className?: string }) {
   return (
     <View className={`gap-2 ${className || ''}`}>
       {Array.from({ length: lines }).map((_, i) => (
@@ -86,28 +70,13 @@ export function SkeletonText({
   );
 }
 
-export function SkeletonCircle({
-  size = 40,
-  className,
-}: {
-  size?: number;
-  className?: string;
-}) {
-  return (
-    <Skeleton
-      width={size}
-      height={size}
-      borderRadius={size / 2}
-      className={className}
-    />
-  );
+export function SkeletonCircle({ size = 40, className }: { size?: number; className?: string }) {
+  return <Skeleton width={size} height={size} borderRadius={size / 2} className={className} />;
 }
 
 export function SkeletonCard({ className }: { className?: string }) {
   return (
-    <View
-      className={`bg-surface dark:bg-surface-dark rounded-2xl p-4 ${className || ''}`}
-    >
+    <View className={`bg-surface dark:bg-surface-dark rounded-2xl p-4 ${className || ''}`}>
       <View className="flex-row items-center mb-3">
         <SkeletonCircle size={48} />
         <View className="flex-1 ml-3">

@@ -1,9 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: [
-    './app/**/*.{js,jsx,ts,tsx}',
-    './src/**/*.{js,jsx,ts,tsx}',
-  ],
+  content: ['./app/**/*.{js,jsx,ts,tsx}', './src/**/*.{js,jsx,ts,tsx}'],
   presets: [require('nativewind/preset')],
   theme: {
     extend: {
@@ -30,8 +27,8 @@ module.exports = {
         primary: {
           DEFAULT: '#93BD57',
           light: '#A8CE6F',
-          dark: '#5C8A32',      // Darker for better contrast with white text
-          deep: '#3D6B23',      // Deepest shade for buttons with white text
+          dark: '#5C8A32',
+          deep: '#3D6B23',
         },
         accent: {
           DEFAULT: '#FBE580',

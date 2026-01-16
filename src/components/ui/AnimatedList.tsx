@@ -18,7 +18,6 @@ interface AnimatedListItemProps extends ViewProps {
   duration?: number;
 }
 
-// Individual animated list item with staggered fade-in
 export function AnimatedListItem({
   index,
   children,
@@ -48,17 +47,14 @@ export function AnimatedListItem({
   );
 }
 
-// Pre-built entering animations
 export const enteringAnimations = {
   fadeIn: FadeIn.duration(300),
   fadeInDown: FadeInDown.duration(300).springify(),
   fadeInUp: FadeInUp.duration(300).springify(),
 };
 
-// Layout animation for smooth reordering
 export const layoutAnimation = Layout.springify().damping(15);
 
-// Pressable with scale animation
 interface AnimatedPressableProps {
   children: React.ReactNode;
   onPress?: () => void;

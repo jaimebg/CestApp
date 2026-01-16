@@ -7,7 +7,6 @@ import {
   readDirectoryAsync,
 } from 'expo-file-system/legacy';
 
-// Directory for storing receipt images
 const RECEIPTS_DIR = `${documentDirectory}receipts/`;
 
 /**
@@ -59,7 +58,6 @@ function getExtension(uri: string, mimeType?: string): string {
     }
   }
 
-  // Extract from URI
   const match = uri.match(/\.([a-zA-Z0-9]+)(?:\?|$)/);
   return match ? match[1].toLowerCase() : 'jpg';
 }
@@ -70,10 +68,7 @@ function getExtension(uri: string, mimeType?: string): string {
  * @param mimeType - Optional mime type for better extension detection
  * @returns The local URI of the saved file
  */
-export async function saveReceiptFile(
-  sourceUri: string,
-  mimeType?: string
-): Promise<string> {
+export async function saveReceiptFile(sourceUri: string, mimeType?: string): Promise<string> {
   await ensureReceiptsDirectory();
 
   const extension = getExtension(sourceUri, mimeType);

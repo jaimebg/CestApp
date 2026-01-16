@@ -12,14 +12,53 @@ export const DEFAULT_CATEGORIES = [
     icon: '🥬',
     color: '#93BD57',
     keywords: [
-      // English
-      'apple', 'banana', 'orange', 'lettuce', 'tomato', 'carrot', 'onion', 'potato',
-      'fruit', 'vegetable', 'organic', 'avocado', 'lemon', 'lime', 'grape', 'berry',
-      'melon', 'cucumber', 'pepper', 'broccoli', 'spinach', 'kale', 'celery', 'garlic',
-      // Spanish
-      'manzana', 'platano', 'naranja', 'lechuga', 'tomate', 'zanahoria', 'cebolla',
-      'papa', 'patata', 'fruta', 'verdura', 'aguacate', 'limon', 'uva', 'fresa',
-      'melon', 'sandia', 'pepino', 'pimiento', 'brocoli', 'espinaca', 'apio', 'ajo',
+      'apple',
+      'banana',
+      'orange',
+      'lettuce',
+      'tomato',
+      'carrot',
+      'onion',
+      'potato',
+      'fruit',
+      'vegetable',
+      'organic',
+      'avocado',
+      'lemon',
+      'lime',
+      'grape',
+      'berry',
+      'melon',
+      'cucumber',
+      'pepper',
+      'broccoli',
+      'spinach',
+      'kale',
+      'celery',
+      'garlic',
+      'manzana',
+      'platano',
+      'naranja',
+      'lechuga',
+      'tomate',
+      'zanahoria',
+      'cebolla',
+      'papa',
+      'patata',
+      'fruta',
+      'verdura',
+      'aguacate',
+      'limon',
+      'uva',
+      'fresa',
+      'melon',
+      'sandia',
+      'pepino',
+      'pimiento',
+      'brocoli',
+      'espinaca',
+      'apio',
+      'ajo',
     ],
     isDefault: true,
   },
@@ -28,12 +67,33 @@ export const DEFAULT_CATEGORIES = [
     icon: '🥛',
     color: '#5BA4D9',
     keywords: [
-      // English
-      'milk', 'cheese', 'yogurt', 'butter', 'cream', 'egg', 'eggs', 'sour cream',
-      'cottage', 'mozzarella', 'cheddar', 'parmesan', 'dairy', 'half and half',
-      // Spanish
-      'leche', 'queso', 'yogur', 'mantequilla', 'crema', 'huevo', 'huevos', 'nata',
-      'requeson', 'lacteo', 'lacteos', 'quesillo', 'queso fresco',
+      'milk',
+      'cheese',
+      'yogurt',
+      'butter',
+      'cream',
+      'egg',
+      'eggs',
+      'sour cream',
+      'cottage',
+      'mozzarella',
+      'cheddar',
+      'parmesan',
+      'dairy',
+      'half and half',
+      'leche',
+      'queso',
+      'yogur',
+      'mantequilla',
+      'crema',
+      'huevo',
+      'huevos',
+      'nata',
+      'requeson',
+      'lacteo',
+      'lacteos',
+      'quesillo',
+      'queso fresco',
     ],
     isDefault: true,
   },
@@ -42,13 +102,42 @@ export const DEFAULT_CATEGORIES = [
     icon: '🥩',
     color: '#980404',
     keywords: [
-      // English
-      'beef', 'chicken', 'pork', 'turkey', 'fish', 'salmon', 'steak', 'ground',
-      'bacon', 'sausage', 'ham', 'lamb', 'shrimp', 'tuna', 'meat', 'seafood', 'tilapia',
-      // Spanish
-      'carne', 'pollo', 'cerdo', 'pavo', 'pescado', 'res', 'bistec', 'molida',
-      'tocino', 'salchicha', 'jamon', 'cordero', 'camaron', 'atun', 'mariscos',
-      'carnitas', 'chorizo', 'costilla', 'chuleta',
+      'beef',
+      'chicken',
+      'pork',
+      'turkey',
+      'fish',
+      'salmon',
+      'steak',
+      'ground',
+      'bacon',
+      'sausage',
+      'ham',
+      'lamb',
+      'shrimp',
+      'tuna',
+      'meat',
+      'seafood',
+      'tilapia',
+      'carne',
+      'pollo',
+      'cerdo',
+      'pavo',
+      'pescado',
+      'res',
+      'bistec',
+      'molida',
+      'tocino',
+      'salchicha',
+      'jamon',
+      'cordero',
+      'camaron',
+      'atun',
+      'mariscos',
+      'carnitas',
+      'chorizo',
+      'costilla',
+      'chuleta',
     ],
     isDefault: true,
   },
@@ -57,12 +146,35 @@ export const DEFAULT_CATEGORIES = [
     icon: '🍞',
     color: '#FBE580',
     keywords: [
-      // English
-      'bread', 'bagel', 'muffin', 'cake', 'cookie', 'donut', 'pastry', 'croissant',
-      'roll', 'bun', 'tortilla', 'pita', 'baguette', 'sourdough', 'rye',
-      // Spanish
-      'pan', 'bolillo', 'dona', 'pastel', 'galleta', 'panecillo', 'concha',
-      'cuerno', 'telera', 'birote', 'polvoron', 'empanada', 'churro', 'rosca',
+      'bread',
+      'bagel',
+      'muffin',
+      'cake',
+      'cookie',
+      'donut',
+      'pastry',
+      'croissant',
+      'roll',
+      'bun',
+      'tortilla',
+      'pita',
+      'baguette',
+      'sourdough',
+      'rye',
+      'pan',
+      'bolillo',
+      'dona',
+      'pastel',
+      'galleta',
+      'panecillo',
+      'concha',
+      'cuerno',
+      'telera',
+      'birote',
+      'polvoron',
+      'empanada',
+      'churro',
+      'rosca',
     ],
     isDefault: true,
   },
@@ -71,12 +183,35 @@ export const DEFAULT_CATEGORIES = [
     icon: '🥤',
     color: '#8B7EC8',
     keywords: [
-      // English
-      'water', 'juice', 'soda', 'coffee', 'tea', 'beer', 'wine', 'drink', 'cola',
-      'sprite', 'energy', 'smoothie', 'lemonade', 'sparkling', 'beverage',
-      // Spanish
-      'agua', 'jugo', 'refresco', 'cafe', 'te', 'cerveza', 'vino', 'bebida',
-      'limonada', 'horchata', 'jamaica', 'tamarindo', 'gaseosa', 'licuado',
+      'water',
+      'juice',
+      'soda',
+      'coffee',
+      'tea',
+      'beer',
+      'wine',
+      'drink',
+      'cola',
+      'sprite',
+      'energy',
+      'smoothie',
+      'lemonade',
+      'sparkling',
+      'beverage',
+      'agua',
+      'jugo',
+      'refresco',
+      'cafe',
+      'te',
+      'cerveza',
+      'vino',
+      'bebida',
+      'limonada',
+      'horchata',
+      'jamaica',
+      'tamarindo',
+      'gaseosa',
+      'licuado',
     ],
     isDefault: true,
   },
@@ -85,12 +220,26 @@ export const DEFAULT_CATEGORIES = [
     icon: '🧊',
     color: '#4DB6AC',
     keywords: [
-      // English
-      'frozen', 'ice cream', 'pizza', 'meals', 'fries', 'popsicle', 'gelato',
-      'sorbet', 'frozen dinner', 'tv dinner', 'ice', 'freezer',
-      // Spanish
-      'congelado', 'helado', 'paleta', 'papas fritas', 'comida congelada',
-      'nieve', 'hielo', 'pizza congelada',
+      'frozen',
+      'ice cream',
+      'pizza',
+      'meals',
+      'fries',
+      'popsicle',
+      'gelato',
+      'sorbet',
+      'frozen dinner',
+      'tv dinner',
+      'ice',
+      'freezer',
+      'congelado',
+      'helado',
+      'paleta',
+      'papas fritas',
+      'comida congelada',
+      'nieve',
+      'hielo',
+      'pizza congelada',
     ],
     isDefault: true,
   },
@@ -99,14 +248,48 @@ export const DEFAULT_CATEGORIES = [
     icon: '🥫',
     color: '#E8976C',
     keywords: [
-      // English
-      'rice', 'pasta', 'sauce', 'soup', 'canned', 'cereal', 'flour', 'sugar',
-      'oil', 'beans', 'spices', 'seasoning', 'salt', 'pepper', 'vinegar', 'honey',
-      'jam', 'peanut butter', 'noodles', 'oatmeal', 'syrup',
-      // Spanish
-      'arroz', 'fideos', 'salsa', 'sopa', 'enlatado', 'cereal', 'harina', 'azucar',
-      'aceite', 'frijoles', 'especias', 'condimento', 'sal', 'pimienta', 'vinagre',
-      'miel', 'mermelada', 'crema de cacahuate', 'avena', 'jarabe', 'lata',
+      'rice',
+      'pasta',
+      'sauce',
+      'soup',
+      'canned',
+      'cereal',
+      'flour',
+      'sugar',
+      'oil',
+      'beans',
+      'spices',
+      'seasoning',
+      'salt',
+      'pepper',
+      'vinegar',
+      'honey',
+      'jam',
+      'peanut butter',
+      'noodles',
+      'oatmeal',
+      'syrup',
+      'arroz',
+      'fideos',
+      'salsa',
+      'sopa',
+      'enlatado',
+      'cereal',
+      'harina',
+      'azucar',
+      'aceite',
+      'frijoles',
+      'especias',
+      'condimento',
+      'sal',
+      'pimienta',
+      'vinagre',
+      'miel',
+      'mermelada',
+      'crema de cacahuate',
+      'avena',
+      'jarabe',
+      'lata',
     ],
     isDefault: true,
   },
@@ -115,12 +298,31 @@ export const DEFAULT_CATEGORIES = [
     icon: '🍿',
     color: '#F4A261',
     keywords: [
-      // English
-      'chips', 'crackers', 'popcorn', 'candy', 'chocolate', 'nuts', 'pretzels',
-      'cookies', 'granola', 'bar', 'trail mix', 'gummies', 'snack',
-      // Spanish
-      'papas', 'galletas saladas', 'palomitas', 'dulce', 'dulces', 'nueces',
-      'cacahuates', 'botana', 'frituras', 'chicharron', 'gomitas', 'chocolates',
+      'chips',
+      'crackers',
+      'popcorn',
+      'candy',
+      'chocolate',
+      'nuts',
+      'pretzels',
+      'cookies',
+      'granola',
+      'bar',
+      'trail mix',
+      'gummies',
+      'snack',
+      'papas',
+      'galletas saladas',
+      'palomitas',
+      'dulce',
+      'dulces',
+      'nueces',
+      'cacahuates',
+      'botana',
+      'frituras',
+      'chicharron',
+      'gomitas',
+      'chocolates',
     ],
     isDefault: true,
   },
@@ -129,12 +331,34 @@ export const DEFAULT_CATEGORIES = [
     icon: '🧹',
     color: '#8D8680',
     keywords: [
-      // English
-      'paper', 'towel', 'tissue', 'detergent', 'soap', 'cleaner', 'trash', 'bag',
-      'foil', 'wrap', 'sponge', 'bleach', 'dishwasher', 'laundry', 'cleaning',
-      // Spanish
-      'papel', 'toalla', 'servilleta', 'detergente', 'jabon', 'limpiador',
-      'basura', 'bolsa', 'aluminio', 'esponja', 'cloro', 'lavaplatos', 'limpieza',
+      'paper',
+      'towel',
+      'tissue',
+      'detergent',
+      'soap',
+      'cleaner',
+      'trash',
+      'bag',
+      'foil',
+      'wrap',
+      'sponge',
+      'bleach',
+      'dishwasher',
+      'laundry',
+      'cleaning',
+      'papel',
+      'toalla',
+      'servilleta',
+      'detergente',
+      'jabon',
+      'limpiador',
+      'basura',
+      'bolsa',
+      'aluminio',
+      'esponja',
+      'cloro',
+      'lavaplatos',
+      'limpieza',
     ],
     isDefault: true,
   },
@@ -143,12 +367,30 @@ export const DEFAULT_CATEGORIES = [
     icon: '🧴',
     color: '#DDA0DD',
     keywords: [
-      // English
-      'shampoo', 'toothpaste', 'deodorant', 'razor', 'lotion', 'soap', 'conditioner',
-      'body wash', 'sunscreen', 'makeup', 'skincare', 'hygiene', 'dental',
-      // Spanish
-      'champu', 'pasta dental', 'desodorante', 'rastrillo', 'crema', 'jabon',
-      'acondicionador', 'gel de bano', 'protector solar', 'maquillaje', 'higiene',
+      'shampoo',
+      'toothpaste',
+      'deodorant',
+      'razor',
+      'lotion',
+      'soap',
+      'conditioner',
+      'body wash',
+      'sunscreen',
+      'makeup',
+      'skincare',
+      'hygiene',
+      'dental',
+      'champu',
+      'pasta dental',
+      'desodorante',
+      'rastrillo',
+      'crema',
+      'jabon',
+      'acondicionador',
+      'gel de bano',
+      'protector solar',
+      'maquillaje',
+      'higiene',
     ],
     isDefault: true,
   },
@@ -162,14 +404,12 @@ export const DEFAULT_CATEGORIES = [
 ];
 
 export async function seedCategories() {
-  // Check if categories already exist
   const existingCategories = await db.select().from(categories).limit(1);
 
   if (existingCategories.length > 0) {
     return;
   }
 
-  // Insert default categories
   for (const category of DEFAULT_CATEGORIES) {
     await db.insert(categories).values({
       name: category.name,
@@ -191,9 +431,9 @@ export function normalizeItemName(name: string): string {
   return name
     .toLowerCase()
     .trim()
-    .replace(/\s+/g, ' ') // normalize whitespace
-    .replace(/^\d+\s*x\s*/i, '') // remove quantity prefixes like "2 x "
-    .replace(/\s*\d+\s*(oz|lb|kg|g|ml|l|ct|pk|pc)\.?$/i, '') // remove unit suffixes
+    .replace(/\s+/g, ' ')
+    .replace(/^\d+\s*x\s*/i, '')
+    .replace(/\s*\d+\s*(oz|lb|kg|g|ml|l|ct|pk|pc)\.?$/i, '')
     .trim();
 }
 
@@ -212,26 +452,20 @@ export async function getCategoryForItem(
 ): Promise<{ categoryId: number; confidence: number; source: 'learned' | 'keyword' | 'default' }> {
   const normalizedName = normalizeItemName(itemName);
 
-  // 1. Check user learned items first (store-specific, then global)
   const learnedItems = await db
     .select()
     .from(userLearnedItems)
     .where(eq(userLearnedItems.normalizedName, normalizedName));
 
-  // Prefer store-specific learning over global
-  const storeSpecific = storeId
-    ? learnedItems.find((item) => item.storeId === storeId)
-    : null;
+  const storeSpecific = storeId ? learnedItems.find((item) => item.storeId === storeId) : null;
   const global = learnedItems.find((item) => item.storeId === null);
   const learned = storeSpecific || global;
 
   if (learned) {
-    // Higher confidence for more corrections
     const confidence = Math.min(90 + learned.correctionCount * 2, 100);
     return { categoryId: learned.categoryId, confidence, source: 'learned' };
   }
 
-  // 2. Fall back to keyword matching
   const allCategories = await db.select().from(categories);
 
   for (const category of allCategories) {
@@ -241,7 +475,6 @@ export async function getCategoryForItem(
     }
   }
 
-  // 3. Return "Other" category if no match
   const otherCategory = allCategories.find((c) => c.name === 'Other');
   return {
     categoryId: otherCategory?.id || 1,
@@ -261,7 +494,6 @@ export async function recordUserCorrection(
 ): Promise<void> {
   const normalizedName = normalizeItemName(itemName);
 
-  // Check if this mapping already exists
   const conditions = [eq(userLearnedItems.normalizedName, normalizedName)];
   if (storeId) {
     conditions.push(eq(userLearnedItems.storeId, storeId));
@@ -276,7 +508,6 @@ export async function recordUserCorrection(
     .limit(1);
 
   if (existing.length > 0) {
-    // Update existing: increment count and update timestamp
     await db
       .update(userLearnedItems)
       .set({
@@ -286,7 +517,6 @@ export async function recordUserCorrection(
       })
       .where(eq(userLearnedItems.id, existing[0].id));
   } else {
-    // Insert new learning
     await db.insert(userLearnedItems).values({
       normalizedName,
       categoryId,

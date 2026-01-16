@@ -13,9 +13,7 @@ export const receipts = sqliteTable('receipts', {
   imagePath: text('image_path'),
   pdfPath: text('pdf_path'),
   rawText: text('raw_text'),
-  processingStatus: text('processing_status')
-    .notNull()
-    .default('pending'), // 'pending' | 'processing' | 'completed' | 'failed' | 'manual_review'
+  processingStatus: text('processing_status').notNull().default('pending'), // 'pending' | 'processing' | 'completed' | 'failed' | 'manual_review'
   confidence: integer('confidence'), // 0-100
   notes: text('notes'),
   createdAt: integer('created_at', { mode: 'timestamp' })

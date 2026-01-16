@@ -1,5 +1,5 @@
 import '../styles/global.css';
-import '@/src/i18n'; // Initialize i18n
+import '@/src/i18n';
 import { useEffect } from 'react';
 import { Stack, Redirect, useSegments, useRootNavigationState } from 'expo-router';
 import { useColorScheme, View, ActivityIndicator } from 'react-native';
@@ -41,7 +41,6 @@ export default function RootLayout() {
     }
   }, [fontsLoaded]);
 
-  // Wait for fonts to load
   if (!fontsLoaded) {
     return (
       <SafeAreaProvider>
@@ -59,7 +58,6 @@ export default function RootLayout() {
     );
   }
 
-  // Check if navigation is ready before redirecting
   const isNavigationReady = navigationState?.key;
   const isOnOnboardingScreen = segments[0] === 'onboarding';
 
@@ -80,7 +78,6 @@ export default function RootLayout() {
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="scan" />
           </Stack>
-          {/* Redirect logic - only when navigation is ready */}
           {isNavigationReady && !hasCompletedOnboarding && !isOnOnboardingScreen && (
             <Redirect href="/onboarding" />
           )}

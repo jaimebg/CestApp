@@ -45,13 +45,7 @@ const sizeClasses: Record<BadgeSize, { container: string; text: string }> = {
   },
 };
 
-export function Badge({
-  variant = 'default',
-  size = 'md',
-  label,
-  icon,
-  className,
-}: BadgeProps) {
+export function Badge({ variant = 'default', size = 'md', label, icon, className }: BadgeProps) {
   const variantStyle = variantClasses[variant];
   const sizeStyle = sizeClasses[size];
 

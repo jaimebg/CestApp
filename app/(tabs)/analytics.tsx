@@ -5,11 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { BarChart, PieChart } from 'react-native-gifted-charts';
 import { useDatabaseReady } from '@/src/db/provider';
-import {
-  getAnalyticsSummary,
-  TimePeriod,
-  getDateRange,
-} from '@/src/db/queries/analytics';
+import { getAnalyticsSummary, TimePeriod } from '@/src/db/queries/analytics';
 import { useFormatPrice } from '@/src/store/preferences';
 
 type AnalyticsData = Awaited<ReturnType<typeof getAnalyticsSummary>>;
@@ -38,18 +34,17 @@ export default function AnalyticsScreen() {
     error: isDark ? '#C94444' : '#980404',
   };
 
-  // Category colors for pie chart
   const categoryColors = [
-    '#93BD57', // Green
-    '#5BA4D9', // Blue
-    '#980404', // Burgundy
-    '#FBE580', // Yellow
-    '#8B7EC8', // Purple
-    '#4DB6AC', // Cyan
-    '#E8976C', // Orange
-    '#8D8680', // Gray
-    '#D4A574', // Tan
-    '#A8CE6F', // Light green
+    '#93BD57',
+    '#5BA4D9',
+    '#980404',
+    '#FBE580',
+    '#8B7EC8',
+    '#4DB6AC',
+    '#E8976C',
+    '#8D8680',
+    '#D4A574',
+    '#A8CE6F',
   ];
 
   const loadAnalytics = useCallback(async () => {
@@ -76,34 +71,34 @@ export default function AnalyticsScreen() {
     { key: 'year', label: t('analytics.thisYear') },
   ];
 
-  // Prepare bar chart data for spending over time
-  const barChartData = data?.spendingByDay.map((item, index) => {
-    const date = new Date(item.date);
-    const dayLabel = date.toLocaleDateString(undefined, {
-      weekday: 'short',
-      day: 'numeric',
-    });
+  const barChartData =
+    data?.spendingByDay.map((item, index) => {
+      const date = new Date(item.date);
+      const dayLabel = date.toLocaleDateString(undefined, {
+        weekday: 'short',
+        day: 'numeric',
+      });
 
-    return {
-      value: item.amount,
-      label: period === 'week' ? dayLabel.split(' ')[0] : date.getDate().toString(),
-      frontColor: colors.primary,
-      topLabelComponent: () => null,
-    };
-  }) || [];
+      return {
+        value: item.amount,
+        label: period === 'week' ? dayLabel.split(' ')[0] : date.getDate().toString(),
+        frontColor: colors.primary,
+        topLabelComponent: () => null,
+      };
+    }) || [];
 
-  // Prepare pie chart data for category breakdown
-  const pieChartData = data?.spendingByCategory
-    .filter((item) => item.amount > 0)
-    .slice(0, 8) // Limit to top 8 categories
-    .map((item, index) => ({
-      value: item.amount,
-      color: item.categoryColor || categoryColors[index % categoryColors.length],
-      text: `${item.percentage.toFixed(0)}%`,
-      textColor: colors.text,
-      shiftTextX: -8,
-      shiftTextY: 0,
-    })) || [];
+  const pieChartData =
+    data?.spendingByCategory
+      .filter((item) => item.amount > 0)
+      .slice(0, 8)
+      .map((item, index) => ({
+        value: item.amount,
+        color: item.categoryColor || categoryColors[index % categoryColors.length],
+        text: `${item.percentage.toFixed(0)}%`,
+        textColor: colors.text,
+        shiftTextX: -8,
+        shiftTextY: 0,
+      })) || [];
 
   const hasData = data && data.receiptCount > 0;
 
@@ -173,7 +168,6 @@ export default function AnalyticsScreen() {
         </View>
 
         {!hasData ? (
-          // Empty state
           <View className="flex-1 justify-center items-center py-20">
             <View className="bg-primary/20 rounded-full p-6 mb-4">
               <Ionicons name="stats-chart-outline" size={48} color={colors.primary} />
@@ -306,7 +300,8 @@ export default function AnalyticsScreen() {
                           className="w-3 h-3 rounded-full mr-2"
                           style={{
                             backgroundColor:
-                              category.categoryColor || categoryColors[index % categoryColors.length],
+                              category.categoryColor ||
+                              categoryColors[index % categoryColors.length],
                           }}
                         />
                         <Text
@@ -368,7 +363,8 @@ export default function AnalyticsScreen() {
                       className="text-xs text-text-secondary dark:text-text-dark-secondary mt-1"
                       style={{ fontFamily: 'Inter_400Regular' }}
                     >
-                      {store.receiptCount} {store.receiptCount === 1 ? t('analytics.receipt') : t('analytics.receipts')}
+                      {store.receiptCount}{' '}
+                      {store.receiptCount === 1 ? t('analytics.receipt') : t('analytics.receipts')}
                     </Text>
                   </View>
                 ))}

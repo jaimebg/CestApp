@@ -53,7 +53,6 @@ export async function hasGalleryPermission(): Promise<boolean> {
  */
 export async function captureFromCamera(): Promise<CaptureResult> {
   try {
-    // Check/request permission
     const hasPermission = await hasCameraPermission();
     if (!hasPermission) {
       const granted = await requestCameraPermission();
@@ -66,7 +65,6 @@ export async function captureFromCamera(): Promise<CaptureResult> {
       }
     }
 
-    // Launch camera
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ['images'],
       allowsEditing: false,
@@ -84,7 +82,6 @@ export async function captureFromCamera(): Promise<CaptureResult> {
 
     const asset = result.assets[0];
 
-    // Save to local storage
     const localUri = await saveReceiptFile(asset.uri, asset.mimeType);
 
     return {
@@ -112,7 +109,6 @@ export async function captureFromCamera(): Promise<CaptureResult> {
  */
 export async function selectFromGallery(): Promise<CaptureResult> {
   try {
-    // Check/request permission
     const hasPermission = await hasGalleryPermission();
     if (!hasPermission) {
       const granted = await requestGalleryPermission();
@@ -125,7 +121,6 @@ export async function selectFromGallery(): Promise<CaptureResult> {
       }
     }
 
-    // Launch gallery picker
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: false,
@@ -143,7 +138,6 @@ export async function selectFromGallery(): Promise<CaptureResult> {
 
     const asset = result.assets[0];
 
-    // Save to local storage
     const localUri = await saveReceiptFile(asset.uri, asset.mimeType);
 
     return {
@@ -186,7 +180,6 @@ export async function selectPdf(): Promise<CaptureResult> {
 
     const asset = result.assets[0];
 
-    // Save to local storage
     const localUri = await saveReceiptFile(asset.uri, asset.mimeType);
 
     return {

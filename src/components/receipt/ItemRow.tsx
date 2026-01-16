@@ -1,5 +1,4 @@
 import { View, Text } from 'react-native';
-import { useTranslation } from 'react-i18next';
 import { useFormatPrice } from '../../store/preferences';
 import type { Item } from '../../db/schema/items';
 import type { Category } from '../../db/schema/categories';
@@ -11,7 +10,6 @@ interface ItemRowProps {
 }
 
 export function ItemRow({ item, category, showCategory = true }: ItemRowProps) {
-  const { t } = useTranslation();
   const { formatPrice } = useFormatPrice();
 
   const hasQuantity = item.quantity && item.quantity > 1;
@@ -31,10 +29,7 @@ export function ItemRow({ item, category, showCategory = true }: ItemRowProps) {
 
       {/* Item details */}
       <View className="flex-1 mr-3">
-        <Text
-          className="text-text dark:text-text-dark text-base"
-          numberOfLines={2}
-        >
+        <Text className="text-text dark:text-text-dark text-base" numberOfLines={2}>
           {item.name}
         </Text>
         <View className="flex-row items-center mt-0.5">
@@ -45,7 +40,8 @@ export function ItemRow({ item, category, showCategory = true }: ItemRowProps) {
           )}
           {item.unitPrice && hasQuantity && (
             <Text className="text-text-secondary dark:text-text-dark-secondary text-sm ml-1">
-              @ {formatPrice(item.unitPrice / 100)}{unitDisplay}
+              @ {formatPrice(item.unitPrice / 100)}
+              {unitDisplay}
             </Text>
           )}
           {showCategory && category && (

@@ -76,7 +76,6 @@ export default function HistoryScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
 
-  // Filter state
   const [showFilters, setShowFilters] = useState(false);
   const [selectedStoreId, setSelectedStoreId] = useState<number | null>(null);
   const [selectedDatePreset, setSelectedDatePreset] = useState<DatePreset>('all');
@@ -106,10 +105,7 @@ export default function HistoryScreen() {
       };
 
       const hasFilters =
-        filters.storeId ||
-        filters.startDate ||
-        filters.endDate ||
-        filters.searchTerm;
+        filters.storeId || filters.startDate || filters.endDate || filters.searchTerm;
 
       const data = hasFilters
         ? await getFilteredReceipts(filters)
@@ -129,7 +125,6 @@ export default function HistoryScreen() {
     setIsSearching(true);
   }, []);
 
-  // Debounced search effect
   useEffect(() => {
     const timer = setTimeout(() => {
       if (isReady) {
@@ -159,7 +154,6 @@ export default function HistoryScreen() {
     setSearchQuery('');
   }, []);
 
-  // Load data when database is ready
   useEffect(() => {
     if (isReady) {
       loadReceipts();
@@ -167,7 +161,6 @@ export default function HistoryScreen() {
     }
   }, [isReady, loadReceipts, loadStores]);
 
-  // Refresh receipts when screen comes into focus
   useFocusEffect(
     useCallback(() => {
       if (isReady) {
@@ -207,9 +200,7 @@ export default function HistoryScreen() {
         className="text-lg text-text dark:text-text-dark text-center"
         style={{ fontFamily: 'Inter_600SemiBold' }}
       >
-        {hasActiveFilters || searchQuery
-          ? t('history.noResults')
-          : t('history.noReceipts')}
+        {hasActiveFilters || searchQuery ? t('history.noResults') : t('history.noReceipts')}
       </Text>
       <Text
         className="text-base text-text-secondary dark:text-text-dark-secondary text-center mt-2"
@@ -218,17 +209,12 @@ export default function HistoryScreen() {
         {searchQuery
           ? t('history.noResultsFor', { query: searchQuery })
           : hasActiveFilters
-          ? t('history.clearFilters')
-          : t('history.noReceiptsDesc')}
+            ? t('history.clearFilters')
+            : t('history.noReceiptsDesc')}
       </Text>
       {(hasActiveFilters || searchQuery) && (
-        <Pressable
-          onPress={handleClearFilters}
-          className="mt-4 px-4 py-2 bg-primary rounded-lg"
-        >
-          <Text className="text-white font-medium">
-            {t('history.clearFilters')}
-          </Text>
+        <Pressable onPress={handleClearFilters} className="mt-4 px-4 py-2 bg-primary rounded-lg">
+          <Text className="text-white font-medium">{t('history.clearFilters')}</Text>
         </Pressable>
       )}
     </View>
@@ -236,7 +222,9 @@ export default function HistoryScreen() {
 
   const renderReceiptItem = ({ item, index }: { item: ReceiptWithStore; index: number }) => (
     <Animated.View
-      entering={FadeInDown.delay(index * 50).duration(300).springify()}
+      entering={FadeInDown.delay(index * 50)
+        .duration(300)
+        .springify()}
       layout={Layout.springify()}
     >
       <ReceiptCard
@@ -317,9 +305,7 @@ export default function HistoryScreen() {
               <Ionicons name="close-circle" size={20} color="#8D8680" />
             </Pressable>
           )}
-          {isSearching && (
-            <ActivityIndicator size="small" color="#93BD57" className="ml-2" />
-          )}
+          {isSearching && <ActivityIndicator size="small" color="#93BD57" className="ml-2" />}
         </View>
       </View>
 
@@ -471,9 +457,7 @@ export default function HistoryScreen() {
               {t('history.filters')}
             </Text>
             <Pressable onPress={() => setShowFilters(false)}>
-              <Text className="text-primary text-base font-semibold">
-                {t('common.done')}
-              </Text>
+              <Text className="text-primary text-base font-semibold">{t('common.done')}</Text>
             </Pressable>
           </View>
 
@@ -486,37 +470,29 @@ export default function HistoryScreen() {
               {t('history.dateRange')}
             </Text>
             <View className="flex-row flex-wrap gap-2 mb-6">
-              {(
-                [
-                  'all',
-                  'thisWeek',
-                  'thisMonth',
-                  'last3Months',
-                  'thisYear',
-                ] as DatePreset[]
-              ).map((preset) => (
-                <Pressable
-                  key={preset}
-                  onPress={() => setSelectedDatePreset(preset)}
-                  className={`px-4 py-2 rounded-full border ${
-                    selectedDatePreset === preset
-                      ? 'bg-primary border-primary'
-                      : 'bg-surface dark:bg-surface-dark border-border dark:border-border-dark'
-                  }`}
-                >
-                  <Text
-                    className={
+              {(['all', 'thisWeek', 'thisMonth', 'last3Months', 'thisYear'] as DatePreset[]).map(
+                (preset) => (
+                  <Pressable
+                    key={preset}
+                    onPress={() => setSelectedDatePreset(preset)}
+                    className={`px-4 py-2 rounded-full border ${
                       selectedDatePreset === preset
-                        ? 'text-white font-medium'
-                        : 'text-text-secondary dark:text-text-dark-secondary'
-                    }
+                        ? 'bg-primary border-primary'
+                        : 'bg-surface dark:bg-surface-dark border-border dark:border-border-dark'
+                    }`}
                   >
-                    {preset === 'all'
-                      ? t('history.allDates')
-                      : t(`history.${preset}`)}
-                  </Text>
-                </Pressable>
-              ))}
+                    <Text
+                      className={
+                        selectedDatePreset === preset
+                          ? 'text-white font-medium'
+                          : 'text-text-secondary dark:text-text-dark-secondary'
+                      }
+                    >
+                      {preset === 'all' ? t('history.allDates') : t(`history.${preset}`)}
+                    </Text>
+                  </Pressable>
+                )
+              )}
             </View>
 
             {/* Store Section */}
@@ -574,9 +550,7 @@ export default function HistoryScreen() {
                 onPress={handleClearFilters}
                 className="bg-error/10 border border-error/30 rounded-xl py-3 items-center mt-4"
               >
-                <Text className="text-error font-medium">
-                  {t('history.clearFilters')}
-                </Text>
+                <Text className="text-error font-medium">{t('history.clearFilters')}</Text>
               </Pressable>
             )}
           </ScrollView>

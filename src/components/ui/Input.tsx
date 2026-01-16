@@ -47,10 +47,7 @@ export function Input({
         {rightIcon && <View className="ml-3">{rightIcon}</View>}
       </View>
       {error && (
-        <Text
-          className="text-sm text-error mt-1"
-          style={{ fontFamily: 'Inter_400Regular' }}
-        >
+        <Text className="text-sm text-error mt-1" style={{ fontFamily: 'Inter_400Regular' }}>
           {error}
         </Text>
       )}
