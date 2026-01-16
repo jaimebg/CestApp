@@ -1,5 +1,5 @@
 import { View, Text, Pressable, ActivityIndicator } from 'react-native';
-import { showErrorToast } from '@/src/utils/toast';
+import { showErrorToast, showInfoToast } from '@/src/utils/toast';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,6 +9,7 @@ import { useColorScheme } from 'react-native';
 import { useState } from 'react';
 import { deleteReceiptFile, isPdfFile } from '@/src/services/storage';
 import { recognizeText } from '@/src/services/ocr';
+import { extractTextFromPdf } from '@/src/services/pdf';
 import { Button } from '@/src/components/ui';
 
 export default function ScanPreviewScreen() {
@@ -46,12 +47,26 @@ export default function ScanPreviewScreen() {
 
     try {
       if (isPdf) {
-        // PDF processing will be implemented later
-        // For now, navigate to review with empty text
-        router.push({
-          pathname: '/scan/review',
-          params: { uri, source, ocrText: '', isPdf: 'true' },
-        });
+        // Extract text from PDF
+        const result = await extractTextFromPdf(uri);
+
+        if (result.success && result.text.length > 0) {
+          router.push({
+            pathname: '/scan/review',
+            params: {
+              uri,
+              source,
+              ocrText: result.text,
+              ocrLines: JSON.stringify(result.lines),
+              isPdf: 'true',
+            },
+          });
+        } else if (result.error === 'no_text_content') {
+          // PDF has no extractable text (likely a scanned image)
+          showErrorToast(t('scan.pdfOcrPending'), t('scan.pdfOcrPendingDesc'));
+        } else {
+          showErrorToast(t('common.error'), t('errors.ocrFailed'));
+        }
       } else {
         // Perform OCR on image
         const result = await recognizeText(uri);
