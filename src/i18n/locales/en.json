@@ -130,7 +130,9 @@
     "thisMonth": "This Month",
     "thisYear": "This Year",
     "total": "Total",
-    "average": "Average"
+    "average": "Average",
+    "receipts": "receipts",
+    "receipt": "receipt"
   },
   "receipt": {
     "details": "Receipt Details",

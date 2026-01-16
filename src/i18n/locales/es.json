@@ -130,7 +130,9 @@
     "thisMonth": "Este Mes",
     "thisYear": "Este Año",
     "total": "Total",
-    "average": "Promedio"
+    "average": "Promedio",
+    "receipts": "recibos",
+    "receipt": "recibo"
   },
   "receipt": {
     "details": "Detalles del Recibo",
