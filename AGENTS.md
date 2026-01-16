@@ -296,7 +296,6 @@ Before committing:
 - **Never commit automatically** - only commit when explicitly asked
 - **New features/fixes/chores must be in a new branch** and go through PR review first
 - Use conventional commits: `feat:`, `fix:`, `refactor:`, `docs:`, `chore:`
-- **Never include `Co-Authored-By` lines** in commit messages
 
 ## Common Pitfalls
 
