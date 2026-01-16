@@ -462,7 +462,9 @@ function extractTextFromTextBlock(block: string, unicodeMap: UnicodeMap): string
     if (decoded) parts.push(decoded);
   }
 
-  return parts.join(' ');
+  // Join without spaces - the text itself contains spaces where needed
+  // PDFs often have separate Tj/TJ calls for each character with kerning
+  return parts.join('');
 }
 
 /**
