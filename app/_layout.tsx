@@ -5,6 +5,7 @@ import { Stack, Redirect, useSegments, useRootNavigationState } from 'expo-route
 import { useColorScheme, View, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Toaster } from 'sonner-native';
 import * as SplashScreen from 'expo-splash-screen';
 import {
@@ -63,27 +64,29 @@ export default function RootLayout() {
   const isOnOnboardingScreen = segments[0] === 'onboarding';
 
   return (
-    <SafeAreaProvider>
-      <DatabaseProvider>
-        <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: {
-              backgroundColor: colorScheme === 'dark' ? '#1A1918' : '#FFFDE1',
-            },
-          }}
-        >
-          <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="scan" />
-        </Stack>
-        {/* Redirect logic - only when navigation is ready */}
-        {isNavigationReady && !hasCompletedOnboarding && !isOnOnboardingScreen && (
-          <Redirect href="/onboarding" />
-        )}
-        <Toaster />
-      </DatabaseProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <DatabaseProvider>
+          <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: {
+                backgroundColor: colorScheme === 'dark' ? '#1A1918' : '#FFFDE1',
+              },
+            }}
+          >
+            <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="scan" />
+          </Stack>
+          {/* Redirect logic - only when navigation is ready */}
+          {isNavigationReady && !hasCompletedOnboarding && !isOnOnboardingScreen && (
+            <Redirect href="/onboarding" />
+          )}
+          <Toaster />
+        </DatabaseProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
