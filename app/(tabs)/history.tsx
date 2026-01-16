@@ -10,6 +10,7 @@ import {
   Modal,
   ScrollView,
 } from 'react-native';
+import Animated, { FadeInDown, Layout } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -21,7 +22,7 @@ import {
   getStoresWithReceipts,
   type ReceiptFilters,
 } from '../../src/db/queries/receipts';
-import { ReceiptCard } from '../../src/components/receipt';
+import { ReceiptCard, ReceiptListSkeleton } from '../../src/components/receipt';
 import type { Receipt } from '../../src/db/schema/receipts';
 import type { Store } from '../../src/db/schema/stores';
 
@@ -233,22 +234,44 @@ export default function HistoryScreen() {
     </View>
   );
 
-  const renderReceiptItem = ({ item }: { item: ReceiptWithStore }) => (
-    <ReceiptCard
-      receipt={item.receipt}
-      store={item.store}
-      itemCount={item.itemCount}
-      onPress={() => handleReceiptPress(item.receipt.id)}
-    />
+  const renderReceiptItem = ({ item, index }: { item: ReceiptWithStore; index: number }) => (
+    <Animated.View
+      entering={FadeInDown.delay(index * 50).duration(300).springify()}
+      layout={Layout.springify()}
+    >
+      <ReceiptCard
+        receipt={item.receipt}
+        store={item.store}
+        itemCount={item.itemCount}
+        onPress={() => handleReceiptPress(item.receipt.id)}
+      />
+    </Animated.View>
   );
 
   if (!isReady || isLoading) {
     return (
       <View
-        className="flex-1 bg-background dark:bg-background-dark justify-center items-center"
+        className="flex-1 bg-background dark:bg-background-dark"
         style={{ paddingTop: insets.top }}
       >
-        <ActivityIndicator size="large" color="#93BD57" />
+        {/* Header */}
+        <View className="px-6 pt-4 pb-2">
+          <Text
+            className="text-3xl text-text dark:text-text-dark"
+            style={{ fontFamily: 'Inter_700Bold' }}
+          >
+            {t('history.title')}
+          </Text>
+          <Text
+            className="text-base text-text-secondary dark:text-text-dark-secondary mt-1"
+            style={{ fontFamily: 'Inter_400Regular' }}
+          >
+            {t('history.subtitle')}
+          </Text>
+        </View>
+        <View className="py-6">
+          <ReceiptListSkeleton count={5} />
+        </View>
       </View>
     );
   }
