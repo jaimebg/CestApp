@@ -62,18 +62,18 @@ npx expo run:android
 
 ## Tech Stack
 
-| Category | Technology |
-|----------|------------|
-| Framework | React Native 0.81 + Expo SDK 54 |
-| Navigation | Expo Router |
-| Styling | NativeWind v4 |
-| Database | Drizzle ORM + expo-sqlite |
-| State | Zustand v5 |
-| OCR | rn-mlkit-ocr |
-| PDF | Custom parser + pako |
-| i18n | i18next |
-| Animations | Reanimated v4 |
-| Charts | react-native-gifted-charts |
+| Category   | Technology                      |
+| ---------- | ------------------------------- |
+| Framework  | React Native 0.81 + Expo SDK 54 |
+| Navigation | Expo Router                     |
+| Styling    | NativeWind v4                   |
+| Database   | Drizzle ORM + expo-sqlite       |
+| State      | Zustand v5                      |
+| OCR        | rn-mlkit-ocr                    |
+| PDF        | Custom parser + pako            |
+| i18n       | i18next                         |
+| Animations | Reanimated v4                   |
+| Charts     | react-native-gifted-charts      |
 
 ## Project Structure
 
@@ -119,5 +119,5 @@ MIT — see [LICENSE](LICENSE)
 ---
 
 <p align="center">
-  Made with care by <a href="https://github.com/jaimebg">JBGSoft - Jaime Barreto 🧡</a>
+  Made with care by <a href="https://github.com/jaimebg">JBGSoft - Jaime Barreto</a> 🧡
 </p>
