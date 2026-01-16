@@ -166,7 +166,6 @@ export async function seedCategories() {
   const existingCategories = await db.select().from(categories).limit(1);
 
   if (existingCategories.length > 0) {
-    console.log('Categories already seeded');
     return;
   }
 
@@ -180,8 +179,6 @@ export async function seedCategories() {
       isDefault: category.isDefault,
     });
   }
-
-  console.log('Default categories seeded successfully');
 }
 
 /**

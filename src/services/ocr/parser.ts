@@ -160,12 +160,6 @@ function detectReceiptFormat(lines: string[]): ReceiptFormat {
   // If most prices are on their own lines, it's columnar
   const isColumnar = priceOnlyLines > 3 && priceOnlyLines > textWithPriceLines;
 
-  console.log('=== FORMAT DETECTION ===');
-  console.log('Decimal separator:', decimalSeparator, `(comma: ${commaDecimals}, dot: ${dotDecimals})`);
-  console.log('Date format:', dateFormat);
-  console.log('Layout:', isColumnar ? 'COLUMNAR' : 'INLINE', `(priceOnly: ${priceOnlyLines}, textWithPrice: ${textWithPriceLines})`);
-  console.log('========================');
-
   return { decimalSeparator, dateFormat, isColumnar };
 }
 
@@ -405,9 +399,6 @@ function parseColumnarItems(lines: string[]): ParsedItem[] {
       productLines.push(trimmed);
     }
   }
-
-  console.log('Columnar parsing - Products found:', productLines.length);
-  console.log('Columnar parsing - Prices found:', priceLines.length);
 
   // Match products with prices (in order)
   const matchCount = Math.min(productLines.length, priceLines.length);
@@ -950,7 +941,6 @@ export function parseReceipt(lines: string[], options?: ParserOptions): ParsedRe
       // If both could be day or month, use user preference
       if (first <= 12 && second <= 12) {
         format.dateFormat = options.preferredDateFormat;
-        console.log('Using user preference for date format:', options.preferredDateFormat);
       }
     }
   }
@@ -962,17 +952,8 @@ export function parseReceipt(lines: string[], options?: ParserOptions): ParsedRe
     // If counts are similar, use user preference
     if (Math.abs(commaDecimals - dotDecimals) < 2) {
       format.decimalSeparator = options.preferredDecimalSeparator;
-      console.log('Using user preference for decimal separator:', options.preferredDecimalSeparator);
     }
   }
-
-  // Debug logging
-  console.log('=== OCR PARSING DEBUG ===');
-  console.log('Raw lines received:', lines.length);
-  console.log('Detected format:', format);
-  console.log('--- RAW TEXT ---');
-  lines.forEach((line, i) => console.log(`[${i}] ${line}`));
-  console.log('========================');
 
   // Extract sections
   const sections = extractSections(processedLines);
@@ -1023,7 +1004,6 @@ export function parseReceipt(lines: string[], options?: ParserOptions): ParsedRe
 
   // If columnar format detected, try columnar parsing first
   if (format.isColumnar) {
-    console.log('Using columnar format parsing (auto-detected)...');
     items = parseColumnarItems(processedLines);
   }
 
@@ -1050,7 +1030,6 @@ export function parseReceipt(lines: string[], options?: ParserOptions): ParsedRe
 
   // Last resort: try columnar format if not already tried
   if (items.length === 0 && !format.isColumnar) {
-    console.log('Trying columnar format as fallback...');
     items = parseColumnarItems(processedLines);
   }
 
@@ -1102,22 +1081,6 @@ export function parseReceipt(lines: string[], options?: ParserOptions): ParsedRe
     rawText,
     confidence: Math.min(confidence, 100),
   };
-
-  // Debug logging - parsing results
-  console.log('=== PARSING RESULTS ===');
-  console.log('Store:', storeName);
-  console.log('Address:', storeAddress);
-  console.log('Date:', dateResult.date, '| String:', dateResult.dateString);
-  console.log('Time:', time);
-  console.log('Items found:', items.length);
-  items.forEach((item, i) => console.log(`  [${i}] ${item.name} - ${item.totalPrice} (qty: ${item.quantity})`));
-  console.log('Subtotal:', subtotal);
-  console.log('Tax:', tax);
-  console.log('Discount:', discount);
-  console.log('Total:', total);
-  console.log('Payment:', paymentMethod);
-  console.log('Confidence:', result.confidence);
-  console.log('=======================');
 
   return result;
 }

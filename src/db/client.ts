@@ -71,10 +71,21 @@ export const createTablesSQL = `
     sync_id TEXT
   );
 
+  CREATE TABLE IF NOT EXISTS user_learned_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    normalized_name TEXT NOT NULL,
+    category_id INTEGER NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
+    store_id INTEGER REFERENCES stores(id) ON DELETE SET NULL,
+    correction_count INTEGER NOT NULL DEFAULT 1,
+    last_used_at INTEGER NOT NULL DEFAULT (unixepoch()),
+    created_at INTEGER NOT NULL DEFAULT (unixepoch())
+  );
+
   CREATE INDEX IF NOT EXISTS idx_receipts_date ON receipts(date_time);
   CREATE INDEX IF NOT EXISTS idx_receipts_store ON receipts(store_id);
   CREATE INDEX IF NOT EXISTS idx_items_receipt ON items(receipt_id);
   CREATE INDEX IF NOT EXISTS idx_items_category ON items(category_id);
+  CREATE UNIQUE INDEX IF NOT EXISTS user_learned_items_unique_idx ON user_learned_items(normalized_name, store_id);
 `;
 
 // Initialize database with tables

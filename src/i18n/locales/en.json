@@ -82,7 +82,18 @@
     "removeItem": "Remove",
     "showRawText": "Show Raw Text",
     "hideRawText": "Hide Raw Text",
-    "time": "Time"
+    "time": "Time",
+    "editItem": "Edit Item",
+    "storeName": "Store Name",
+    "selectCategory": "Select Category",
+    "saving": "Saving...",
+    "receiptSaved": "Receipt saved successfully!",
+    "day": "Day",
+    "month": "Month",
+    "year": "Year",
+    "itemsSum": "Items Sum",
+    "totalsMismatch": "Total doesn't match items sum. Please adjust items or edit the total.",
+    "matchToItemsSum": "Set total to items sum"
   },
   "history": {
     "title": "History",
