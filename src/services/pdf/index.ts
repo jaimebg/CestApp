@@ -32,7 +32,19 @@ export async function extractTextFromPdf(uri: string): Promise<PdfExtractionResu
 
     // Extract text from PDF
     const extractedText = extractTextFromPdfBytes(bytes);
-    const lines = extractedText
+
+    // Debug: log raw extracted text
+    if (__DEV__) {
+      console.log(`[PDF] Raw text first 200 chars: "${extractedText.substring(0, 200)}"`);
+    }
+
+    // Post-process: clean up extracted text
+    const cleanedText = extractedText
+      .replace(/\x00/g, '')     // Remove NUL bytes (from UTF-16BE encoding issues)
+      .replace(/[ \t]+/g, ' ')  // Collapse multiple spaces/tabs into single space
+      .replace(/ ?\n ?/g, '\n'); // Clean up spaces around newlines
+
+    const lines = cleanedText
       .split('\n')
       .map((line) => line.trim())
       .filter((line) => line.length > 0);
