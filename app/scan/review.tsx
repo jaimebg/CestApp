@@ -149,7 +149,11 @@ export default function ScanReviewScreen() {
   const canSave = !totalsDiffer && parsedData && parsedData.items.length > 0;
 
   const handleDone = () => {
-    router.dismissAll();
+    // Small delay to prevent SafeAreaProvider crash on Android
+    // when dismissing while view hierarchy is still updating
+    setTimeout(() => {
+      router.dismissAll();
+    }, 100);
   };
 
   const handleBack = () => {
