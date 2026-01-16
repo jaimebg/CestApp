@@ -39,12 +39,11 @@ type Category = {
 };
 
 export default function ScanReviewScreen() {
-  const { uri, source, ocrText, ocrLines, isPdf } = useLocalSearchParams<{
+  const { uri, source, ocrText, ocrLines } = useLocalSearchParams<{
     uri: string;
     source: string;
     ocrText?: string;
     ocrLines?: string;
-    isPdf?: string;
   }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -70,7 +69,6 @@ export default function ScanReviewScreen() {
   // Parse OCR lines if available
   const lines: string[] = ocrLines ? JSON.parse(ocrLines) : [];
   const hasOcrResult = ocrText && ocrText.length > 0;
-  const isPdfFile = isPdf === 'true';
 
   // Parse receipt data with user preferences as hints
   const parserOptions: ParserOptions = useMemo(
@@ -463,29 +461,8 @@ export default function ScanReviewScreen() {
         className="flex-1"
         contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
       >
-        {isPdfFile ? (
-          // PDF - OCR not yet implemented
-          <Card variant="filled" padding="lg">
-            <View className="items-center">
-              <View className="bg-primary/20 rounded-full p-4 mb-3">
-                <Ionicons name="document-text-outline" size={32} color={colors.primary} />
-              </View>
-              <Text
-                className="text-base text-center"
-                style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
-              >
-                {t('scan.pdfOcrPending')}
-              </Text>
-              <Text
-                className="text-sm text-center mt-2"
-                style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-              >
-                {t('scan.pdfOcrPendingDesc')}
-              </Text>
-            </View>
-          </Card>
-        ) : hasOcrResult && parsedData ? (
-          // Image with parsed OCR results
+        {hasOcrResult && parsedData ? (
+          // Parsed receipt data (from image OCR or PDF text extraction)
           <>
             {/* Confidence indicator */}
             <View className="flex-row items-center justify-between mb-4">
