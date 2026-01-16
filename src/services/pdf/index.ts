@@ -1,8 +1,6 @@
 import { readAsStringAsync } from 'expo-file-system/legacy';
 import pako from 'pako';
 
-declare const __DEV__: boolean;
-
 export interface PdfExtractionResult {
   success: boolean;
   text: string;
@@ -32,11 +30,6 @@ export async function extractTextFromPdf(uri: string): Promise<PdfExtractionResu
 
     // Extract text from PDF
     const extractedText = extractTextFromPdfBytes(bytes);
-
-    // Debug: log raw extracted text
-    if (__DEV__) {
-      console.log(`[PDF] Raw text first 200 chars: "${extractedText.substring(0, 200)}"`);
-    }
 
     // Post-process: clean up extracted text
     const cleanedText = extractedText
@@ -103,15 +96,9 @@ type UnicodeMap = Map<number, string>;
 function extractTextFromPdfBytes(bytes: Uint8Array): string {
   const pdfString = bytesToString(bytes);
   const textParts: string[] = [];
-  let streamCount = 0;
-  let decompressedCount = 0;
-  let textFoundCount = 0;
 
   // First, extract all ToUnicode CMaps from the PDF
   const unicodeMaps = extractToUnicodeMaps(pdfString, bytes);
-  if (__DEV__ && unicodeMaps.size > 0) {
-    console.log(`[PDF] Found ${unicodeMaps.size} ToUnicode CMaps`);
-  }
 
   // Build a combined unicode map from all CMaps
   const combinedMap: UnicodeMap = new Map();
@@ -124,7 +111,6 @@ function extractTextFromPdfBytes(bytes: Uint8Array): string {
   let match;
 
   while ((match = streamRegex.exec(pdfString)) !== null) {
-    streamCount++;
     const streamStart = match.index + match[0].indexOf('stream') + 6;
 
     // Find the object that contains this stream to check for filters
@@ -166,7 +152,6 @@ function extractTextFromPdfBytes(bytes: Uint8Array): string {
           }
 
           streamContent = bytesToString(decompressed);
-          decompressedCount++;
         }
       } catch (e) {
         // Decompression failed, skip this stream
@@ -178,19 +163,6 @@ function extractTextFromPdfBytes(bytes: Uint8Array): string {
     const text = extractTextFromStream(streamContent, combinedMap);
     if (text) {
       textParts.push(text);
-      textFoundCount++;
-      // Log first extracted text for debugging
-      if (__DEV__ && textFoundCount === 1) {
-        console.log(`[PDF] First text sample (100 chars): ${text.substring(0, 100)}`);
-      }
-    }
-  }
-
-  // Debug logging for troubleshooting
-  if (__DEV__) {
-    console.log(`[PDF] Streams: ${streamCount}, Decompressed: ${decompressedCount}, With text: ${textFoundCount}`);
-    if (textParts.length > 0) {
-      console.log(`[PDF] Total extracted text length: ${textParts.join('\n').length}`);
     }
   }
 

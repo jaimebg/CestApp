@@ -1,137 +1,123 @@
-# CestApp
+<p align="center">
+  <img src="assets/images/cestapp-logo.png" alt="CestApp Logo" width="120" height="120" />
+</p>
 
-A supermarket receipt scanner app built with React Native and Expo. Scan receipts using your camera, gallery, or PDF files, and automatically extract, organize, and analyze your spending.
+<h1 align="center">CestApp</h1>
+
+<p align="center">
+  <strong>Receipt scanner that respects your privacy.</strong>
+</p>
+
+<p align="center">
+  Scan receipts. Track spending. Keep your data local.
+</p>
+
+<p align="center">
+  <a href="#features">Features</a> •
+  <a href="#installation">Installation</a> •
+  <a href="#tech-stack">Tech Stack</a> •
+  <a href="#contributing">Contributing</a> •
+  <a href="#license">License</a>
+</p>
+
+---
+
+> **🚧 Under Construction**
+> CestApp is in active development. Core features work, but expect rough edges. Contributions welcome!
+
+---
+
+## Why CestApp?
+
+- **100% on-device** — ML Kit OCR runs locally. No cloud uploads.
+- **Any format** — Camera, gallery, or PDF.
+- **Smart categories** — Auto-sorts items. Learns from your corrections.
+- **Multi-language** — English & Spanish with regional format detection.
 
 ## Features
 
-- **Multi-input scanning**: Camera, photo gallery, or PDF file import
-- **On-device OCR**: Privacy-first receipt processing using ML Kit
-- **Smart categorization**: Keyword-based auto-categorization with user learning
-- **Multi-language support**: English and Spanish (auto-detects device language)
-- **Spending analytics**: Track spending by category, store, and time period
-- **Beautiful UI**: Custom color palette with dark mode support
-- **Offline-first**: All data stored locally with SQLite
+**Capture**: Camera scanning, gallery import, PDF parsing via ML Kit OCR.
+
+**Organize**: 10 built-in categories, auto-categorization, user learning, store detection.
+
+**Analyze**: Monthly trends, category breakdowns, store comparisons, top items.
+
+**Privacy**: Offline-first, local SQLite, no tracking, no ads.
+
+**Details**: Dark mode, 140+ currencies, flexible date formats, smooth animations.
+
+## Installation
+
+```bash
+git clone https://github.com/jaimebarreto/CestApp.git
+cd CestApp
+npm install
+
+# Dev build required (ML Kit needs native code)
+npx expo run:ios     # or
+npx expo run:android
+```
+
+> Expo Go won't work. You need a development build.
 
 ## Tech Stack
 
 | Category | Technology |
 |----------|------------|
-| Framework | React Native + Expo SDK 54 |
-| Navigation | Expo Router (file-based) |
-| Styling | NativeWind v4 (Tailwind CSS) |
+| Framework | React Native 0.81 + Expo SDK 54 |
+| Navigation | Expo Router |
+| Styling | NativeWind v4 |
 | Database | Drizzle ORM + expo-sqlite |
 | State | Zustand v5 |
 | OCR | rn-mlkit-ocr |
-| i18n | i18next + expo-localization |
-| Fonts | Inter (Google Fonts) |
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js 18+
-- Expo CLI (`npm install -g expo-cli`)
-- iOS Simulator (Mac) or Android Emulator
-- For physical device testing: Expo Go app or development build
-
-### Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/jaimebarreto/CestApp.git
-cd CestApp
-
-# Install dependencies
-npm install
-
-# Start the development server
-npx expo start
-```
-
-### Development Build
-
-For OCR functionality, you need a development build (ML Kit requires native code):
-
-```bash
-# Build for iOS
-npx expo run:ios
-
-# Build for Android
-npx expo run:android
-```
+| PDF | Custom parser + pako |
+| i18n | i18next |
+| Animations | Reanimated v4 |
+| Charts | react-native-gifted-charts |
 
 ## Project Structure
 
 ```
-CestApp/
-├── app/                          # Expo Router screens
-│   ├── _layout.tsx               # Root layout with providers
-│   ├── (tabs)/                   # Tab navigation
-│   │   ├── index.tsx             # Dashboard
-│   │   ├── scan.tsx              # Scan receipt
-│   │   ├── history.tsx           # Receipt history
-│   │   └── analytics.tsx         # Spending analytics
-│   ├── receipt/[id].tsx          # Receipt detail
-│   └── settings/                 # Settings screens
-├── src/
-│   ├── components/ui/            # Reusable UI components
-│   ├── db/                       # Database schema and queries
-│   ├── i18n/                     # Translations
-│   ├── services/                 # Business logic
-│   └── store/                    # State management
-└── styles/                       # Global styles
+app/           # Screens (Expo Router)
+src/
+  components/  # UI components
+  db/          # Schema & queries
+  services/    # OCR, PDF, capture, storage
+  store/       # Zustand state
+  i18n/        # Translations
 ```
 
-## Color Palette
+## How It Works
 
-| Color | Hex | Usage |
-|-------|-----|-------|
-| Cream | `#FFFDE1` | Light background |
-| Golden | `#FBE580` | Accent, highlights |
-| Fresh Green | `#93BD57` | Primary actions |
-| Deep Burgundy | `#980404` | Errors, meat category |
+1. **Detect** — Auto-detects decimal separators, date formats, receipt layout
+2. **Extract** — ML Kit for images, custom parser for PDFs
+3. **Categorize** — User corrections → keyword matching → default
 
-## Database Schema
-
-- **stores**: Store information (name, address, logo)
-- **categories**: Item categories with keywords for auto-categorization
-- **receipts**: Receipt metadata (store, date, totals, payment method)
-- **items**: Individual line items from receipts
-- **user_learned_items**: User corrections for category learning
-
-## Auto-Categorization
-
-Items are categorized using a priority system:
-
-1. **User Learning**: Previously corrected items are remembered
-2. **Keyword Matching**: Multilingual keywords (EN/ES) match item names
-3. **Default**: Falls back to "Other" category
-
-Categories include: Produce, Dairy, Meat, Bakery, Beverages, Frozen, Pantry, Snacks, Household, Personal Care.
-
-## Internationalization
-
-The app supports:
-- **English** (default)
-- **Spanish**
-
-Language is auto-detected from device settings. All UI text and category keywords support both languages.
+Learning is store-aware: same item can have different categories at different stores.
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+1. Fork → branch → commit → PR
+2. TypeScript strict mode
+3. NativeWind for styling
+4. `useTranslation()` for all text
+5. Test iOS + Android + dark mode
+
+## Roadmap
+
+- Cloud sync
+- Export (CSV, PDF)
+- Budget alerts
+- More languages
+- Better OCR parsing
+- Widgets
 
 ## License
 
-MIT License - see LICENSE file for details.
+MIT — see [LICENSE](LICENSE)
 
-## Acknowledgments
+---
 
-- [Expo](https://expo.dev) for the amazing React Native toolchain
-- [NativeWind](https://nativewind.dev) for Tailwind CSS in React Native
-- [Drizzle ORM](https://orm.drizzle.team) for type-safe database queries
-- [ML Kit](https://developers.google.com/ml-kit) for on-device OCR
+<p align="center">
+  Made with care by <a href="https://github.com/jaimebg">JBGSoft - Jaime Barreto 🧡</a>
+</p>

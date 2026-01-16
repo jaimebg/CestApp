@@ -70,14 +70,6 @@ export default function ScanReviewScreen() {
   const lines: string[] = ocrLines ? JSON.parse(ocrLines) : [];
   const hasOcrResult = ocrText && ocrText.length > 0;
 
-  // Debug: log received text and check for special chars
-  if (__DEV__ && lines.length > 0) {
-    console.log(`[Review] Received ${lines.length} lines, first line: "${lines[0]}"`);
-    // Check for special characters that might cause display issues
-    const firstLineChars = lines[0].split('').map(c => c.charCodeAt(0));
-    console.log(`[Review] First line char codes: ${firstLineChars.slice(0, 20).join(',')}`);
-  }
-
   // Parse receipt data with user preferences as hints
   const parserOptions: ParserOptions = useMemo(
     () => ({
@@ -89,14 +81,7 @@ export default function ScanReviewScreen() {
 
   const initialParsedData = useMemo(() => {
     if (lines.length > 0) {
-      const result = parseReceipt(lines, parserOptions);
-      if (__DEV__) {
-        console.log(`[Review] Parsed: store="${result.storeName}", date=${result.date}, items=${result.items.length}, total=${result.total}`);
-        if (result.items.length > 0) {
-          console.log(`[Review] First item: "${result.items[0].name}" = ${result.items[0].totalPrice}`);
-        }
-      }
-      return result;
+      return parseReceipt(lines, parserOptions);
     }
     return null;
   }, [lines, parserOptions]);
