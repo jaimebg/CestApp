@@ -82,6 +82,9 @@ function bytesToString(bytes: Uint8Array): string {
   return result;
 }
 
+// Type for Unicode character mappings from ToUnicode CMaps
+type UnicodeMap = Map<number, string>;
+
 /**
  * Extract text from PDF bytes.
  */
@@ -91,6 +94,18 @@ function extractTextFromPdfBytes(bytes: Uint8Array): string {
   let streamCount = 0;
   let decompressedCount = 0;
   let textFoundCount = 0;
+
+  // First, extract all ToUnicode CMaps from the PDF
+  const unicodeMaps = extractToUnicodeMaps(pdfString, bytes);
+  if (__DEV__ && unicodeMaps.size > 0) {
+    console.log(`[PDF] Found ${unicodeMaps.size} ToUnicode CMaps`);
+  }
+
+  // Build a combined unicode map from all CMaps
+  const combinedMap: UnicodeMap = new Map();
+  unicodeMaps.forEach((map) => {
+    map.forEach((value, key) => combinedMap.set(key, value));
+  });
 
   // Find all streams and try to extract text
   const streamRegex = /stream\r?\n([\s\S]*?)\r?\nendstream/g;
@@ -148,16 +163,23 @@ function extractTextFromPdfBytes(bytes: Uint8Array): string {
     }
 
     // Extract text from the stream content
-    const text = extractTextFromStream(streamContent);
+    const text = extractTextFromStream(streamContent, combinedMap);
     if (text) {
       textParts.push(text);
       textFoundCount++;
+      // Log first extracted text for debugging
+      if (__DEV__ && textFoundCount === 1) {
+        console.log(`[PDF] First text sample (100 chars): ${text.substring(0, 100)}`);
+      }
     }
   }
 
   // Debug logging for troubleshooting
   if (__DEV__) {
     console.log(`[PDF] Streams: ${streamCount}, Decompressed: ${decompressedCount}, With text: ${textFoundCount}`);
+    if (textParts.length > 0) {
+      console.log(`[PDF] Total extracted text length: ${textParts.join('\n').length}`);
+    }
   }
 
   return textParts.join('\n');
@@ -204,9 +226,179 @@ function findStreamEnd(bytes: Uint8Array, startIndex: number): number {
 }
 
 /**
+ * Extract ToUnicode CMaps from the PDF.
+ */
+function extractToUnicodeMaps(pdfString: string, bytes: Uint8Array): Map<string, UnicodeMap> {
+  const maps = new Map<string, UnicodeMap>();
+
+  // Find all ToUnicode references and their streams
+  const toUnicodeRegex = /(\d+)\s+\d+\s+obj[\s\S]*?\/ToUnicode\s+(\d+)\s+\d+\s+R/g;
+  let refMatch;
+
+  const streamObjIds = new Set<string>();
+  while ((refMatch = toUnicodeRegex.exec(pdfString)) !== null) {
+    streamObjIds.add(refMatch[2]);
+  }
+
+  // Also find direct ToUnicode streams
+  const directToUnicodeRegex = /\/ToUnicode\s+(\d+)\s+\d+\s+R/g;
+  while ((refMatch = directToUnicodeRegex.exec(pdfString)) !== null) {
+    streamObjIds.add(refMatch[1]);
+  }
+
+  // For each referenced object, find and parse its stream
+  streamObjIds.forEach((objId) => {
+    const objRegex = new RegExp(`${objId}\\s+\\d+\\s+obj[\\s\\S]*?stream\\r?\\n([\\s\\S]*?)\\r?\\nendstream`, 'g');
+    const objMatch = objRegex.exec(pdfString);
+
+    if (objMatch) {
+      let cmapContent = objMatch[1];
+
+      // Check if compressed
+      const objHeaderRegex = new RegExp(`${objId}\\s+\\d+\\s+obj([\\s\\S]*?)stream`);
+      const headerMatch = objHeaderRegex.exec(pdfString);
+
+      if (headerMatch && /\/Filter\s*\/FlateDecode/.test(headerMatch[1])) {
+        // Need to decompress
+        const streamStart = findStreamStartForObj(pdfString, bytes, objId);
+        if (streamStart !== -1) {
+          const streamEnd = findStreamEnd(bytes, streamStart);
+          if (streamEnd !== -1) {
+            try {
+              const compressed = bytes.slice(streamStart, streamEnd);
+              const decompressed = pako.inflate(compressed);
+              cmapContent = bytesToString(decompressed);
+            } catch {
+              try {
+                const compressed = bytes.slice(streamStart, streamEnd);
+                const decompressed = pako.inflateRaw(compressed);
+                cmapContent = bytesToString(decompressed);
+              } catch {
+                return;
+              }
+            }
+          }
+        }
+      }
+
+      // Parse the CMap
+      const unicodeMap = parseToUnicodeCMap(cmapContent);
+      if (unicodeMap.size > 0) {
+        maps.set(objId, unicodeMap);
+      }
+    }
+  });
+
+  return maps;
+}
+
+/**
+ * Find stream start for a specific object ID.
+ */
+function findStreamStartForObj(pdfString: string, bytes: Uint8Array, objId: string): number {
+  const objRegex = new RegExp(`${objId}\\s+\\d+\\s+obj`);
+  const match = objRegex.exec(pdfString);
+  if (match) {
+    return findStreamStart(bytes, match.index);
+  }
+  return -1;
+}
+
+/**
+ * Parse a ToUnicode CMap and return a mapping of character codes to Unicode strings.
+ */
+function parseToUnicodeCMap(cmapContent: string): UnicodeMap {
+  const map: UnicodeMap = new Map();
+
+  // Parse beginbfchar...endbfchar sections
+  // Format: <srcCode> <dstString>
+  const bfcharRegex = /beginbfchar([\s\S]*?)endbfchar/g;
+  let bfcharMatch;
+
+  while ((bfcharMatch = bfcharRegex.exec(cmapContent)) !== null) {
+    const section = bfcharMatch[1];
+    const lineRegex = /<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>/g;
+    let lineMatch;
+
+    while ((lineMatch = lineRegex.exec(section)) !== null) {
+      const srcCode = parseInt(lineMatch[1], 16);
+      const dstHex = lineMatch[2];
+      const dstString = hexToUnicodeString(dstHex);
+      map.set(srcCode, dstString);
+    }
+  }
+
+  // Parse beginbfrange...endbfrange sections
+  // Format: <srcCodeLo> <srcCodeHi> <dstStringLo>
+  // or: <srcCodeLo> <srcCodeHi> [<dstString1> <dstString2> ...]
+  const bfrangeRegex = /beginbfrange([\s\S]*?)endbfrange/g;
+  let bfrangeMatch;
+
+  while ((bfrangeMatch = bfrangeRegex.exec(cmapContent)) !== null) {
+    const section = bfrangeMatch[1];
+
+    // Match range with single destination
+    const rangeRegex = /<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>/g;
+    let rangeMatch;
+
+    while ((rangeMatch = rangeRegex.exec(section)) !== null) {
+      const srcLo = parseInt(rangeMatch[1], 16);
+      const srcHi = parseInt(rangeMatch[2], 16);
+      let dstCode = parseInt(rangeMatch[3], 16);
+
+      for (let code = srcLo; code <= srcHi; code++) {
+        map.set(code, String.fromCharCode(dstCode));
+        dstCode++;
+      }
+    }
+
+    // Match range with array of destinations
+    const arrayRangeRegex = /<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>\s*\[([\s\S]*?)\]/g;
+    let arrayMatch;
+
+    while ((arrayMatch = arrayRangeRegex.exec(section)) !== null) {
+      const srcLo = parseInt(arrayMatch[1], 16);
+      const srcHi = parseInt(arrayMatch[2], 16);
+      const destArray = arrayMatch[3];
+
+      const destRegex = /<([0-9A-Fa-f]+)>/g;
+      let destMatch;
+      let code = srcLo;
+
+      while ((destMatch = destRegex.exec(destArray)) !== null && code <= srcHi) {
+        const dstString = hexToUnicodeString(destMatch[1]);
+        map.set(code, dstString);
+        code++;
+      }
+    }
+  }
+
+  return map;
+}
+
+/**
+ * Convert a hex string to a Unicode string (UTF-16BE).
+ */
+function hexToUnicodeString(hex: string): string {
+  let result = '';
+  // UTF-16BE: 2 bytes per character
+  for (let i = 0; i < hex.length; i += 4) {
+    if (i + 4 <= hex.length) {
+      const charCode = parseInt(hex.substr(i, 4), 16);
+      result += String.fromCharCode(charCode);
+    } else if (i + 2 <= hex.length) {
+      // Single byte fallback
+      const charCode = parseInt(hex.substr(i, 2), 16);
+      result += String.fromCharCode(charCode);
+    }
+  }
+  return result;
+}
+
+/**
  * Extract text from a PDF stream content.
  */
-function extractTextFromStream(content: string): string {
+function extractTextFromStream(content: string, unicodeMap: UnicodeMap): string {
   const textParts: string[] = [];
 
   // Find all text blocks between BT and ET
@@ -215,7 +407,7 @@ function extractTextFromStream(content: string): string {
 
   while ((match = textBlockRegex.exec(content)) !== null) {
     const textBlock = match[1];
-    const blockText = extractTextFromTextBlock(textBlock);
+    const blockText = extractTextFromTextBlock(textBlock, unicodeMap);
     if (blockText) {
       textParts.push(blockText);
     }
@@ -227,14 +419,14 @@ function extractTextFromStream(content: string): string {
 /**
  * Extract text from a BT...ET text block.
  */
-function extractTextFromTextBlock(block: string): string {
+function extractTextFromTextBlock(block: string, unicodeMap: UnicodeMap): string {
   const parts: string[] = [];
 
   // Match Tj operator: (text) Tj
   const tjRegex = /\(([^)]*)\)\s*Tj/g;
   let match;
   while ((match = tjRegex.exec(block)) !== null) {
-    const decoded = decodePdfString(match[1]);
+    const decoded = decodePdfString(match[1], unicodeMap);
     if (decoded) parts.push(decoded);
   }
 
@@ -250,11 +442,11 @@ function extractTextFromTextBlock(block: string): string {
     while ((elemMatch = elementRegex.exec(arrayContent)) !== null) {
       if (elemMatch[1] !== undefined) {
         // Parenthesized string
-        const decoded = decodePdfString(elemMatch[1]);
+        const decoded = decodePdfString(elemMatch[1], unicodeMap);
         if (decoded) lineParts.push(decoded);
       } else if (elemMatch[2] !== undefined) {
         // Hex string
-        const decoded = decodeHexString(elemMatch[2]);
+        const decoded = decodeHexStringWithMap(elemMatch[2], unicodeMap);
         if (decoded) lineParts.push(decoded);
       }
     }
@@ -266,7 +458,7 @@ function extractTextFromTextBlock(block: string): string {
   // Match standalone hex strings: <hexdata> Tj
   const hexTjRegex = /<([0-9A-Fa-f]+)>\s*Tj/g;
   while ((match = hexTjRegex.exec(block)) !== null) {
-    const decoded = decodeHexString(match[1]);
+    const decoded = decodeHexStringWithMap(match[1], unicodeMap);
     if (decoded) parts.push(decoded);
   }
 
@@ -274,9 +466,9 @@ function extractTextFromTextBlock(block: string): string {
 }
 
 /**
- * Decode a PDF string with escape sequences.
+ * Decode a PDF string with escape sequences, applying unicode map if available.
  */
-function decodePdfString(str: string): string {
+function decodePdfString(str: string, unicodeMap: UnicodeMap): string {
   if (!str) return '';
 
   let result = str
@@ -292,7 +484,72 @@ function decodePdfString(str: string): string {
     return String.fromCharCode(parseInt(octal, 8));
   });
 
+  // If we have a unicode map, try to apply it character by character
+  if (unicodeMap.size > 0) {
+    let mapped = '';
+    for (let i = 0; i < result.length; i++) {
+      const charCode = result.charCodeAt(i);
+      const mappedChar = unicodeMap.get(charCode);
+      mapped += mappedChar !== undefined ? mappedChar : result[i];
+    }
+    return mapped;
+  }
+
   return result;
+}
+
+/**
+ * Decode a hex string using the unicode map if available.
+ */
+function decodeHexStringWithMap(hex: string, unicodeMap: UnicodeMap): string {
+  if (!hex) return '';
+
+  // Pad to even length if needed
+  if (hex.length % 2 !== 0) {
+    hex = hex + '0';
+  }
+
+  // If we have a unicode map, use it
+  if (unicodeMap.size > 0) {
+    let result = '';
+
+    // Try 2-byte codes first (common for CID fonts)
+    if (hex.length % 4 === 0) {
+      for (let i = 0; i < hex.length; i += 4) {
+        const code = parseInt(hex.substr(i, 4), 16);
+        const mapped = unicodeMap.get(code);
+        if (mapped !== undefined) {
+          result += mapped;
+        } else {
+          // Fallback to direct character if not in map
+          if (code >= 32 && code < 65535) {
+            result += String.fromCharCode(code);
+          }
+        }
+      }
+      if (result.length > 0) {
+        return result;
+      }
+    }
+
+    // Try 1-byte codes
+    for (let i = 0; i < hex.length; i += 2) {
+      const code = parseInt(hex.substr(i, 2), 16);
+      const mapped = unicodeMap.get(code);
+      if (mapped !== undefined) {
+        result += mapped;
+      } else if (code >= 32 && code <= 126) {
+        result += String.fromCharCode(code);
+      }
+    }
+
+    if (result.length > 0) {
+      return result;
+    }
+  }
+
+  // Fall back to the original hex string decoding
+  return decodeHexString(hex);
 }
 
 /**
