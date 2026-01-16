@@ -281,20 +281,6 @@ interface PreferencesState {
 
 Persisted to AsyncStorage. Auto-detects device locale on first launch.
 
-## Implementation Progress
-
-- [x] Phase 1: Foundation Setup
-- [x] Phase 2: UI Component Library
-- [x] Phase 3: Database Layer
-- [x] Phase 3.5: Internationalization
-- [x] Phase 4: Input & Capture
-- [x] Phase 5: OCR Integration
-- [x] Phase 6: Receipt Parsing
-- [x] Phase 7: Review & Save Flow
-- [x] Phase 8: Receipt Management
-- [x] Phase 9: Analytics Dashboard
-- [x] Phase 10: Polish & Animations
-
 ## Testing
 
 Before committing:
@@ -310,6 +296,7 @@ Before committing:
 - **Never commit automatically** - only commit when explicitly asked
 - **New features/fixes/chores must be in a new branch** and go through PR review first
 - Use conventional commits: `feat:`, `fix:`, `refactor:`, `docs:`, `chore:`
+- **Never include `Co-Authored-By` lines** in commit messages
 
 ## Common Pitfalls
 
@@ -370,6 +357,79 @@ See `.prettierrc`:
 - ES5 trailing commas
 
 **Note**: This app requires a development build due to native modules (ML Kit OCR). Expo Go is not sufficient.
+
+## Spawning Specialized Agents
+
+Use the Task tool to spawn specialized agents for specific scenarios. This improves efficiency and ensures expert handling of different task types.
+
+### Agent Types and When to Spawn Them
+
+| Agent                  | When to Spawn                                                                                                   |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------- |
+| **Explore**            | Codebase exploration, finding files by patterns, searching code for keywords, answering "how does X work?"      |
+| **Plan**               | Designing implementation strategies, planning multi-file changes, architectural decisions                       |
+| **code-reviewer**      | After writing/modifying code to ensure quality, security, and maintainability                                   |
+| **mobile-developer**   | React Native specific tasks, native integrations, offline sync, push notifications, cross-platform optimization |
+| **frontend-developer** | React UI components, state management, performance optimization, accessibility                                  |
+| **ui-ux-designer**     | User research, wireframes, design systems, prototyping, accessibility standards                                 |
+| **prompt-engineer**    | Building AI features, improving agent prompts, crafting system prompts                                          |
+| **context-manager**    | Complex multi-agent workflows, long-running tasks, session coordination                                         |
+| **Bash**               | Git operations, npm commands, build processes, terminal tasks                                                   |
+| **general-purpose**    | Complex multi-step research, when multiple search rounds may be needed                                          |
+| **claude-code-guide**  | Questions about Claude Code CLI, Claude Agent SDK, or Anthropic API                                             |
+
+### CestApp-Specific Agent Usage
+
+#### For Receipt Parser Changes (`src/services/ocr/parser.ts`)
+
+1. **Explore** agent first to understand existing patterns
+2. **Plan** agent for significant parsing logic changes
+3. **code-reviewer** after implementation
+
+#### For UI Component Work
+
+1. **frontend-developer** for React component implementation
+2. **mobile-developer** for React Native-specific considerations
+3. **ui-ux-designer** if user experience decisions are needed
+
+#### For Database/Schema Changes
+
+1. **Explore** agent to understand current schema relationships
+2. **Plan** agent for migration strategy
+3. **code-reviewer** to verify type safety
+
+#### For PDF Service (`src/services/pdf/`)
+
+1. **Explore** agent to understand stream handling
+2. **code-reviewer** for security review (parsing external files)
+
+### Agent Spawning Rules
+
+1. **Always spawn Explore** for open-ended codebase questions instead of running Glob/Grep directly
+2. **Spawn code-reviewer proactively** after any non-trivial code changes
+3. **Spawn mobile-developer** for anything touching native modules or platform-specific behavior
+4. **Spawn Plan** before multi-file refactors or new feature implementations
+5. **Spawn agents in parallel** when tasks are independent (e.g., code-reviewer + mobile-developer for a React Native component)
+
+### Examples
+
+```
+# User: "Where is the OCR result handled?"
+→ Spawn Explore agent with "Find where OCR results are processed and handled in the codebase"
+
+# User: "Add a new category type"
+→ Spawn Plan agent to design the implementation across schema, seed, and UI files
+
+# After implementing a new component
+→ Spawn code-reviewer to review the changes
+
+# User: "Optimize the receipt list performance"
+→ Spawn mobile-developer for React Native performance patterns
+→ Then spawn code-reviewer after changes
+
+# User: "How do I configure Claude Code hooks?"
+→ Spawn claude-code-guide agent
+```
 
 ## Potential Future Work
 
