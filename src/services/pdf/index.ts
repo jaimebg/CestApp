@@ -71,10 +71,22 @@ export async function extractTextFromPdf(uri: string): Promise<PdfExtractionResu
 }
 
 /**
+ * Convert bytes to string (latin1/iso-8859-1 encoding).
+ * TextDecoder doesn't support latin1 in Hermes, so we do it manually.
+ */
+function bytesToString(bytes: Uint8Array): string {
+  let result = '';
+  for (let i = 0; i < bytes.length; i++) {
+    result += String.fromCharCode(bytes[i]);
+  }
+  return result;
+}
+
+/**
  * Extract text from PDF bytes.
  */
 function extractTextFromPdfBytes(bytes: Uint8Array): string {
-  const pdfString = new TextDecoder('latin1').decode(bytes);
+  const pdfString = bytesToString(bytes);
   const textParts: string[] = [];
   let streamCount = 0;
   let decompressedCount = 0;
@@ -126,7 +138,7 @@ function extractTextFromPdfBytes(bytes: Uint8Array): string {
             }
           }
 
-          streamContent = new TextDecoder('latin1').decode(decompressed);
+          streamContent = bytesToString(decompressed);
           decompressedCount++;
         }
       } catch (e) {
