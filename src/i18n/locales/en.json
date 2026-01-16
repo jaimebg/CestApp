@@ -64,7 +64,25 @@
     "noTextDetected": "No Text Detected",
     "noTextDetectedDesc": "Could not extract text from the image. Try taking a clearer photo.",
     "pdfOcrPending": "PDF Processing",
-    "pdfOcrPendingDesc": "PDF text extraction will be available in a future update"
+    "pdfOcrPendingDesc": "PDF text extraction will be available in a future update",
+    "receiptInfo": "Receipt Info",
+    "unknownStore": "Unknown Store",
+    "noDateFound": "Date not found",
+    "unknownPayment": "Unknown",
+    "itemsFound": "{{count}} item found",
+    "itemsFound_plural": "{{count}} items found",
+    "noItemsFound": "No items found",
+    "confidence": "Confidence",
+    "lowConfidence": "Low confidence - please review",
+    "editStore": "Edit Store",
+    "editDate": "Edit Date",
+    "saveReceipt": "Save Receipt",
+    "discardReceipt": "Discard",
+    "addItem": "Add Item",
+    "removeItem": "Remove",
+    "showRawText": "Show Raw Text",
+    "hideRawText": "Hide Raw Text",
+    "time": "Time"
   },
   "history": {
     "title": "History",
@@ -133,6 +151,8 @@
     "appearance": "Appearance",
     "darkMode": "Dark Mode",
     "language": "Language",
+    "currency": "Currency",
+    "currencyDesc": "Set your preferred currency for prices",
     "categories": "Manage Categories",
     "stores": "Manage Stores",
     "exportData": "Export Data",
@@ -148,5 +168,22 @@
     "loadFailed": "Failed to load data",
     "networkError": "Network error. Please try again.",
     "unknownError": "An unknown error occurred"
+  },
+  "onboarding": {
+    "welcome": "Welcome to CestApp",
+    "subtitle": "Let's set up your preferences",
+    "language": "Language",
+    "languageDesc": "Choose your preferred language",
+    "currency": "Currency",
+    "currencyDesc": "Select your default currency",
+    "dateFormat": "Date Format",
+    "dateFormatDesc": "How dates appear on your receipts",
+    "numberFormat": "Number Format",
+    "numberFormatDesc": "How numbers appear on your receipts",
+    "getStarted": "Get Started",
+    "dmy": "Day / Month / Year",
+    "mdy": "Month / Day / Year",
+    "decimalDot": "Dot as decimal (1,234.56)",
+    "decimalComma": "Comma as decimal (1.234,56)"
   }
 }

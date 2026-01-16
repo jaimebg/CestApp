@@ -1,7 +1,7 @@
 import '../styles/global.css';
 import '@/src/i18n'; // Initialize i18n
 import { useEffect } from 'react';
-import { Stack } from 'expo-router';
+import { Stack, Redirect, useSegments, useRootNavigationState } from 'expo-router';
 import { useColorScheme, View, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -15,11 +15,16 @@ import {
   Inter_700Bold,
 } from '@expo-google-fonts/inter';
 import { DatabaseProvider } from '@/src/db/provider';
+import { usePreferencesStore } from '@/src/store/preferences';
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  const segments = useSegments();
+  const navigationState = useRootNavigationState();
+  const hasCompletedOnboarding = usePreferencesStore((state) => state.hasCompletedOnboarding);
+
   const [fontsLoaded] = useFonts({
     Inter_300Light,
     Inter_400Regular,
@@ -34,6 +39,7 @@ export default function RootLayout() {
     }
   }, [fontsLoaded]);
 
+  // Wait for fonts to load
   if (!fontsLoaded) {
     return (
       <SafeAreaProvider>
@@ -51,6 +57,10 @@ export default function RootLayout() {
     );
   }
 
+  // Check if navigation is ready before redirecting
+  const isNavigationReady = navigationState?.key;
+  const isOnOnboardingScreen = segments[0] === 'onboarding';
+
   return (
     <SafeAreaProvider>
       <DatabaseProvider>
@@ -62,7 +72,15 @@ export default function RootLayout() {
               backgroundColor: colorScheme === 'dark' ? '#1A1918' : '#FFFDE1',
             },
           }}
-        />
+        >
+          <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="scan" />
+        </Stack>
+        {/* Redirect logic - only when navigation is ready */}
+        {isNavigationReady && !hasCompletedOnboarding && !isOnOnboardingScreen && (
+          <Redirect href="/onboarding" />
+        )}
       </DatabaseProvider>
     </SafeAreaProvider>
   );

@@ -64,7 +64,25 @@
     "noTextDetected": "No se Detecto Texto",
     "noTextDetectedDesc": "No se pudo extraer texto de la imagen. Intenta tomar una foto mas clara.",
     "pdfOcrPending": "Procesamiento de PDF",
-    "pdfOcrPendingDesc": "La extraccion de texto de PDF estara disponible en una futura actualizacion"
+    "pdfOcrPendingDesc": "La extraccion de texto de PDF estara disponible en una futura actualizacion",
+    "receiptInfo": "Info del Recibo",
+    "unknownStore": "Tienda Desconocida",
+    "noDateFound": "Fecha no encontrada",
+    "unknownPayment": "Desconocido",
+    "itemsFound": "{{count}} articulo encontrado",
+    "itemsFound_plural": "{{count}} articulos encontrados",
+    "noItemsFound": "No se encontraron articulos",
+    "confidence": "Confianza",
+    "lowConfidence": "Baja confianza - por favor revisa",
+    "editStore": "Editar Tienda",
+    "editDate": "Editar Fecha",
+    "saveReceipt": "Guardar Recibo",
+    "discardReceipt": "Descartar",
+    "addItem": "Agregar Articulo",
+    "removeItem": "Eliminar",
+    "showRawText": "Mostrar Texto Original",
+    "hideRawText": "Ocultar Texto Original",
+    "time": "Hora"
   },
   "history": {
     "title": "Historial",
@@ -133,6 +151,8 @@
     "appearance": "Apariencia",
     "darkMode": "Modo Oscuro",
     "language": "Idioma",
+    "currency": "Moneda",
+    "currencyDesc": "Configura tu moneda preferida para los precios",
     "categories": "Administrar Categorias",
     "stores": "Administrar Tiendas",
     "exportData": "Exportar Datos",
@@ -148,5 +168,22 @@
     "loadFailed": "Error al cargar datos",
     "networkError": "Error de red. Por favor intenta de nuevo.",
     "unknownError": "Ocurrio un error desconocido"
+  },
+  "onboarding": {
+    "welcome": "Bienvenido a CestApp",
+    "subtitle": "Configuremos tus preferencias",
+    "language": "Idioma",
+    "languageDesc": "Elige tu idioma preferido",
+    "currency": "Moneda",
+    "currencyDesc": "Selecciona tu moneda predeterminada",
+    "dateFormat": "Formato de Fecha",
+    "dateFormatDesc": "Como aparecen las fechas en tus recibos",
+    "numberFormat": "Formato de Numeros",
+    "numberFormatDesc": "Como aparecen los numeros en tus recibos",
+    "getStarted": "Comenzar",
+    "dmy": "Dia / Mes / Ano",
+    "mdy": "Mes / Dia / Ano",
+    "decimalDot": "Punto decimal (1,234.56)",
+    "decimalComma": "Coma decimal (1.234,56)"
   }
 }
