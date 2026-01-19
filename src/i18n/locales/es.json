@@ -97,7 +97,14 @@
     "matchToItemsSum": "Igualar total a suma de artículos",
     "configureZones": "Mejorar parseo para esta tienda",
     "configureZonesDesc": "Define zonas para entender mejor los recibos",
-    "defineZones": "Definir Zonas"
+    "defineZones": "Definir Zonas",
+    "templateApplied": "Plantilla Aplicada",
+    "templateAppliedDesc": "Se usó parseo basado en zonas para este recibo",
+    "appliedZones": "Zonas Aplicadas",
+    "zoneTypes": "Tipos de Zona",
+    "hasTemplate": "Plantilla Disponible",
+    "hasTemplateDesc": "Esta tienda tiene una plantilla de parseo guardada",
+    "templateDeleted": "Plantilla eliminada exitosamente"
   },
   "history": {
     "title": "Historial",
@@ -192,16 +199,27 @@
   },
   "settings": {
     "title": "Configuración",
+    "preferences": "Preferencias",
     "appearance": "Apariencia",
     "darkMode": "Modo Oscuro",
     "language": "Idioma",
     "currency": "Moneda",
     "currencyDesc": "Configura tu moneda preferida para los precios",
+    "dateFormat": "Formato de Fecha",
+    "numberFormat": "Formato de Números",
     "categories": "Administrar Categorías",
     "stores": "Administrar Tiendas",
     "exportData": "Exportar Datos",
     "about": "Acerca de",
-    "version": "Versión"
+    "version": "Versión",
+    "parsingTemplates": "Plantillas de Parseo",
+    "manageTemplates": "Plantillas de Tiendas",
+    "noTemplates": "Sin plantillas guardadas",
+    "noTemplatesDesc": "Las plantillas se crean cuando defines zonas para los recibos de una tienda",
+    "templatesCount": "{{count}} plantilla(s) guardada(s)",
+    "deleteTemplate": "Eliminar Plantilla",
+    "deleteTemplateConfirm": "¿Eliminar la plantilla de parseo para {{store}}? Esto no se puede deshacer.",
+    "confidence": "Confianza"
   },
   "errors": {
     "cameraPermission": "Se requiere permiso de cámara para tomar fotos",

@@ -140,20 +140,33 @@ export default function DashboardScreen() {
       }
     >
       <View className="px-6 pt-4">
-        <Animated.Text
-          entering={FadeIn.duration(400)}
-          className="text-3xl text-text dark:text-text-dark"
-          style={{ fontFamily: 'Inter_700Bold' }}
-        >
-          {t('dashboard.title')}
-        </Animated.Text>
-        <Animated.Text
-          entering={FadeIn.delay(100).duration(400)}
-          className="text-base text-text-secondary dark:text-text-dark-secondary mt-2"
-          style={{ fontFamily: 'Inter_400Regular' }}
-        >
-          {t('dashboard.subtitle')}
-        </Animated.Text>
+        <View className="flex-row items-start justify-between">
+          <View className="flex-1">
+            <Animated.Text
+              entering={FadeIn.duration(400)}
+              className="text-3xl text-text dark:text-text-dark"
+              style={{ fontFamily: 'Inter_700Bold' }}
+            >
+              {t('dashboard.title')}
+            </Animated.Text>
+            <Animated.Text
+              entering={FadeIn.delay(100).duration(400)}
+              className="text-base text-text-secondary dark:text-text-dark-secondary mt-2"
+              style={{ fontFamily: 'Inter_400Regular' }}
+            >
+              {t('dashboard.subtitle')}
+            </Animated.Text>
+          </View>
+          <Animated.View entering={FadeIn.delay(200).duration(400)}>
+            <Pressable
+              onPress={() => router.push('/settings')}
+              className="w-10 h-10 rounded-full bg-surface dark:bg-surface-dark items-center justify-center"
+              style={{ marginTop: 4 }}
+            >
+              <Ionicons name="settings-outline" size={24} color="#93BD57" />
+            </Pressable>
+          </Animated.View>
+        </View>
 
         {/* Monthly Spending Card */}
         <Animated.View entering={FadeInUp.delay(200).duration(500).springify()}>

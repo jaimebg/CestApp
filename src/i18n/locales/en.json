@@ -97,7 +97,14 @@
     "matchToItemsSum": "Set total to items sum",
     "configureZones": "Improve parsing for this store",
     "configureZonesDesc": "Define zones to help understand receipts better",
-    "defineZones": "Define Zones"
+    "defineZones": "Define Zones",
+    "templateApplied": "Template Applied",
+    "templateAppliedDesc": "Zone-based parsing was used for this receipt",
+    "appliedZones": "Applied Zones",
+    "zoneTypes": "Zone Types",
+    "hasTemplate": "Template Available",
+    "hasTemplateDesc": "This store has a saved parsing template",
+    "templateDeleted": "Template deleted successfully"
   },
   "history": {
     "title": "History",
@@ -192,16 +199,27 @@
   },
   "settings": {
     "title": "Settings",
+    "preferences": "Preferences",
     "appearance": "Appearance",
     "darkMode": "Dark Mode",
     "language": "Language",
     "currency": "Currency",
     "currencyDesc": "Set your preferred currency for prices",
+    "dateFormat": "Date Format",
+    "numberFormat": "Number Format",
     "categories": "Manage Categories",
     "stores": "Manage Stores",
     "exportData": "Export Data",
     "about": "About",
-    "version": "Version"
+    "version": "Version",
+    "parsingTemplates": "Parsing Templates",
+    "manageTemplates": "Store Templates",
+    "noTemplates": "No templates saved",
+    "noTemplatesDesc": "Templates are created when you define zones for a store's receipts",
+    "templatesCount": "{{count}} template(s) saved",
+    "deleteTemplate": "Delete Template",
+    "deleteTemplateConfirm": "Delete the parsing template for {{store}}? This cannot be undone.",
+    "confidence": "Confidence"
   },
   "errors": {
     "cameraPermission": "Camera permission is required to take photos",
