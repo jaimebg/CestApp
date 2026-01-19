@@ -1,5 +1,6 @@
 import type { OcrBlock } from './index';
 import type { ParsedReceipt, ParsedItem } from './parser';
+import { parseReceipt } from './parser';
 import type { ZoneDefinition, NormalizedBoundingBox } from '../../types/zones';
 import type {
   StoreParsingTemplate,
@@ -415,43 +416,25 @@ export function parseWithTemplate(
   rawText: string,
   imageDimensions: { width: number; height: number }
 ): ParsedReceipt {
-  logger.log('Starting parseWithTemplate');
+  logger.log('Starting parseWithTemplate (hybrid approach)');
   logger.log('Provided image dimensions:', imageDimensions);
   logger.log('Number of blocks:', blocks.length);
   logger.log('Number of zones:', template.zones.length);
+
+  // First, get the text-based parsing result as a baseline
+  const allLines = blocks.flatMap((block) => block.lines.map((line) => line.text));
+  const textBasedResult = parseReceipt(allLines);
+  logger.log('Text-based baseline:', {
+    items: textBasedResult.items.length,
+    total: textBasedResult.total,
+    confidence: textBasedResult.confidence,
+  });
 
   // Infer actual dimensions from OCR blocks
   const inferredDims = inferImageDimensionsFromBlocks(blocks, imageDimensions);
   logger.log('Inferred dimensions from OCR:', inferredDims);
 
-  // Check for potential rotation (aspect ratio inversion)
-  const providedAspect = imageDimensions.width / imageDimensions.height;
-  const inferredAspect = inferredDims.width / inferredDims.height;
-  const isLikelyRotated =
-    (providedAspect > 1 && inferredAspect < 1) || (providedAspect < 1 && inferredAspect > 1);
-
-  if (isLikelyRotated) {
-    logger.warn('WARNING: Image appears to be rotated! Aspect ratios inverted.');
-    logger.log(
-      'Provided aspect:',
-      providedAspect.toFixed(2),
-      'Inferred aspect:',
-      inferredAspect.toFixed(2)
-    );
-  }
-
   const normalizedBlocks = normalizeBlocks(blocks, imageDimensions);
-
-  logger.log(
-    'Normalized blocks sample:',
-    normalizedBlocks.slice(0, 2).map((b) => ({
-      text: b.lines
-        .map((l) => l.text)
-        .join(' ')
-        .substring(0, 50),
-      bbox: b.normalizedBoundingBox,
-    }))
-  );
 
   // Scale zones if image aspect ratios differ
   const scaledZones = scaleZonesForAspectRatio(
@@ -470,80 +453,95 @@ export function parseWithTemplate(
 
   const zones = scaledZones;
   const hints = template.parsingHints || {};
-
   const decimalSeparator = hints.decimalSeparator || '.';
   const dateFormat = hints.dateFormat || 'DMY';
 
-  let storeName: string | null = null;
-  let date: Date | null = null;
-  let time: string | null = null;
-  let total: number | null = null;
-  let subtotal: number | null = null;
-  let tax: number | null = null;
-  let items: ParsedItem[] = [];
+  // Start with text-based results
+  let storeName: string | null = textBasedResult.storeName;
+  let date: Date | null = textBasedResult.date;
+  let time: string | null = textBasedResult.time;
+  let total: number | null = textBasedResult.total;
+  let subtotal: number | null = textBasedResult.subtotal;
+  let tax: number | null = textBasedResult.tax;
+  let items: ParsedItem[] = textBasedResult.items;
 
-  // Log all blocks for debugging
-  logger.log('All normalized blocks:');
-  normalizedBlocks.forEach((block, i) => {
-    logger.log(
-      `  Block ${i}: bbox=${JSON.stringify(block.normalizedBoundingBox)}, text="${block.lines
-        .map((l) => l.text)
-        .join(' ')
-        .substring(0, 40)}"`
-    );
-  });
-
+  // Now use zones to REFINE specific fields
   for (const zone of zones) {
     logger.log(`Processing zone ${zone.type} with bbox:`, zone.boundingBox);
-    const zoneBlocks = getBlocksInZone(normalizedBlocks, zone, true);
     const textLines = extractTextFromZone(normalizedBlocks, zone, imageDimensions);
-    logger.log(`Zone ${zone.type}: ${zoneBlocks.length} blocks, ${textLines.length} lines`);
-    logger.log(`Zone ${zone.type} lines:`, textLines.slice(0, 5));
+    logger.log(`Zone ${zone.type}: ${textLines.length} lines`);
 
     switch (zone.type) {
       case 'store_name':
-        storeName = textLines[0] || null;
+        // Only override if zone extraction found something
+        if (textLines.length > 0 && textLines[0].trim()) {
+          storeName = textLines[0].trim();
+          logger.log('Zone extracted store name:', storeName);
+        }
         break;
 
       case 'date':
-        date = parseDate(textLines, dateFormat);
+        const zoneParsedDate = parseDate(textLines, dateFormat);
+        if (zoneParsedDate) {
+          date = zoneParsedDate;
+          logger.log('Zone extracted date:', date);
+        }
         const timeMatch = textLines.join(' ').match(/(\d{1,2}:\d{2})/);
         if (timeMatch) time = timeMatch[1];
         break;
 
       case 'total':
-        total = extractPrice(textLines, decimalSeparator);
+        const zoneTotal = extractPrice(textLines, decimalSeparator);
+        if (zoneTotal !== null) {
+          total = zoneTotal;
+          logger.log('Zone extracted total:', total);
+        }
         break;
 
       case 'subtotal':
-        subtotal = extractPrice(textLines, decimalSeparator);
+        const zoneSubtotal = extractPrice(textLines, decimalSeparator);
+        if (zoneSubtotal !== null) subtotal = zoneSubtotal;
         break;
 
       case 'tax':
-        tax = extractPrice(textLines, decimalSeparator);
+        const zoneTax = extractPrice(textLines, decimalSeparator);
+        if (zoneTax !== null) tax = zoneTax;
         break;
 
-      case 'product_names': {
+      case 'product_names':
+      case 'prices': {
+        // For product/price zones, use the text-based parser on JUST the zone's lines
+        // This combines zone targeting with proven text parsing
+        const productZone = zones.find((z) => z.type === 'product_names');
         const priceZone = zones.find((z) => z.type === 'prices');
-        if (priceZone) {
-          // Use explicit prices zone
-          const priceBlocks = getBlocksInZone(normalizedBlocks, priceZone);
-          items = correlateProductsWithPrices(
-            zoneBlocks,
-            priceBlocks,
-            decimalSeparator,
-            imageDimensions.height
-          );
-        } else {
-          // No explicit prices zone - try to find prices anywhere in the receipt
-          // by looking for price-like blocks that align horizontally with products
-          logger.log('No prices zone - auto-detecting prices from all blocks');
-          items = correlateProductsWithPrices(
-            zoneBlocks,
-            normalizedBlocks, // Search all blocks for prices
-            decimalSeparator,
-            imageDimensions.height
-          );
+
+        if (productZone && zone.type === 'product_names') {
+          // Get all lines from the product zone
+          const productLines = extractTextFromZone(normalizedBlocks, productZone, imageDimensions);
+
+          // If there's a price zone, also get those lines
+          let combinedLines = productLines;
+          if (priceZone) {
+            const priceLines = extractTextFromZone(normalizedBlocks, priceZone, imageDimensions);
+            // For columnar receipts, we might need to combine lines by position
+            // For now, just include all lines and let the text parser handle it
+            combinedLines = [...productLines, ...priceLines];
+          }
+
+          logger.log('Zone-filtered lines for item parsing:', combinedLines.length);
+
+          // Use text-based parser on the zone-filtered lines
+          const zoneItemsResult = parseReceipt(combinedLines);
+          logger.log('Zone-based item parsing result:', zoneItemsResult.items.length, 'items');
+
+          // Use zone items if we got more or similar count with better quality
+          if (zoneItemsResult.items.length > 0) {
+            // If zone parsing found items, use them
+            if (zoneItemsResult.items.length >= items.length || items.length === 0) {
+              items = zoneItemsResult.items;
+              logger.log('Using zone-extracted items');
+            }
+          }
         }
         break;
       }
@@ -551,6 +549,13 @@ export function parseWithTemplate(
   }
 
   const confidence = calculateConfidence(storeName, date, items, total);
+
+  logger.log('Final hybrid result:', {
+    storeName,
+    items: items.length,
+    total,
+    confidence,
+  });
 
   return {
     storeName,

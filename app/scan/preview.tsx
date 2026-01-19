@@ -15,10 +15,11 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { deleteReceiptFile, isPdfFile } from '@/src/services/storage';
-import { recognizeText } from '@/src/services/ocr';
+import { recognizeText, OcrBlock } from '@/src/services/ocr';
 import { extractTextFromPdf } from '@/src/services/pdf';
+import { autoDetectZones } from '@/src/services/ocr/autoZoneDetector';
 import { Button } from '@/src/components/ui/Button';
 import { ZONE_COLORS, type ZoneDefinition } from '@/src/types/zones';
 import Pdf from 'react-native-pdf';
@@ -66,11 +67,21 @@ export default function ScanPreviewScreen() {
   const { width: screenWidth } = useWindowDimensions();
 
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isDetectingZones, setIsDetectingZones] = useState(false);
   const [zones, setZones] = useState<ZoneDefinition[]>([]);
   const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(
     imageDimensionsParam ? JSON.parse(imageDimensionsParam) : null
   );
 
+  // Store OCR results for reuse when processing
+  const [ocrResult, setOcrResult] = useState<{
+    text: string;
+    lines: string[];
+    blocks: OcrBlock[];
+    inferredDimensions: { width: number; height: number } | null;
+  } | null>(null);
+
+  const hasAutoDetected = useRef(false);
   const isPdf = uri ? isPdfFile(uri) : false;
 
   // Parse defined zones from params (returned from zones screen)
@@ -79,7 +90,7 @@ export default function ScanPreviewScreen() {
     if (definedZonesParam) {
       try {
         const parsedZones = JSON.parse(definedZonesParam) as ZoneDefinition[];
-        logger.log('Parsed zones:', parsedZones.length);
+        logger.log('Parsed zones from zones screen:', parsedZones.length);
         parsedZones.forEach((z, i) => {
           logger.log(`Zone ${i}: type=${z.type}, bbox=${JSON.stringify(z.boundingBox)}`);
         });
@@ -96,6 +107,59 @@ export default function ScanPreviewScreen() {
       getImageDimensions(uri).then(setDimensions);
     }
   }, [uri, isPdf, dimensions]);
+
+  // Auto-detect zones when image loads (if no zones defined)
+  useEffect(() => {
+    async function runAutoDetection() {
+      // Skip if already detecting, already have zones, or no URI
+      if (hasAutoDetected.current || zones.length > 0 || !uri || isPdf || isDetectingZones) {
+        return;
+      }
+
+      hasAutoDetected.current = true;
+      setIsDetectingZones(true);
+      logger.log('Starting auto zone detection...');
+
+      try {
+        // Run OCR to get blocks
+        const result = await recognizeText(uri);
+
+        if (result.success && result.blocks.length > 0) {
+          // Store OCR result for later use
+          setOcrResult({
+            text: result.text,
+            lines: result.lines,
+            blocks: result.blocks,
+            inferredDimensions: result.inferredDimensions || null,
+          });
+
+          // Get effective dimensions for zone detection
+          const imageDims = dimensions || (await getImageDimensions(uri));
+          const effectiveDims = result.inferredDimensions || imageDims;
+
+          logger.log('OCR completed:', result.blocks.length, 'blocks');
+          logger.log('Using dimensions for auto-detection:', effectiveDims);
+
+          // Auto-detect zones from OCR blocks
+          const detected = autoDetectZones(result.blocks, effectiveDims);
+          logger.log('Auto-detected zones:', detected.zones.length);
+          logger.log('Detection confidence:', detected.confidence);
+
+          if (detected.zones.length > 0) {
+            setZones(detected.zones);
+          }
+        } else {
+          logger.log('OCR failed or no blocks found');
+        }
+      } catch (error) {
+        logger.error('Auto-detection error:', error);
+      } finally {
+        setIsDetectingZones(false);
+      }
+    }
+
+    runAutoDetection();
+  }, [uri, isPdf, dimensions, zones.length, isDetectingZones]);
 
   const colors = {
     background: isDark ? '#1A1918' : '#FFFDE1',
@@ -122,6 +186,7 @@ export default function ScanPreviewScreen() {
     }
 
     logger.log('Going to zones with dimensions:', dims);
+    logger.log('Passing existing zones:', zones.length);
     router.push({
       pathname: '/scan/zones',
       params: {
@@ -129,6 +194,8 @@ export default function ScanPreviewScreen() {
         source,
         mode: 'preview',
         imageDimensions: dims ? JSON.stringify(dims) : undefined,
+        // Pass existing zones (auto-detected or manually modified)
+        existingZones: zones.length > 0 ? JSON.stringify(zones) : undefined,
       },
     });
   };
@@ -161,41 +228,55 @@ export default function ScanPreviewScreen() {
           showErrorToast(t('common.error'), t('errors.ocrFailed'));
         }
       } else {
-        const result = await recognizeText(uri);
-
-        if (result.success) {
-          const imageDims = dimensions || (await getImageDimensions(uri));
-          // Prefer OCR-inferred dimensions for accurate zone matching
-          const effectiveDims = result.inferredDimensions || imageDims;
-
-          logger.log('Processing image with:');
-          logger.log('- getImageDimensions:', imageDims);
-          logger.log('- OCR inferredDimensions:', result.inferredDimensions);
-          logger.log('- Using effectiveDims:', effectiveDims);
-          logger.log('- Zones:', zones.length);
-          logger.log('- Blocks from OCR:', result.blocks.length);
-          if (result.blocks.length > 0) {
-            logger.log('- First block bbox:', result.blocks[0].boundingBox);
+        // Use cached OCR result if available, otherwise run OCR
+        let result = ocrResult;
+        if (!result) {
+          logger.log('Running OCR (no cached result)...');
+          const ocrResponse = await recognizeText(uri);
+          if (ocrResponse.success) {
+            result = {
+              text: ocrResponse.text,
+              lines: ocrResponse.lines,
+              blocks: ocrResponse.blocks,
+              inferredDimensions: ocrResponse.inferredDimensions || null,
+            };
+          } else {
+            showErrorToast(t('common.error'), t('errors.ocrFailed'));
+            return;
           }
-
-          router.push({
-            pathname: '/scan/review',
-            params: {
-              uri,
-              source,
-              ocrText: result.text,
-              ocrLines: JSON.stringify(result.lines),
-              ocrBlocks: JSON.stringify(result.blocks),
-              imageDimensions: JSON.stringify(effectiveDims),
-              // Also pass original dimensions for zone scaling if needed
-              originalImageDimensions: JSON.stringify(imageDims),
-              // Pass zones if defined
-              ...(zones.length > 0 && { manualZones: JSON.stringify(zones) }),
-            },
-          });
         } else {
-          showErrorToast(t('common.error'), t('errors.ocrFailed'));
+          logger.log('Using cached OCR result');
         }
+
+        const imageDims = dimensions || (await getImageDimensions(uri));
+        // Prefer OCR-inferred dimensions for accurate zone matching
+        const effectiveDims = result.inferredDimensions || imageDims;
+
+        logger.log('Processing image with:');
+        logger.log('- getImageDimensions:', imageDims);
+        logger.log('- OCR inferredDimensions:', result.inferredDimensions);
+        logger.log('- Using effectiveDims:', effectiveDims);
+        logger.log('- Zones:', zones.length);
+        logger.log('- Blocks from OCR:', result.blocks.length);
+        if (result.blocks.length > 0) {
+          logger.log('- First block bbox:', result.blocks[0].boundingBox);
+        }
+
+        router.push({
+          pathname: '/scan/review',
+          params: {
+            uri,
+            source,
+            ocrText: result.text,
+            ocrLines: JSON.stringify(result.lines),
+            ocrBlocks: JSON.stringify(result.blocks),
+            imageDimensions: JSON.stringify(effectiveDims),
+            // Also pass original dimensions for zone scaling if needed
+            originalImageDimensions: JSON.stringify(imageDims),
+            // Pass zones if detected (auto or manual) - hybrid parser will use them to refine results
+            ...(zones.length > 0 && { manualZones: JSON.stringify(zones) }),
+          },
+        });
       }
     } catch (error) {
       logger.error('Processing error:', error);
@@ -317,34 +398,52 @@ export default function ScanPreviewScreen() {
       {/* Zones indicator and button */}
       {!isPdf && (
         <View className="px-4 py-2">
-          <Pressable
-            onPress={handleDefineZones}
-            className="flex-row items-center justify-center py-3 rounded-xl"
-            style={{ backgroundColor: zones.length > 0 ? colors.primary + '20' : colors.surface }}
-          >
-            <Ionicons
-              name={zones.length > 0 ? 'checkmark-circle' : 'grid-outline'}
-              size={20}
-              color={zones.length > 0 ? colors.primary : colors.textSecondary}
-            />
-            <Text
-              className="text-sm ml-2"
-              style={{
-                color: zones.length > 0 ? colors.primary : colors.textSecondary,
-                fontFamily: 'Inter_500Medium',
-              }}
+          {isDetectingZones ? (
+            <View
+              className="flex-row items-center justify-center py-3 rounded-xl"
+              style={{ backgroundColor: colors.surface }}
             >
-              {zones.length > 0
-                ? `${zones.length} ${t('scan.zonesDefined')}`
-                : t('scan.defineParsingZones')}
-            </Text>
-            <Ionicons
-              name="chevron-forward"
-              size={16}
-              color={zones.length > 0 ? colors.primary : colors.textSecondary}
-              style={{ marginLeft: 4 }}
-            />
-          </Pressable>
+              <ActivityIndicator size="small" color={colors.primary} />
+              <Text
+                className="text-sm ml-2"
+                style={{
+                  color: colors.textSecondary,
+                  fontFamily: 'Inter_500Medium',
+                }}
+              >
+                {t('scan.detectingZones')}
+              </Text>
+            </View>
+          ) : (
+            <Pressable
+              onPress={handleDefineZones}
+              className="flex-row items-center justify-center py-3 rounded-xl"
+              style={{ backgroundColor: zones.length > 0 ? colors.primary + '20' : colors.surface }}
+            >
+              <Ionicons
+                name={zones.length > 0 ? 'checkmark-circle' : 'grid-outline'}
+                size={20}
+                color={zones.length > 0 ? colors.primary : colors.textSecondary}
+              />
+              <Text
+                className="text-sm ml-2"
+                style={{
+                  color: zones.length > 0 ? colors.primary : colors.textSecondary,
+                  fontFamily: 'Inter_500Medium',
+                }}
+              >
+                {zones.length > 0
+                  ? `${zones.length} ${t('scan.zonesDetected')} - ${t('scan.tapToEdit')}`
+                  : t('scan.defineParsingZones')}
+              </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={16}
+                color={zones.length > 0 ? colors.primary : colors.textSecondary}
+                style={{ marginLeft: 4 }}
+              />
+            </Pressable>
+          )}
         </View>
       )}
 

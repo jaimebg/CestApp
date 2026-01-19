@@ -23,12 +23,14 @@ export default function ZoneSelectionScreen() {
     imageDimensions,
     mode: screenMode,
     source,
+    existingZones,
   } = useLocalSearchParams<{
     uri: string;
     storeId?: string;
     imageDimensions?: string;
     mode?: 'template' | 'preview'; // 'template' saves to DB, 'preview' returns zones for one-time use
     source?: string;
+    existingZones?: string; // Auto-detected or previously defined zones (for preview mode)
   }>();
   const isPreviewMode = screenMode === 'preview';
   const router = useRouter();
@@ -62,11 +64,29 @@ export default function ZoneSelectionScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
 
-  // Load existing template zones when editing (not in preview mode)
+  // Load existing zones (auto-detected or from template)
   useEffect(() => {
-    async function loadExistingTemplate() {
-      // In preview mode, don't load templates - start fresh
-      if (isPreviewMode || !storeId) {
+    async function loadExistingZones() {
+      // In preview mode, load existing zones passed from preview screen
+      if (isPreviewMode) {
+        if (existingZones) {
+          try {
+            const parsedZones = JSON.parse(existingZones) as ZoneDefinition[];
+            logger.log('Loading existing zones in preview mode:', parsedZones.length);
+            setZones(parsedZones);
+            setIsEditing(true);
+            // Switch to select mode when editing existing zones
+            setMode('select');
+          } catch (error) {
+            logger.error('Error parsing existing zones:', error);
+          }
+        }
+        setIsLoading(false);
+        return;
+      }
+
+      // In template mode, load from database
+      if (!storeId) {
         setIsLoading(false);
         return;
       }
@@ -86,8 +106,8 @@ export default function ZoneSelectionScreen() {
       }
     }
 
-    loadExistingTemplate();
-  }, [storeId, isPreviewMode]);
+    loadExistingZones();
+  }, [storeId, isPreviewMode, existingZones]);
 
   const canSave = zones.length > 0;
 
