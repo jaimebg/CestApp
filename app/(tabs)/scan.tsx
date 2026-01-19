@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Card } from '@/src/components/ui';
+import { Card } from '@/src/components/ui/Card';
 import {
   captureFromCamera,
   selectFromGallery,

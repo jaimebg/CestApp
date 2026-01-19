@@ -1,6 +1,9 @@
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { saveReceiptFile } from '../storage';
+import { createScopedLogger } from '../../utils/debug';
+
+const logger = createScopedLogger('Capture');
 
 export type CaptureSource = 'camera' | 'gallery' | 'pdf';
 
@@ -95,7 +98,7 @@ export async function captureFromCamera(): Promise<CaptureResult> {
       fileName: asset.fileName || undefined,
     };
   } catch (error) {
-    console.error('Camera capture error:', error);
+    logger.error('Camera capture error:', error);
     return {
       success: false,
       source: 'camera',
@@ -151,7 +154,7 @@ export async function selectFromGallery(): Promise<CaptureResult> {
       fileName: asset.fileName || undefined,
     };
   } catch (error) {
-    console.error('Gallery selection error:', error);
+    logger.error('Gallery selection error:', error);
     return {
       success: false,
       source: 'gallery',
@@ -191,7 +194,7 @@ export async function selectPdf(): Promise<CaptureResult> {
       fileName: asset.name,
     };
   } catch (error) {
-    console.error('PDF selection error:', error);
+    logger.error('PDF selection error:', error);
     return {
       success: false,
       source: 'pdf',

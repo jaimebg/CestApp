@@ -3,6 +3,9 @@ import MlkitOcr, {
   OcrBlock as MlkitOcrBlock,
   OcrLine as MlkitOcrLine,
 } from 'rn-mlkit-ocr';
+import { createScopedLogger } from '../../utils/debug';
+
+const logger = createScopedLogger('OCR');
 
 export interface OcrBlock {
   text: string;
@@ -47,7 +50,7 @@ export async function recognizeText(imageUri: string): Promise<OcrResult> {
     // Debug: Log first block's raw bounding box to see actual image coordinates
     if (result.blocks.length > 0) {
       const firstBlock = result.blocks[0];
-      console.log('[OCR] Raw first block frame from MLKit:', {
+      logger.log('Raw first block frame from MLKit:', {
         x: firstBlock.frame.x,
         y: firstBlock.frame.y,
         width: firstBlock.frame.width,
@@ -61,7 +64,7 @@ export async function recognizeText(imageUri: string): Promise<OcrResult> {
         maxX = Math.max(maxX, b.frame.x + b.frame.width);
         maxY = Math.max(maxY, b.frame.y + b.frame.height);
       });
-      console.log('[OCR] Inferred image bounds from OCR blocks:', { maxX, maxY });
+      logger.log('Inferred image bounds from OCR blocks:', { maxX, maxY });
     }
 
     const blocks: OcrBlock[] = result.blocks.map((block: MlkitOcrBlock) => ({
@@ -106,7 +109,7 @@ export async function recognizeText(imageUri: string): Promise<OcrResult> {
         width: Math.ceil(maxX * 1.02),
         height: Math.ceil(maxY * 1.02),
       };
-      console.log('[OCR] Returning inferredDimensions:', inferredDimensions);
+      logger.log('Returning inferredDimensions:', inferredDimensions);
     }
 
     return {
@@ -117,7 +120,7 @@ export async function recognizeText(imageUri: string): Promise<OcrResult> {
       inferredDimensions,
     };
   } catch (error) {
-    console.error('OCR error:', error);
+    logger.error('OCR error:', error);
     return {
       success: false,
       text: '',

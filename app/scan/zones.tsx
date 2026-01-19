@@ -5,9 +5,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { showSuccessToast, showErrorToast } from '@/src/utils/toast';
-import { ZoneSelectionCanvas, ZoneTypePicker, ZoneSelectionToolbar } from '@/src/components/zones';
+import { createScopedLogger } from '@/src/utils/debug';
+import { ZoneSelectionCanvas } from '@/src/components/zones/ZoneSelectionCanvas';
+import { ZoneTypePicker } from '@/src/components/zones/ZoneTypePicker';
+import { ZoneSelectionToolbar } from '@/src/components/zones/ZoneSelectionToolbar';
 import { type ZoneDefinition, type ZoneType, type ParsingHints } from '@/src/types/zones';
 import { upsertStoreTemplate, getTemplateByStoreId } from '@/src/db/queries/storeParsingTemplates';
+
+const logger = createScopedLogger('Zones');
 
 type ToolMode = 'draw' | 'select' | 'delete';
 
@@ -46,8 +51,8 @@ export default function ZoneSelectionScreen() {
     ? JSON.parse(imageDimensions)
     : { width: 1000, height: 1500 };
 
-  console.log('[Zones] Using imageDimensions:', parsedDimensions);
-  console.log('[Zones] Raw imageDimensions param:', imageDimensions);
+  logger.log('Using imageDimensions:', parsedDimensions);
+  logger.log('Raw imageDimensions param:', imageDimensions);
 
   const [zones, setZones] = useState<ZoneDefinition[]>([]);
   const [mode, setMode] = useState<ToolMode>('draw');
@@ -75,7 +80,7 @@ export default function ZoneSelectionScreen() {
           setMode('select');
         }
       } catch (error) {
-        console.error('Error loading template:', error);
+        logger.error('Error loading template:', error);
       } finally {
         setIsLoading(false);
       }
@@ -97,9 +102,9 @@ export default function ZoneSelectionScreen() {
 
     // In preview mode, return zones to preview screen via params
     if (isPreviewMode) {
-      console.log('[Zones] Returning zones to preview:', zones.length);
+      logger.log('Returning zones to preview:', zones.length);
       zones.forEach((z, i) => {
-        console.log(`[Zones] Zone ${i}: type=${z.type}, bbox=${JSON.stringify(z.boundingBox)}`);
+        logger.log(`Zone ${i}: type=${z.type}, bbox=${JSON.stringify(z.boundingBox)}`);
       });
       router.navigate({
         pathname: '/scan/preview',
@@ -140,7 +145,7 @@ export default function ZoneSelectionScreen() {
 
       router.back();
     } catch (error) {
-      console.error('Error saving template:', error);
+      logger.error('Error saving template:', error);
       showErrorToast(t('common.error'), t('errors.saveFailed'));
     }
   }, [storeId, zones, uri, router, t, lang, isPreviewMode, imageDimensions]);

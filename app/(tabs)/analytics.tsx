@@ -7,6 +7,9 @@ import { BarChart, PieChart } from 'react-native-gifted-charts';
 import { useDatabaseReady } from '@/src/db/provider';
 import { getAnalyticsSummary, TimePeriod } from '@/src/db/queries/analytics';
 import { useFormatPrice } from '@/src/store/preferences';
+import { createScopedLogger } from '@/src/utils/debug';
+
+const logger = createScopedLogger('Analytics');
 
 type AnalyticsData = Awaited<ReturnType<typeof getAnalyticsSummary>>;
 
@@ -55,7 +58,7 @@ export default function AnalyticsScreen() {
       const analyticsData = await getAnalyticsSummary(period);
       setData(analyticsData);
     } catch (error) {
-      console.error('Failed to load analytics:', error);
+      logger.error('Failed to load analytics:', error);
     } finally {
       setIsLoading(false);
     }

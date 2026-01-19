@@ -5,14 +5,20 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Card, Badge, Skeleton } from '@/src/components/ui';
-import { ReceiptCard, ReceiptCardSkeleton } from '@/src/components/receipt';
+import { Card } from '@/src/components/ui/Card';
+import { Badge } from '@/src/components/ui/Badge';
+import { Skeleton } from '@/src/components/ui/Skeleton';
+import { ReceiptCard } from '@/src/components/receipt/ReceiptCard';
+import { ReceiptCardSkeleton } from '@/src/components/receipt/ReceiptCardSkeleton';
+import { createScopedLogger } from '@/src/utils/debug';
 import { useDatabaseReady } from '@/src/db/provider';
 import { getReceiptsWithItemCount } from '@/src/db/queries/receipts';
 import { getTotalSpending, getReceiptCount } from '@/src/db/queries/analytics';
 import { useFormatPrice } from '@/src/store/preferences';
 import type { Receipt } from '@/src/db/schema/receipts';
 import type { Store } from '@/src/db/schema/stores';
+
+const logger = createScopedLogger('Dashboard');
 
 type ReceiptWithStore = {
   receipt: Receipt;
@@ -47,7 +53,7 @@ export default function DashboardScreen() {
       setReceiptCount(count);
       setRecentReceipts(receipts.slice(0, 3)); // Show only 3 recent
     } catch (error) {
-      console.error('Failed to load dashboard data:', error);
+      logger.error('Failed to load dashboard data:', error);
     } finally {
       setIsLoading(false);
     }

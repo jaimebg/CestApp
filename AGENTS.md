@@ -25,6 +25,7 @@ CestApp is a supermarket receipt scanner app built with React Native and Expo. I
 | React Native Reanimated    | 4.1.1   | Animations                                  |
 | react-native-gifted-charts | 1.4.70  | Analytics charts                            |
 | sonner-native              | 0.23.0  | Toast notifications                         |
+| @shopify/flash-list        | 2.0.2   | High-performance virtualized lists          |
 
 ## Code Style Guidelines
 
@@ -36,6 +37,15 @@ CestApp is a supermarket receipt scanner app built with React Native and Expo. I
 - Use `useTranslation()` hook for all user-facing text
 - **No comments** unless JSDoc or absolutely necessary - code should be self-documenting
 - **Never create new .md files** unless explicitly asked
+- **Use direct imports** instead of barrel imports for better tree-shaking:
+  ```typescript
+  // Good
+  import { Button } from '@/src/components/ui/Button';
+  // Avoid
+  import { Button } from '@/src/components/ui';
+  ```
+- **Use FlashList** instead of FlatList for virtualized lists
+- **Use scoped loggers** instead of `console.log` (see Debug Utilities)
 
 ### Styling
 
@@ -74,6 +84,7 @@ CestApp is a supermarket receipt scanner app built with React Native and Expo. I
 app/                           # Screens (Expo Router)
   _layout.tsx                  # Root layout with providers
   onboarding.tsx               # First-time user setup
+  settings.tsx                 # App settings screen
   (tabs)/                      # Main tab navigation
     _layout.tsx                # Tab bar configuration
     index.tsx                  # Dashboard screen
@@ -86,7 +97,12 @@ app/                           # Screens (Expo Router)
   scan/
     _layout.tsx                # Scan flow layout (modal stack)
     preview.tsx                # Image/PDF preview
+    zones.tsx                  # Manual zone definition
     review.tsx                 # OCR review & save
+    _components/modals/        # Extracted modal components
+      CategoryPickerModal.tsx  # Category selection
+      CurrencyPickerModal.tsx  # Currency selection
+      ZonesPreviewModal.tsx    # Zones preview
 
 src/
   components/
@@ -106,6 +122,7 @@ src/
       ItemRow.tsx              # Line item display
     settings/
       CurrencySelector.tsx     # Currency picker
+    ErrorBoundary.tsx          # React error boundary
 
   db/
     client.ts                  # Drizzle + expo-sqlite setup
@@ -117,17 +134,20 @@ src/
       stores.ts                # Store reference table
       categories.ts            # Item categories table
       userLearnedItems.ts      # User learning table
+      storeParsingTemplates.ts # Store parsing templates
     queries/
       receipts.ts              # Receipt CRUD operations
       items.ts                 # Item queries
       stores.ts                # Store queries
       categories.ts            # Category queries
       analytics.ts             # Analytics aggregations
+      storeParsingTemplates.ts # Template queries
 
   services/
     ocr/
       index.ts                 # ML Kit OCR wrapper
       parser.ts                # Receipt parsing (1,086 lines)
+      templateParser.ts        # Template-based parsing
     pdf/
       index.ts                 # PDF text extraction (648 lines)
     capture/
@@ -137,6 +157,21 @@ src/
 
   store/
     preferences.ts             # Zustand preferences store
+    receipts.ts                # Receipts store with caching
+
+  hooks/
+    useAppColors.ts            # Theme colors hook
+
+  theme/
+    colors.ts                  # Centralized color definitions
+
+  types/
+    index.ts                   # Type exports
+    zones.ts                   # Zone type definitions
+    receipts.ts                # Receipt types
+    items.ts                   # Item types
+    categories.ts              # Category types
+    stores.ts                  # Store types
 
   config/
     currency.ts                # 140+ currency definitions
@@ -149,6 +184,7 @@ src/
 
   utils/
     toast.ts                   # Toast notification helper
+    debug.ts                   # Scoped debug logging
 ```
 
 ## UI Components
@@ -165,6 +201,35 @@ Available in `src/components/ui/`:
 | AnimatedList      | `entering`, `layout`                                                    | Animated list items   |
 | ConfirmationModal | `visible`, `title`, `message`, `onConfirm`, `onCancel`                  | Delete confirmation   |
 | EmptyState        | `icon`, `title`, `description`, `action`                                | Empty/error states    |
+| ErrorBoundary     | `children`, `fallback`, `onError`                                       | React error boundary  |
+
+## Theme System
+
+Centralized theme colors in `src/theme/colors.ts`:
+
+```typescript
+import { useAppColors } from '@/src/hooks/useAppColors';
+
+function MyComponent() {
+  const colors = useAppColors(); // Returns light or dark colors based on colorScheme
+  return <View style={{ backgroundColor: colors.background }} />;
+}
+```
+
+Available color keys: `background`, `surface`, `text`, `textSecondary`, `border`, `primary`, `primaryDark`, `primaryDeep`, `accent`, `error`
+
+## Debug Utilities
+
+Use scoped loggers instead of `console.log` (logs only in `__DEV__` mode):
+
+```typescript
+import { createScopedLogger } from '@/src/utils/debug';
+
+const logger = createScopedLogger('MyComponent');
+logger.log('Info message');
+logger.warn('Warning message');
+logger.error('Error message');
+```
 
 ## Services
 
@@ -261,7 +326,7 @@ Key functions in `src/db/seed.ts`:
 
 ## State Management
 
-Zustand store in `src/store/preferences.ts`:
+### Preferences Store (`src/store/preferences.ts`)
 
 ```typescript
 interface PreferencesState {
@@ -280,6 +345,18 @@ interface PreferencesState {
 ```
 
 Persisted to AsyncStorage. Auto-detects device locale on first launch.
+
+### Receipts Store (`src/store/receipts.ts`)
+
+Zustand store with 30-second caching for efficient data fetching:
+
+```typescript
+const { receipts, isLoading, fetchReceipts, invalidateCache } = useReceiptsStore();
+
+// Selector hooks for optimized re-renders
+const receipts = useReceipts();
+const isLoading = useReceiptsLoading();
+```
 
 ## Testing
 
@@ -309,6 +386,9 @@ Before committing:
 8. **PDF Text Extraction**: Some PDFs have no embedded text (scanned images) - falls back to OCR
 9. **Kerning in PDFs**: TJ operator kerning values need threshold (-100) to detect word spacing
 10. **NUL Bytes**: PDF extracted text may contain NUL bytes - must be cleaned
+11. **FlashList v2**: Does not have `estimatedItemSize` prop - removed in v2.0
+12. **Theme Colors**: Use `useAppColors()` hook instead of duplicating colors in components
+13. **Debug Logging**: Use `createScopedLogger()` instead of `console.log`
 
 ## Development Setup
 

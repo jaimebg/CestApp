@@ -2,7 +2,6 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
-  FlatList,
   RefreshControl,
   TextInput,
   Pressable,
@@ -10,6 +9,7 @@ import {
   Modal,
   ScrollView,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import Animated, { FadeInDown, Layout } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -22,9 +22,13 @@ import {
   getStoresWithReceipts,
   type ReceiptFilters,
 } from '../../src/db/queries/receipts';
-import { ReceiptCard, ReceiptListSkeleton } from '../../src/components/receipt';
+import { ReceiptCard } from '../../src/components/receipt/ReceiptCard';
+import { ReceiptListSkeleton } from '../../src/components/receipt/ReceiptCardSkeleton';
+import { createScopedLogger } from '../../src/utils/debug';
 import type { Receipt } from '../../src/db/schema/receipts';
 import type { Store } from '../../src/db/schema/stores';
+
+const logger = createScopedLogger('History');
 
 type ReceiptWithStore = {
   receipt: Receipt;
@@ -88,7 +92,7 @@ export default function HistoryScreen() {
       const data = await getStoresWithReceipts();
       setStores(data);
     } catch (error) {
-      console.error('Failed to load stores:', error);
+      logger.error('Failed to load stores:', error);
     }
   }, [isReady]);
 
@@ -113,7 +117,7 @@ export default function HistoryScreen() {
 
       setReceipts(data);
     } catch (error) {
-      console.error('Failed to load receipts:', error);
+      logger.error('Failed to load receipts:', error);
     } finally {
       setIsLoading(false);
       setIsSearching(false);
@@ -413,14 +417,13 @@ export default function HistoryScreen() {
       </View>
 
       {/* Receipt list */}
-      <FlatList
+      <FlashList
         data={receipts}
         keyExtractor={(item) => item.receipt.id.toString()}
         renderItem={renderReceiptItem}
         contentContainerStyle={{
           paddingHorizontal: 16,
           paddingBottom: insets.bottom + 20,
-          flexGrow: receipts.length === 0 ? 1 : undefined,
         }}
         ListEmptyComponent={renderEmptyState}
         refreshControl={

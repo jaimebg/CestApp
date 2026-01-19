@@ -1,5 +1,8 @@
 import { readAsStringAsync } from 'expo-file-system/legacy';
 import pako from 'pako';
+import { createScopedLogger } from '../../utils/debug';
+
+const logger = createScopedLogger('PDF');
 
 export interface PdfExtractionResult {
   success: boolean;
@@ -59,7 +62,7 @@ export async function extractTextFromPdf(uri: string): Promise<PdfExtractionResu
       pageCount,
     };
   } catch (error) {
-    console.error('PDF extraction error:', error);
+    logger.error('PDF extraction error:', error);
     return {
       success: false,
       text: '',

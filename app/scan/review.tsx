@@ -6,21 +6,24 @@ import {
   Pressable,
   TextInput,
   Modal,
-  FlatList,
   KeyboardAvoidingView,
   Platform,
   useColorScheme,
   useWindowDimensions,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
 import Svg, { Rect } from 'react-native-svg';
 import { ZONE_COLORS, type ZoneDefinition } from '@/src/types/zones';
 import { showSuccessToast, showErrorToast } from '@/src/utils/toast';
+import { createScopedLogger } from '@/src/utils/debug';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import { Button, Card, Badge } from '@/src/components/ui';
+import { Button } from '@/src/components/ui/Button';
+import { Card } from '@/src/components/ui/Card';
+import { Badge } from '@/src/components/ui/Badge';
 import { parseReceipt, ParsedReceipt, ParsedItem, ParserOptions } from '@/src/services/ocr/parser';
 import { parseWithTemplate, shouldUseTemplate } from '@/src/services/ocr/templateParser';
 import type { OcrBlock } from '@/src/services/ocr';
@@ -32,6 +35,8 @@ import { createItems } from '@/src/db/queries/items';
 import { getCategories } from '@/src/db/queries/categories';
 import { getTemplateByStoreId, deleteTemplate } from '@/src/db/queries/storeParsingTemplates';
 import { getCategoryForItem, normalizeItemName, recordUserCorrection } from '@/src/db/seed';
+
+const logger = createScopedLogger('Review');
 
 type Category = {
   id: number;
@@ -88,11 +93,11 @@ export default function ScanReviewScreen() {
   const hasOcrResult = ocrText && ocrText.length > 0;
 
   // Debug: Log what dimensions we received
-  console.log('[Review] Received dimensions (OCR-effective):', dimensions);
-  console.log('[Review] Original dimensions (zone-drawing):', origDimensions);
-  console.log('[Review] Raw imageDimensions param:', imageDimensions);
+  logger.log('Received dimensions (OCR-effective):', dimensions);
+  logger.log('Original dimensions (zone-drawing):', origDimensions);
+  logger.log('Raw imageDimensions param:', imageDimensions);
   if (blocks.length > 0) {
-    console.log('[Review] First OCR block raw bbox:', blocks[0].boundingBox);
+    logger.log('First OCR block raw bbox:', blocks[0].boundingBox);
   }
 
   // Parse manual zones from preview screen and transform if aspect ratios differ
@@ -106,22 +111,20 @@ export default function ScanReviewScreen() {
         const ocrAspect = dimensions.width / dimensions.height;
         const aspectDiff = Math.abs(origAspect - ocrAspect) / origAspect;
 
-        console.log('[Review] Zone transformation check:');
-        console.log('[Review] - Original aspect:', origAspect.toFixed(3));
-        console.log('[Review] - OCR aspect:', ocrAspect.toFixed(3));
-        console.log('[Review] - Difference:', (aspectDiff * 100).toFixed(1), '%');
+        logger.log('Zone transformation check:');
+        logger.log('- Original aspect:', origAspect.toFixed(3));
+        logger.log('- OCR aspect:', ocrAspect.toFixed(3));
+        logger.log('- Difference:', (aspectDiff * 100).toFixed(1), '%');
 
         // If aspect ratios are very different (>10%), zones need transformation
         if (aspectDiff > 0.1) {
-          console.log('[Review] Transforming zones due to aspect ratio mismatch');
+          logger.log('Transforming zones due to aspect ratio mismatch');
 
           // Check if it looks like a 90-degree rotation
           const isRotated = (origAspect > 1 && ocrAspect < 1) || (origAspect < 1 && ocrAspect > 1);
 
           if (isRotated) {
-            console.log(
-              '[Review] Image appears rotated 90 degrees - transforming zone coordinates'
-            );
+            logger.log('Image appears rotated 90 degrees - transforming zone coordinates');
             // Transform zones for 90-degree rotation: (x, y) -> (y, 1-x-width)
             return rawZones.map((zone) => ({
               ...zone,
@@ -148,7 +151,7 @@ export default function ScanReviewScreen() {
 
         return rawZones;
       } catch (e) {
-        console.error('[Review] Error parsing zones:', e);
+        logger.error('Error parsing zones:', e);
         return [];
       }
     }
@@ -168,12 +171,12 @@ export default function ScanReviewScreen() {
 
     // If manual zones were defined in preview, use them for parsing
     if (previewZones.length > 0 && blocks.length > 0) {
-      console.log('[Review] Using manual zones for parsing');
-      console.log('[Review] Preview zones:', previewZones.length);
-      console.log('[Review] Blocks available:', blocks.length);
-      console.log('[Review] Dimensions:', dimensions);
-      console.log(
-        '[Review] First block sample:',
+      logger.log('Using manual zones for parsing');
+      logger.log('Preview zones:', previewZones.length);
+      logger.log('Blocks available:', blocks.length);
+      logger.log('Dimensions:', dimensions);
+      logger.log(
+        'First block sample:',
         blocks[0]
           ? {
               text: blocks[0].lines
@@ -204,7 +207,7 @@ export default function ScanReviewScreen() {
         ocrText || lines.join('\n'),
         dimensions
       );
-      console.log('[Review] Parse result:', {
+      logger.log('Parse result:', {
         storeName: result.storeName,
         itemsCount: result.items.length,
         total: result.total,
@@ -445,7 +448,7 @@ export default function ScanReviewScreen() {
       showSuccessToast(t('common.success'), t('scan.receiptSaved'));
       handleDone();
     } catch (error) {
-      console.error('Save error:', error);
+      logger.error('Save error:', error);
       showErrorToast(t('common.error'), t('errors.saveFailed'));
     } finally {
       setIsSaving(false);
@@ -608,7 +611,7 @@ export default function ScanReviewScreen() {
 
       showSuccessToast(t('common.success'), t('scan.templateDeleted'));
     } catch (error) {
-      console.error('Error deleting template:', error);
+      logger.error('Error deleting template:', error);
       showErrorToast(t('common.error'), t('errors.deleteFailed'));
     }
   };
@@ -1666,7 +1669,7 @@ export default function ScanReviewScreen() {
           </View>
 
           {/* Category List */}
-          <FlatList
+          <FlashList
             data={categoriesList}
             keyExtractor={(item) => item.id.toString()}
             renderItem={({ item }) => {
@@ -1800,7 +1803,7 @@ export default function ScanReviewScreen() {
           </View>
 
           {/* Currency List */}
-          <FlatList
+          <FlashList
             data={currencies}
             keyExtractor={(item) => item.code}
             renderItem={({ item }) => {

@@ -8,6 +8,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { showErrorToast } from '@/src/utils/toast';
+import { createScopedLogger } from '@/src/utils/debug';
 import { Image } from 'expo-image';
 import Svg, { Rect } from 'react-native-svg';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -18,16 +19,18 @@ import { useState, useEffect } from 'react';
 import { deleteReceiptFile, isPdfFile } from '@/src/services/storage';
 import { recognizeText } from '@/src/services/ocr';
 import { extractTextFromPdf } from '@/src/services/pdf';
-import { Button } from '@/src/components/ui';
+import { Button } from '@/src/components/ui/Button';
 import { ZONE_COLORS, type ZoneDefinition } from '@/src/types/zones';
 import Pdf from 'react-native-pdf';
+
+const logger = createScopedLogger('Preview');
 
 async function getImageDimensions(uri: string): Promise<{ width: number; height: number }> {
   return new Promise((resolve) => {
     RNImage.getSize(
       uri,
       (width, height) => {
-        console.log('[Preview] getImageDimensions success:', {
+        logger.log('getImageDimensions success:', {
           width,
           height,
           uri: uri.substring(0, 50),
@@ -36,7 +39,7 @@ async function getImageDimensions(uri: string): Promise<{ width: number; height:
       },
       (error) => {
         // Fallback if getSize fails
-        console.log('[Preview] getImageDimensions FAILED, using fallback:', error);
+        logger.log('getImageDimensions FAILED, using fallback:', error);
         resolve({ width: 1000, height: 1500 });
       }
     );
@@ -72,17 +75,17 @@ export default function ScanPreviewScreen() {
 
   // Parse defined zones from params (returned from zones screen)
   useEffect(() => {
-    console.log('[Preview] definedZonesParam received:', definedZonesParam ? 'yes' : 'no');
+    logger.log('definedZonesParam received:', definedZonesParam ? 'yes' : 'no');
     if (definedZonesParam) {
       try {
         const parsedZones = JSON.parse(definedZonesParam) as ZoneDefinition[];
-        console.log('[Preview] Parsed zones:', parsedZones.length);
+        logger.log('Parsed zones:', parsedZones.length);
         parsedZones.forEach((z, i) => {
-          console.log(`[Preview] Zone ${i}: type=${z.type}, bbox=${JSON.stringify(z.boundingBox)}`);
+          logger.log(`Zone ${i}: type=${z.type}, bbox=${JSON.stringify(z.boundingBox)}`);
         });
         setZones(parsedZones);
       } catch (e) {
-        console.error('[Preview] Error parsing defined zones:', e);
+        logger.error('Error parsing defined zones:', e);
       }
     }
   }, [definedZonesParam]);
@@ -118,7 +121,7 @@ export default function ScanPreviewScreen() {
       setDimensions(dims);
     }
 
-    console.log('[Preview] Going to zones with dimensions:', dims);
+    logger.log('Going to zones with dimensions:', dims);
     router.push({
       pathname: '/scan/zones',
       params: {
@@ -165,14 +168,14 @@ export default function ScanPreviewScreen() {
           // Prefer OCR-inferred dimensions for accurate zone matching
           const effectiveDims = result.inferredDimensions || imageDims;
 
-          console.log('[Preview] Processing image with:');
-          console.log('[Preview] - getImageDimensions:', imageDims);
-          console.log('[Preview] - OCR inferredDimensions:', result.inferredDimensions);
-          console.log('[Preview] - Using effectiveDims:', effectiveDims);
-          console.log('[Preview] - Zones:', zones.length);
-          console.log('[Preview] - Blocks from OCR:', result.blocks.length);
+          logger.log('Processing image with:');
+          logger.log('- getImageDimensions:', imageDims);
+          logger.log('- OCR inferredDimensions:', result.inferredDimensions);
+          logger.log('- Using effectiveDims:', effectiveDims);
+          logger.log('- Zones:', zones.length);
+          logger.log('- Blocks from OCR:', result.blocks.length);
           if (result.blocks.length > 0) {
-            console.log('[Preview] - First block bbox:', result.blocks[0].boundingBox);
+            logger.log('- First block bbox:', result.blocks[0].boundingBox);
           }
 
           router.push({
@@ -195,7 +198,7 @@ export default function ScanPreviewScreen() {
         }
       }
     } catch (error) {
-      console.error('Processing error:', error);
+      logger.error('Processing error:', error);
       showErrorToast(t('common.error'), t('errors.ocrFailed'));
     } finally {
       setIsProcessing(false);
@@ -243,14 +246,14 @@ export default function ScanPreviewScreen() {
               fitPolicy={0}
               spacing={0}
               onLoadComplete={(numberOfPages) => {
-                console.log(`[Preview] PDF loaded with ${numberOfPages} pages`);
+                logger.log(`PDF loaded with ${numberOfPages} pages`);
               }}
               onError={(error) => {
-                console.error('[Preview] PDF error:', error);
+                logger.error('PDF error:', error);
                 showErrorToast(t('common.error'), t('scan.pdfLoadError'));
               }}
               trustAllCerts={false}
-              activityIndicator={
+              renderActivityIndicator={() => (
                 <View className="flex-1 justify-center items-center">
                   <ActivityIndicator size="large" color={colors.primary} />
                   <Text
@@ -260,7 +263,7 @@ export default function ScanPreviewScreen() {
                     {t('scan.loadingPdf')}
                   </Text>
                 </View>
-              }
+              )}
             />
           </View>
         ) : (

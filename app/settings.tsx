@@ -3,16 +3,8 @@
  * Allows users to change app preferences
  */
 
-import {
-  View,
-  Text,
-  Pressable,
-  ScrollView,
-  Modal,
-  FlatList,
-  useColorScheme,
-  Alert,
-} from 'react-native';
+import { View, Text, Pressable, ScrollView, Modal, useColorScheme, Alert } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,7 +18,10 @@ import {
   deleteTemplate,
 } from '@/src/db/queries/storeParsingTemplates';
 import { showSuccessToast, showErrorToast } from '@/src/utils/toast';
+import { createScopedLogger } from '@/src/utils/debug';
 import type { ZoneDefinition } from '@/src/types/zones';
+
+const logger = createScopedLogger('Settings');
 
 type TemplateWithStore = {
   id: number;
@@ -232,7 +227,7 @@ export default function SettingsScreen() {
       const result = await getAllTemplatesWithStoreNames();
       setTemplates(result);
     } catch (error) {
-      console.error('Error loading templates:', error);
+      logger.error('Error loading templates:', error);
     }
   };
 
@@ -251,7 +246,7 @@ export default function SettingsScreen() {
               await loadTemplates();
               showSuccessToast(t('common.success'), t('scan.templateDeleted'));
             } catch (error) {
-              console.error('Error deleting template:', error);
+              logger.error('Error deleting template:', error);
               showErrorToast(t('common.error'), t('errors.deleteFailed'));
             }
           },
@@ -470,7 +465,7 @@ export default function SettingsScreen() {
             </Text>
             <View style={{ width: 24 }} />
           </View>
-          <FlatList
+          <FlashList
             data={currencies}
             keyExtractor={(item) => item.code}
             renderItem={({ item }: { item: Currency }) => {
@@ -582,7 +577,7 @@ export default function SettingsScreen() {
               </Text>
             </View>
           ) : (
-            <FlatList
+            <FlashList
               data={templates}
               keyExtractor={(item) => item.id.toString()}
               renderItem={({ item }) => (

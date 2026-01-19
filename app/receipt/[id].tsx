@@ -25,14 +25,17 @@ import {
 } from '../../src/db/queries/items';
 import { getCategories } from '../../src/db/queries/categories';
 import { findOrCreateStore } from '../../src/db/queries/stores';
-import { ReceiptSummary } from '../../src/components/receipt';
-import { ConfirmationModal } from '../../src/components/ui';
+import { ReceiptSummary } from '../../src/components/receipt/ReceiptSummary';
+import { ConfirmationModal } from '../../src/components/ui/ConfirmationModal';
 import { useFormatPrice } from '../../src/store/preferences';
+import { createScopedLogger } from '../../src/utils/debug';
 import { showSuccessToast, showErrorToast } from '../../src/utils/toast';
 import type { Receipt } from '../../src/db/schema/receipts';
 import type { Store } from '../../src/db/schema/stores';
 import type { Item } from '../../src/db/schema/items';
 import type { Category } from '../../src/db/schema/categories';
+
+const logger = createScopedLogger('ReceiptDetail');
 
 type ItemWithCategory = {
   item: Item;
@@ -92,7 +95,7 @@ export default function ReceiptDetailScreen() {
         setCategoriesState(cats);
       }
     } catch (error) {
-      console.error('Failed to load receipt:', error);
+      logger.error('Failed to load receipt:', error);
     } finally {
       setIsLoading(false);
     }
@@ -178,7 +181,7 @@ export default function ReceiptDetailScreen() {
       setIsEditing(false);
       showSuccessToast(t('receipt.changesSaved'));
     } catch (error) {
-      console.error('Failed to save changes:', error);
+      logger.error('Failed to save changes:', error);
       showErrorToast(t('common.error'), t('errors.saveFailed'));
     } finally {
       setIsSaving(false);
@@ -198,7 +201,7 @@ export default function ReceiptDetailScreen() {
       await deleteReceipt(receipt.id);
       router.back();
     } catch (error) {
-      console.error('Failed to delete receipt:', error);
+      logger.error('Failed to delete receipt:', error);
       showErrorToast(t('common.error'), t('errors.deleteFailed'));
     } finally {
       setIsDeleting(false);

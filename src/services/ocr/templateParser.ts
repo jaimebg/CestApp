@@ -5,6 +5,9 @@ import type {
   StoreParsingTemplate,
   TemplateDimensions,
 } from '../../db/schema/storeParsingTemplates';
+import { createScopedLogger } from '../../utils/debug';
+
+const logger = createScopedLogger('TemplateParser');
 
 export interface OcrBlockWithNormalized extends OcrBlock {
   normalizedBoundingBox: NormalizedBoundingBox;
@@ -92,20 +95,20 @@ function inferImageDimensionsFromBlocks(
   const wouldOverflow = maxX > providedDimensions.width || maxY > providedDimensions.height;
 
   if (wouldOverflow) {
-    console.log('[TemplateParser] Dimension mismatch detected!');
-    console.log('[TemplateParser] Provided dimensions:', providedDimensions);
-    console.log('[TemplateParser] Inferred from OCR blocks:', {
+    logger.log('Dimension mismatch detected!');
+    logger.log('Provided dimensions:', providedDimensions);
+    logger.log('Inferred from OCR blocks:', {
       width: inferredWidth,
       height: inferredHeight,
     });
-    console.log('[TemplateParser] Max OCR bounds:', { maxX, maxY });
+    logger.log('Max OCR bounds:', { maxX, maxY });
     return { width: inferredWidth, height: inferredHeight };
   }
 
   // If aspect ratios are very different, prefer inferred
   const aspectDiff = Math.abs(providedAspect - inferredAspect) / providedAspect;
   if (aspectDiff > 0.2) {
-    console.log('[TemplateParser] Aspect ratio mismatch - using inferred dimensions');
+    logger.log('Aspect ratio mismatch - using inferred dimensions');
     return { width: inferredWidth, height: inferredHeight };
   }
 
@@ -157,13 +160,13 @@ function isBlockInZone(
   const zb = zone.boundingBox;
 
   if (debug) {
-    console.log(`[isBlockInZone] Block bbox:`, bb);
-    console.log(`[isBlockInZone] Zone bbox:`, zb);
+    logger.log(`[isBlockInZone] Block bbox:`, bb);
+    logger.log(`[isBlockInZone] Zone bbox:`, zb);
   }
 
   // Method 1: Check if block overlaps with zone (at least 30%)
   if (rectanglesOverlap(bb, zb, 0.3)) {
-    if (debug) console.log(`[isBlockInZone] Match via 30% overlap`);
+    if (debug) logger.log(`[isBlockInZone] Match via 30% overlap`);
     return true;
   }
 
@@ -177,7 +180,7 @@ function isBlockInZone(
     blockCenterY >= zb.y &&
     blockCenterY <= zb.y + zb.height
   ) {
-    if (debug) console.log(`[isBlockInZone] Match via center point`);
+    if (debug) logger.log(`[isBlockInZone] Match via center point`);
     return true;
   }
 
@@ -200,7 +203,7 @@ function getBlocksInZone(
 ): OcrBlockWithNormalized[] {
   const matches = blocks.filter((block) => isBlockInZone(block, zone, debug));
   if (debug) {
-    console.log(
+    logger.log(
       `[getBlocksInZone] Zone ${zone.type}: checked ${blocks.length} blocks, found ${matches.length} matches`
     );
   }
@@ -323,10 +326,10 @@ function correlateProductsWithPrices(
 ): ParsedItem[] {
   const items: ParsedItem[] = [];
 
-  console.log('[correlateProducts] Starting correlation');
-  console.log('[correlateProducts] Product blocks:', productBlocks.length);
-  console.log('[correlateProducts] Price/all blocks:', priceBlocks.length);
-  console.log('[correlateProducts] imageHeight for normalization:', imageHeight);
+  logger.log('[correlateProducts] Starting correlation');
+  logger.log('[correlateProducts] Product blocks:', productBlocks.length);
+  logger.log('[correlateProducts] Price/all blocks:', priceBlocks.length);
+  logger.log('[correlateProducts] imageHeight for normalization:', imageHeight);
 
   // Extract lines with their normalized Y positions
   const productLines = productBlocks.flatMap((block) =>
@@ -344,10 +347,10 @@ function correlateProductsWithPrices(
     }))
   );
 
-  console.log('[correlateProducts] Product lines:', productLines.length);
-  console.log('[correlateProducts] Price lines:', priceLines.length);
+  logger.log('[correlateProducts] Product lines:', productLines.length);
+  logger.log('[correlateProducts] Price lines:', priceLines.length);
   if (productLines.length > 0) {
-    console.log(
+    logger.log(
       '[correlateProducts] First few product lines:',
       productLines.slice(0, 3).map((l) => ({ text: l.text.substring(0, 30), y: l.y.toFixed(3) }))
     );
@@ -357,9 +360,9 @@ function correlateProductsWithPrices(
 
   // Find all price-like lines
   const validPriceLines = priceLines.filter((p) => pricePattern.test(p.text));
-  console.log('[correlateProducts] Valid price lines found:', validPriceLines.length);
+  logger.log('[correlateProducts] Valid price lines found:', validPriceLines.length);
   if (validPriceLines.length > 0) {
-    console.log(
+    logger.log(
       '[correlateProducts] First few price lines:',
       validPriceLines.slice(0, 5).map((l) => ({ text: l.text, y: l.y.toFixed(3) }))
     );
@@ -383,7 +386,7 @@ function correlateProductsWithPrices(
     if (closestPrice && closestPrice.distance < 0.1) {
       const priceValue = parsePrice(closestPrice.text, decimalSeparator);
       if (priceValue && priceValue > 0) {
-        console.log(
+        logger.log(
           `[correlateProducts] Matched "${product.text}" with price ${priceValue} (distance: ${closestPrice.distance.toFixed(3)})`
         );
         items.push({
@@ -396,13 +399,13 @@ function correlateProductsWithPrices(
         });
       }
     } else if (closestPrice) {
-      console.log(
+      logger.log(
         `[correlateProducts] No match for "${product.text}" - closest price distance: ${closestPrice.distance.toFixed(3)}`
       );
     }
   }
 
-  console.log(`[correlateProducts] Total items matched: ${items.length}`);
+  logger.log(`[correlateProducts] Total items matched: ${items.length}`);
   return items;
 }
 
@@ -412,14 +415,14 @@ export function parseWithTemplate(
   rawText: string,
   imageDimensions: { width: number; height: number }
 ): ParsedReceipt {
-  console.log('[TemplateParser] Starting parseWithTemplate');
-  console.log('[TemplateParser] Provided image dimensions:', imageDimensions);
-  console.log('[TemplateParser] Number of blocks:', blocks.length);
-  console.log('[TemplateParser] Number of zones:', template.zones.length);
+  logger.log('Starting parseWithTemplate');
+  logger.log('Provided image dimensions:', imageDimensions);
+  logger.log('Number of blocks:', blocks.length);
+  logger.log('Number of zones:', template.zones.length);
 
   // Infer actual dimensions from OCR blocks
   const inferredDims = inferImageDimensionsFromBlocks(blocks, imageDimensions);
-  console.log('[TemplateParser] Inferred dimensions from OCR:', inferredDims);
+  logger.log('Inferred dimensions from OCR:', inferredDims);
 
   // Check for potential rotation (aspect ratio inversion)
   const providedAspect = imageDimensions.width / imageDimensions.height;
@@ -428,9 +431,9 @@ export function parseWithTemplate(
     (providedAspect > 1 && inferredAspect < 1) || (providedAspect < 1 && inferredAspect > 1);
 
   if (isLikelyRotated) {
-    console.log('[TemplateParser] WARNING: Image appears to be rotated! Aspect ratios inverted.');
-    console.log(
-      '[TemplateParser] Provided aspect:',
+    logger.warn('WARNING: Image appears to be rotated! Aspect ratios inverted.');
+    logger.log(
+      'Provided aspect:',
       providedAspect.toFixed(2),
       'Inferred aspect:',
       inferredAspect.toFixed(2)
@@ -439,8 +442,8 @@ export function parseWithTemplate(
 
   const normalizedBlocks = normalizeBlocks(blocks, imageDimensions);
 
-  console.log(
-    '[TemplateParser] Normalized blocks sample:',
+  logger.log(
+    'Normalized blocks sample:',
     normalizedBlocks.slice(0, 2).map((b) => ({
       text: b.lines
         .map((l) => l.text)
@@ -457,8 +460,8 @@ export function parseWithTemplate(
     imageDimensions
   );
 
-  console.log(
-    '[TemplateParser] Zones after scaling:',
+  logger.log(
+    'Zones after scaling:',
     scaledZones.map((z) => ({
       type: z.type,
       bbox: z.boundingBox,
@@ -480,9 +483,9 @@ export function parseWithTemplate(
   let items: ParsedItem[] = [];
 
   // Log all blocks for debugging
-  console.log('[TemplateParser] All normalized blocks:');
+  logger.log('All normalized blocks:');
   normalizedBlocks.forEach((block, i) => {
-    console.log(
+    logger.log(
       `  Block ${i}: bbox=${JSON.stringify(block.normalizedBoundingBox)}, text="${block.lines
         .map((l) => l.text)
         .join(' ')
@@ -491,13 +494,11 @@ export function parseWithTemplate(
   });
 
   for (const zone of zones) {
-    console.log(`[TemplateParser] Processing zone ${zone.type} with bbox:`, zone.boundingBox);
+    logger.log(`Processing zone ${zone.type} with bbox:`, zone.boundingBox);
     const zoneBlocks = getBlocksInZone(normalizedBlocks, zone, true);
     const textLines = extractTextFromZone(normalizedBlocks, zone, imageDimensions);
-    console.log(
-      `[TemplateParser] Zone ${zone.type}: ${zoneBlocks.length} blocks, ${textLines.length} lines`
-    );
-    console.log(`[TemplateParser] Zone ${zone.type} lines:`, textLines.slice(0, 5));
+    logger.log(`Zone ${zone.type}: ${zoneBlocks.length} blocks, ${textLines.length} lines`);
+    logger.log(`Zone ${zone.type} lines:`, textLines.slice(0, 5));
 
     switch (zone.type) {
       case 'store_name':
@@ -536,7 +537,7 @@ export function parseWithTemplate(
         } else {
           // No explicit prices zone - try to find prices anywhere in the receipt
           // by looking for price-like blocks that align horizontally with products
-          console.log('[TemplateParser] No prices zone - auto-detecting prices from all blocks');
+          logger.log('No prices zone - auto-detecting prices from all blocks');
           items = correlateProductsWithPrices(
             zoneBlocks,
             normalizedBlocks, // Search all blocks for prices
