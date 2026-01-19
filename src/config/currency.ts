@@ -161,36 +161,71 @@ export const CURRENCIES: Record<string, Currency> = {
 };
 
 const LOCALE_CURRENCY_MAP: Record<string, string> = {
+  // North America
   US: 'USD',
   CA: 'CAD',
   MX: 'MXN',
+  // Europe
   GB: 'GBP',
   DE: 'EUR',
   FR: 'EUR',
   IT: 'EUR',
   ES: 'EUR',
+  IC: 'EUR', // Canary Islands (Spain)
   NL: 'EUR',
   BE: 'EUR',
   AT: 'EUR',
   PT: 'EUR',
   IE: 'EUR',
+  GR: 'EUR',
+  FI: 'EUR',
+  LU: 'EUR',
+  MT: 'EUR',
+  CY: 'EUR',
+  SK: 'EUR',
+  SI: 'EUR',
+  EE: 'EUR',
+  LV: 'EUR',
+  LT: 'EUR',
   CH: 'CHF',
+  // Asia
   JP: 'JPY',
   CN: 'CNY',
   KR: 'KRW',
+  // Oceania
   AU: 'AUD',
+  NZ: 'AUD',
+  // South Asia
   IN: 'INR',
+  // Latin America
   BR: 'BRL',
   AR: 'ARS',
   CO: 'COP',
   CL: 'CLP',
   PE: 'PEN',
+  VE: 'USD', // Venezuela uses USD widely due to inflation
+  EC: 'USD', // Ecuador uses USD
+  UY: 'USD',
+  PY: 'USD',
+  BO: 'USD',
+  // Central America & Caribbean
+  PA: 'USD', // Panama uses USD
+  CR: 'USD',
+  GT: 'USD',
+  HN: 'USD',
+  SV: 'USD', // El Salvador uses USD
+  NI: 'USD',
+  DO: 'USD',
+  CU: 'USD',
+  PR: 'USD', // Puerto Rico (US territory)
 };
 
+// Language fallback when region is unknown
+// Uses the currency of the language's country of origin
 const LANGUAGE_CURRENCY_MAP: Record<string, string> = {
   en: 'USD',
-  es: 'MXN',
-  pt: 'BRL',
+  es: 'EUR', // Spanish originates from Spain (EUR)
+  pt: 'EUR', // Portuguese originates from Portugal (EUR)
   fr: 'EUR',
   de: 'EUR',
   it: 'EUR',
