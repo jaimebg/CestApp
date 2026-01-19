@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,6 @@ import {
   Modal,
   KeyboardAvoidingView,
   Platform,
-  useColorScheme,
   useWindowDimensions,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
@@ -25,9 +24,14 @@ import { Button } from '@/src/components/ui/Button';
 import { Card } from '@/src/components/ui/Card';
 import { Badge } from '@/src/components/ui/Badge';
 import { parseReceipt, ParsedReceipt, ParsedItem, ParserOptions } from '@/src/services/ocr/parser';
-import { parseWithTemplate, shouldUseTemplate } from '@/src/services/ocr/templateParser';
+import {
+  parseWithTemplate,
+  shouldUseTemplate,
+  parseWithSpatialCorrelation,
+} from '@/src/services/ocr/templateParser';
 import type { OcrBlock } from '@/src/services/ocr';
 import { useFormatPrice, usePreferencesStore } from '@/src/store/preferences';
+import { useAppColors } from '@/src/hooks/useAppColors';
 import { getSupportedCurrencies } from '@/src/config/currency';
 import { findOrCreateStore, getStoreByNormalizedName } from '@/src/db/queries/stores';
 import { createReceipt } from '@/src/db/queries/receipts';
@@ -55,6 +59,7 @@ export default function ScanReviewScreen() {
     originalImageDimensions,
     isPdf,
     manualZones,
+    detectedTotal: detectedTotalParam,
   } = useLocalSearchParams<{
     uri: string;
     ocrText?: string;
@@ -64,41 +69,41 @@ export default function ScanReviewScreen() {
     originalImageDimensions?: string; // Original dimensions used for zone drawing
     isPdf?: string;
     manualZones?: string; // Zones defined manually in preview screen
+    detectedTotal?: string; // Total detected from auto zone detection (bypasses zone issues)
   }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const colors = useAppColors();
   const { formatPrice, currency } = useFormatPrice();
   const dateFormat = usePreferencesStore((state) => state.dateFormat);
   const decimalSeparator = usePreferencesStore((state) => state.decimalSeparator);
 
-  const colors = {
-    background: isDark ? '#1A1918' : '#FFFDE1',
-    surface: isDark ? '#2D2A26' : '#FFFFFF',
-    text: isDark ? '#FFFDE1' : '#2D2A26',
-    textSecondary: isDark ? '#B8B4A9' : '#6B6560',
-    border: isDark ? '#4A4640' : '#E8E4D9',
-    primary: '#93BD57',
-    primaryDark: '#7AA042',
-    accent: '#FBE580',
-    error: isDark ? '#C94444' : '#980404',
-  };
-
-  const lines: string[] = ocrLines ? JSON.parse(ocrLines) : [];
-  const blocks: OcrBlock[] = ocrBlocks ? JSON.parse(ocrBlocks) : [];
-  const dimensions = imageDimensions ? JSON.parse(imageDimensions) : { width: 1000, height: 1500 };
-  const origDimensions = originalImageDimensions ? JSON.parse(originalImageDimensions) : dimensions;
+  // Memoize parsed JSON to avoid creating new references on every render
+  const lines = useMemo<string[]>(() => (ocrLines ? JSON.parse(ocrLines) : []), [ocrLines]);
+  const blocks = useMemo<OcrBlock[]>(() => (ocrBlocks ? JSON.parse(ocrBlocks) : []), [ocrBlocks]);
+  const dimensions = useMemo(
+    () => (imageDimensions ? JSON.parse(imageDimensions) : { width: 1000, height: 1500 }),
+    [imageDimensions]
+  );
+  const origDimensions = useMemo(
+    () => (originalImageDimensions ? JSON.parse(originalImageDimensions) : dimensions),
+    [originalImageDimensions, dimensions]
+  );
   const hasOcrResult = ocrText && ocrText.length > 0;
 
-  // Debug: Log what dimensions we received
-  logger.log('Received dimensions (OCR-effective):', dimensions);
-  logger.log('Original dimensions (zone-drawing):', origDimensions);
-  logger.log('Raw imageDimensions param:', imageDimensions);
-  if (blocks.length > 0) {
-    logger.log('First OCR block raw bbox:', blocks[0].boundingBox);
-  }
+  const hasLoggedDebugInfo = useRef(false);
+  useEffect(() => {
+    if (hasLoggedDebugInfo.current) return;
+    hasLoggedDebugInfo.current = true;
+
+    logger.log('Dimensions received:', {
+      effective: dimensions,
+      original: origDimensions,
+      rawParam: imageDimensions,
+      firstBlockBbox: blocks[0]?.boundingBox ?? null,
+    });
+  }, [dimensions, origDimensions, imageDimensions, blocks]);
 
   // Parse manual zones from preview screen and transform if aspect ratios differ
   const previewZones: ZoneDefinition[] = useMemo(() => {
@@ -166,8 +171,16 @@ export default function ScanReviewScreen() {
     [dateFormat, decimalSeparator]
   );
 
+  const detectedTotal = useMemo((): number | null => {
+    if (!detectedTotalParam) return null;
+    const value = parseFloat(detectedTotalParam);
+    return isNaN(value) ? null : value;
+  }, [detectedTotalParam]);
+
   const initialParsedData = useMemo(() => {
     if (lines.length === 0) return null;
+
+    let result: ParsedReceipt | null = null;
 
     // If manual zones were defined in preview, use them for parsing
     if (previewZones.length > 0 && blocks.length > 0) {
@@ -196,29 +209,72 @@ export default function ScanReviewScreen() {
         parsingHints: null,
         sampleImagePath: null,
         templateImageDimensions: dimensions,
+        fingerprint: null,
         confidence: 70,
         useCount: 0,
+        successCount: 0,
+        failureCount: 0,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      const result = parseWithTemplate(
-        blocks,
-        manualTemplate,
-        ocrText || lines.join('\n'),
-        dimensions
-      );
+      result = parseWithTemplate(blocks, manualTemplate, ocrText || lines.join('\n'), dimensions);
       logger.log('Parse result:', {
         storeName: result.storeName,
         itemsCount: result.items.length,
         total: result.total,
         confidence: result.confidence,
       });
-      return result;
+    } else if (blocks.length > 0 && dimensions.width > 0 && dimensions.height > 0) {
+      // Use spatial correlation if blocks with position data are available
+      logger.log('Blocks available for spatial parsing:', blocks.length);
+      logger.log('Using spatial correlation parsing');
+      result = parseWithSpatialCorrelation(blocks, ocrText || lines.join('\n'), dimensions);
+      logger.log('Spatial parse result:', {
+        storeName: result.storeName,
+        itemsCount: result.items.length,
+        total: result.total,
+        confidence: result.confidence,
+      });
+    } else {
+      // Fallback to standard text-based parsing
+      result = parseReceipt(lines, parserOptions);
     }
 
-    // Otherwise use standard parsing
-    return parseReceipt(lines, parserOptions);
-  }, [lines, parserOptions, previewZones, blocks, ocrText, dimensions]);
+    // Apply detected total from auto zone detection if zone-based extraction failed
+    // This bypasses coordinate transformation issues between OCR and display coordinates
+    if (result && detectedTotal !== null) {
+      const parsedTotal = result.total || 0;
+      const itemsSum = result.items.reduce((sum, item) => sum + item.totalPrice, 0);
+
+      // Use detected total if:
+      // 1. Parsed total is null/0 (extraction failed)
+      // 2. Parsed total is suspiciously small (likely wrong value from item line)
+      // 3. Detected total is closer to items sum than parsed total
+      const shouldUseDetectedTotal =
+        parsedTotal === 0 ||
+        parsedTotal === null ||
+        (parsedTotal < 10 && detectedTotal > 10) || // Small parsed total, larger detected
+        (itemsSum > 0 && Math.abs(detectedTotal - itemsSum) < Math.abs(parsedTotal - itemsSum));
+
+      if (shouldUseDetectedTotal) {
+        logger.log('Overriding total with detected value:', {
+          parsedTotal,
+          detectedTotal,
+          itemsSum,
+          reason: parsedTotal === 0 ? 'parsed was 0' : 'detected closer to items sum',
+        });
+        result = { ...result, total: detectedTotal };
+      } else {
+        logger.log('Keeping parsed total:', {
+          parsedTotal,
+          detectedTotal,
+          itemsSum,
+        });
+      }
+    }
+
+    return result;
+  }, [lines, parserOptions, previewZones, blocks, ocrText, dimensions, detectedTotal]);
 
   const setCurrency = usePreferencesStore((state) => state.setCurrency);
   const currencies = useMemo(() => getSupportedCurrencies(), []);
@@ -371,13 +427,35 @@ export default function ScanReviewScreen() {
   const canSave = !totalsDiffer && parsedData && parsedData.items.length > 0;
 
   const handleDone = () => {
+    // Close all modals first to prevent SafeAreaProvider crash on Android
+    // The crash occurs when SafeAreaView is unmounted during the native render cycle
+    setShowStoreModal(false);
+    setShowDateModal(false);
+    setShowItemModal(false);
+    setShowCategoryModal(false);
+    setShowTotalModal(false);
+    setShowCurrencyModal(false);
+    setShowZonesPreview(false);
+
+    // Wait for modals to close before dismissing navigation
     setTimeout(() => {
       router.dismissAll();
-    }, 100);
+    }, 150);
   };
 
   const handleBack = () => {
-    router.back();
+    // Close all modals first to prevent SafeAreaProvider crash on Android
+    setShowStoreModal(false);
+    setShowDateModal(false);
+    setShowItemModal(false);
+    setShowCategoryModal(false);
+    setShowTotalModal(false);
+    setShowCurrencyModal(false);
+    setShowZonesPreview(false);
+
+    setTimeout(() => {
+      router.back();
+    }, 100);
   };
 
   const handleSave = async () => {

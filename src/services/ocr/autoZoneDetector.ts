@@ -6,6 +6,7 @@
 import type { OcrBlock } from './index';
 import type { ZoneDefinition, ZoneType, NormalizedBoundingBox } from '../../types/zones';
 import { createScopedLogger } from '../../utils/debug';
+import { detectRegionFromText, type RegionalPreset } from '../../config/regionalPresets';
 
 const logger = createScopedLogger('AutoZoneDetector');
 
@@ -42,15 +43,25 @@ const SKIP_KEYWORDS = [
   'receipt',
   'ticket',
   'recibo',
+  'factura',
   'phone',
   'tel',
+  'telefono',
+  'teléfono',
   'address',
+  'direccion',
+  'dirección',
   'cashier',
+  'cajero',
   'terminal',
   'register',
+  'caja',
   'member',
+  'socio',
   'client',
+  'cliente',
   'welcome',
+  'bienvenido',
   'thank',
   'gracias',
   'documento',
@@ -70,7 +81,66 @@ const SKIP_KEYWORDS = [
   'cash',
   'credit',
   'debit',
+  'credito',
+  'crédito',
+  'debito',
+  'débito',
+  // Company/legal info
+  'c.i.f',
+  'cif',
+  'n.i.f',
+  'nif',
+  's.l.',
+  's.a.',
+  'supermercados',
+  'hipermercados',
+  // Store codes and addresses
+  'www.',
+  'http',
+  '@',
+  'email',
+  'correo',
 ];
+
+// Keywords that indicate header/company info (not products)
+const HEADER_KEYWORDS = [
+  'supermercados',
+  'hipermercados',
+  's.l.',
+  's.a.',
+  'sociedad',
+  'empresa',
+  'tienda',
+  'sucursal',
+  'centro',
+  'comercial',
+  'avda',
+  'avenida',
+  'calle',
+  'c/',
+  'plaza',
+  'polígono',
+  'codigo postal',
+  'c.p.',
+];
+
+/**
+ * Check if text contains a known store name from regional preset
+ * Returns the matched store name or null
+ */
+function findKnownStoreName(text: string, preset: RegionalPreset | null): string | null {
+  if (!preset?.commonStores) return null;
+
+  const upper = text.toUpperCase();
+
+  for (const storeName of preset.commonStores) {
+    if (upper.includes(storeName)) {
+      return storeName;
+    }
+  }
+
+  return null;
+}
 
 /**
  * Normalize OCR blocks to 0-1 coordinate space
@@ -113,6 +183,28 @@ function normalizeBlocks(
 function containsPrice(text: string): boolean {
   // Match various price formats: 12.34, 12,34, $12.34, €12,34
   return /[\d]+[.,]\d{2}(?!\d)/.test(text);
+}
+
+/**
+ * Extract price value from text (assumes comma as decimal separator for Spain)
+ */
+function extractPriceValue(text: string): number | null {
+  // Match price pattern with comma decimal (European format)
+  const commaMatch = text.match(/[\d.]+,\d{2}/);
+  if (commaMatch) {
+    const normalized = commaMatch[0].replace(/\./g, '').replace(',', '.');
+    const value = parseFloat(normalized);
+    return isNaN(value) ? null : value;
+  }
+
+  // Match price pattern with dot decimal (US format)
+  const dotMatch = text.match(/\d+\.\d{2}/);
+  if (dotMatch) {
+    const value = parseFloat(dotMatch[0]);
+    return isNaN(value) ? null : value;
+  }
+
+  return null;
 }
 
 /**
@@ -160,8 +252,124 @@ function isProductName(text: string): boolean {
   if (isStandalonePrice(cleaned)) return false;
   if (shouldSkipLine(cleaned)) return false;
   if (/^[\d\s\-\/\.\:]+$/.test(cleaned)) return false;
-  // Must have at least 2 letters
-  return /[a-zA-Z]{2,}/.test(cleaned);
+  // Must have at least 2 letters (Unicode-aware)
+  return hasMinLetters(cleaned, 2);
+}
+
+/**
+ * Check if text is a header/company info line (not a product)
+ */
+function isHeaderLine(text: string): boolean {
+  const lower = text.toLowerCase();
+  return HEADER_KEYWORDS.some((kw) => lower.includes(kw));
+}
+
+/**
+ * Check if text contains letters (including Unicode/accented characters)
+ */
+function hasLetters(text: string): boolean {
+  // Match any letter including accented characters, ñ, etc.
+  return /\p{L}/u.test(text);
+}
+
+/**
+ * Check if text has at least N letters
+ */
+function hasMinLetters(text: string, minCount: number): boolean {
+  const matches = text.match(/\p{L}/gu);
+  return matches !== null && matches.length >= minCount;
+}
+
+/**
+ * Check if a line looks like an item line (product name + price)
+ * This handles inline layouts where product and price are on the same line
+ */
+function isItemLine(text: string): boolean {
+  const cleaned = text.trim();
+
+  // Must have some minimum length
+  if (cleaned.length < 5) return false;
+
+  // Skip if it's a header/skip line
+  if (shouldSkipLine(cleaned)) return false;
+  if (isHeaderLine(cleaned)) return false;
+  if (isTotalLine(cleaned)) return false;
+
+  // Must have a price pattern
+  const hasPrice = containsPrice(cleaned);
+  if (!hasPrice) return false;
+
+  // Must not be a standalone price
+  if (isStandalonePrice(cleaned)) return false;
+
+  // Must have some text (letters) before or around the price
+  // Use Unicode-aware letter matching for Spanish/accented characters
+  const hasText = hasMinLetters(cleaned, 2);
+
+  // Check for pattern: text followed by price at the end
+  // Common patterns: "PRODUCT NAME 1,99" or "PRODUCT NAME 1.99"
+  // Use Unicode letter class \p{L} for international support
+  const hasInlinePrice = /\p{L}.+\s+\d+[.,]\d{2}/u.test(cleaned);
+
+  return hasText && (hasInlinePrice || hasPrice);
+}
+
+/**
+ * Extract the Y range where item lines appear
+ * Returns the start and end Y positions of the items section
+ */
+function findItemsYRange(
+  blocks: NormalizedBlock[],
+  totalsStartY: number
+): { startY: number; endY: number } | null {
+  const itemLines: { y: number; text: string }[] = [];
+  let linesChecked = 0;
+  let linesWithPrice = 0;
+
+  for (const block of blocks) {
+    for (const line of block.lines) {
+      linesChecked++;
+
+      // Skip lines in totals section
+      if (line.normalizedY >= totalsStartY) continue;
+
+      // Log lines that have prices for debugging
+      if (containsPrice(line.text)) {
+        linesWithPrice++;
+        const isItem = isItemLine(line.text);
+        logger.log(`Line with price: "${line.text.substring(0, 50)}" -> isItemLine: ${isItem}`);
+      }
+
+      if (isItemLine(line.text)) {
+        itemLines.push({ y: line.normalizedY, text: line.text });
+      }
+    }
+  }
+
+  logger.log(
+    `Checked ${linesChecked} lines, ${linesWithPrice} with prices, ${itemLines.length} detected as items`
+  );
+
+  if (itemLines.length === 0) {
+    return null;
+  }
+
+  // Sort by Y position
+  itemLines.sort((a, b) => a.y - b.y);
+
+  // Find the first and last item lines
+  const startY = itemLines[0].y;
+  const endY = itemLines[itemLines.length - 1].y;
+
+  logger.log(
+    `Found ${itemLines.length} item lines from Y=${startY.toFixed(3)} to Y=${endY.toFixed(3)}`
+  );
+  if (itemLines.length > 0) {
+    logger.log('First item line:', itemLines[0].text.substring(0, 40));
+    logger.log('Last item line:', itemLines[itemLines.length - 1].text.substring(0, 40));
+  }
+
+  return { startY, endY };
 }
 
 /**
@@ -209,6 +417,8 @@ function mergeBoundingBoxes(boxes: NormalizedBoundingBox[]): NormalizedBoundingB
 export interface AutoDetectedZones {
   zones: ZoneDefinition[];
   confidence: number;
+  /** Total value detected directly from OCR (bypasses zone extraction issues) */
+  detectedTotal: number | null;
   debug: {
     storeNameFound: boolean;
     dateFound: boolean;
@@ -235,10 +445,21 @@ export function autoDetectZones(
   logger.log('Blocks:', blocks.length);
   logger.log('Dimensions:', dimensions);
 
+  // Log sample blocks to see structure
+  if (blocks.length > 0) {
+    const sampleBlocks = blocks.slice(0, 5);
+    logger.log('Sample blocks:');
+    sampleBlocks.forEach((block, i) => {
+      const lines = block.lines.map((l) => l.text).join(' | ');
+      logger.log(`  Block ${i}: "${lines.substring(0, 80)}"`);
+    });
+  }
+
   if (blocks.length === 0) {
     return {
       zones: [],
       confidence: 0,
+      detectedTotal: null,
       debug: {
         storeNameFound: false,
         dateFound: false,
@@ -251,6 +472,7 @@ export function autoDetectZones(
 
   const normalizedBlocks = normalizeBlocks(blocks, dimensions);
   const zones: ZoneDefinition[] = [];
+  let detectedTotal: number | null = null;
   const debug = {
     storeNameFound: false,
     dateFound: false,
@@ -264,18 +486,44 @@ export function autoDetectZones(
     (a, b) => a.normalizedBoundingBox.y - b.normalizedBoundingBox.y
   );
 
+  // Detect regional preset from all text
+  const allText = sortedBlocks.map((b) => b.text).join('\n');
+  const preset = detectRegionFromText(allText);
+
   // 1. Detect store name (usually the first text block at the top)
-  for (const block of sortedBlocks.slice(0, 3)) {
+  // First, try to find a block with a known store name (prioritize this)
+  let storeNameBlock: NormalizedBlock | null = null;
+  let foundStoreName: string | null = null;
+
+  for (const block of sortedBlocks.slice(0, 5)) {
     const text = block.text.trim();
-    if (text.length >= 3 && text.length <= 60 && /[a-zA-Z]{2,}/.test(text)) {
-      // Check it's not a date or skip line
-      if (!containsDate(text) && !shouldSkipLine(text)) {
-        zones.push(createZone('store_name', block.normalizedBoundingBox, 0.01));
-        debug.storeNameFound = true;
-        logger.log('Found store name:', text.substring(0, 30));
-        break;
+    const knownStore = findKnownStoreName(text, preset);
+    if (knownStore) {
+      storeNameBlock = block;
+      foundStoreName = knownStore;
+      logger.log('Found known store name:', knownStore, 'in:', text.substring(0, 40));
+      break;
+    }
+  }
+
+  // If no known store found, use heuristic (first valid text block)
+  if (!storeNameBlock) {
+    for (const block of sortedBlocks.slice(0, 3)) {
+      const text = block.text.trim();
+      if (text.length >= 3 && text.length <= 60 && hasMinLetters(text, 2)) {
+        // Check it's not a date or skip line
+        if (!containsDate(text) && !shouldSkipLine(text)) {
+          storeNameBlock = block;
+          logger.log('Found store name (heuristic):', text.substring(0, 30));
+          break;
+        }
       }
     }
+  }
+
+  if (storeNameBlock) {
+    zones.push(createZone('store_name', storeNameBlock.normalizedBoundingBox, 0.01));
+    debug.storeNameFound = true;
   }
 
   // 2. Detect date zone
@@ -288,45 +536,181 @@ export function autoDetectZones(
     }
   }
 
-  // 3. Detect total zone (look for "total" keyword with price)
+  // 3. Detect total zone (look for total keywords with price)
+  // Use regional preset keywords if available
+  const totalKeywords = preset?.keywords?.total || TOTAL_KEYWORDS;
+
+  // First, try to find a block with both total keyword AND price
   for (let i = sortedBlocks.length - 1; i >= 0; i--) {
     const block = sortedBlocks[i];
+    const upper = block.text.toUpperCase();
     const lower = block.text.toLowerCase();
-    if (lower.includes('total') && !lower.includes('sub') && containsPrice(block.text)) {
-      zones.push(createZone('total', block.normalizedBoundingBox, 0.01));
+
+    // Check for any total keyword (from preset or default)
+    const hasTotalKeyword = totalKeywords.some((kw) => upper.includes(kw.toUpperCase()));
+    const isSubtotal = lower.includes('sub');
+    const hasPrice = containsPrice(block.text);
+
+    if (hasTotalKeyword && !isSubtotal && hasPrice) {
+      zones.push(createZone('total', block.normalizedBoundingBox, 0.03));
       debug.totalFound = true;
-      logger.log('Found total:', block.text.substring(0, 30));
+      // Extract the actual total value
+      detectedTotal = extractPriceValue(block.text);
+      logger.log(
+        'Found total (same block):',
+        block.text.substring(0, 30),
+        '- value:',
+        detectedTotal
+      );
       break;
     }
   }
 
-  // 4. Identify items section
-  // Find blocks that contain product names (between header and totals)
-  const productBlocks: NormalizedBlock[] = [];
-  const priceOnlyBlocks: NormalizedBlock[] = [];
+  // If not found, look for total keyword and then find the nearest price below it
+  // This handles receipts where "TOTAL" and the price are on separate lines
+  if (!debug.totalFound) {
+    let totalKeywordBlock: NormalizedBlock | null = null;
+    let totalKeywordY = 0;
 
-  // Determine header end (after store name and date) and totals start
-  let headerEndY = 0.15; // Default: top 15% is header
-  let totalsStartY = 0.85; // Default: bottom 15% is totals
+    // Find the total keyword (search from bottom up, skip subtotals)
+    for (let i = sortedBlocks.length - 1; i >= 0; i--) {
+      const block = sortedBlocks[i];
+      const upper = block.text.toUpperCase();
+      const lower = block.text.toLowerCase();
 
-  // Find where totals section starts
-  for (let i = sortedBlocks.length - 1; i >= 0; i--) {
-    const block = sortedBlocks[i];
-    if (isTotalLine(block.text)) {
-      totalsStartY = Math.min(totalsStartY, block.normalizedBoundingBox.y - 0.02);
+      const hasTotalKeyword = totalKeywords.some((kw) => upper.includes(kw.toUpperCase()));
+      const isSubtotal = lower.includes('sub') || lower.includes('parcial');
+
+      // Must be in bottom half and be a total (not subtotal)
+      if (hasTotalKeyword && !isSubtotal && block.normalizedBoundingBox.y > 0.5) {
+        totalKeywordBlock = block;
+        totalKeywordY = block.normalizedBoundingBox.y;
+        logger.log(
+          'Found total keyword (no price):',
+          block.text.substring(0, 30),
+          'at Y:',
+          totalKeywordY.toFixed(3)
+        );
+        break;
+      }
+    }
+
+    // If we found a total keyword, look for a price nearby (below it)
+    if (totalKeywordBlock) {
+      let nearestPriceBlock: NormalizedBlock | null = null;
+      let smallestDistance = Infinity;
+
+      for (const block of sortedBlocks) {
+        const blockY = block.normalizedBoundingBox.y;
+        // Look for prices within 10% of image height below the total keyword
+        const distance = blockY - totalKeywordY;
+
+        if (distance >= -0.02 && distance < 0.1 && containsPrice(block.text)) {
+          // Prefer standalone prices (not item lines with product names)
+          const isStandalone = isStandalonePrice(block.text);
+          const effectiveDistance = isStandalone ? distance : distance + 0.05; // Penalize non-standalone
+
+          if (effectiveDistance < smallestDistance) {
+            smallestDistance = effectiveDistance;
+            nearestPriceBlock = block;
+          }
+        }
+      }
+
+      if (nearestPriceBlock) {
+        // Create a zone that covers both the keyword and the price
+        // Use extra vertical padding (0.05 = 5%) to survive aspect ratio transformations
+        const mergedBbox = mergeBoundingBoxes([
+          totalKeywordBlock.normalizedBoundingBox,
+          nearestPriceBlock.normalizedBoundingBox,
+        ]);
+        // Extend the zone vertically to ensure it captures the price after transformations
+        const extendedBbox: NormalizedBoundingBox = {
+          ...mergedBbox,
+          y: Math.max(0, mergedBbox.y - 0.02),
+          height: Math.min(1 - Math.max(0, mergedBbox.y - 0.02), mergedBbox.height + 0.06),
+        };
+        zones.push(createZone('total', extendedBbox, 0.02));
+        debug.totalFound = true;
+        // Extract the actual total value from the price block
+        detectedTotal = extractPriceValue(nearestPriceBlock.text);
+        logger.log(
+          'Found total (split blocks):',
+          totalKeywordBlock.text.substring(0, 20),
+          '+',
+          nearestPriceBlock.text.substring(0, 15),
+          '- value:',
+          detectedTotal
+        );
+      }
     }
   }
 
-  // Analyze middle section for products and prices
+  // 4. Identify items section
+  // First, find where totals section starts
+  // Only consider lines that have BOTH a total keyword AND a price, and are in the bottom half
+  let totalsStartY = 0.85; // Default: bottom 15% is totals
+
+  for (let i = sortedBlocks.length - 1; i >= 0; i--) {
+    const block = sortedBlocks[i];
+    const blockY = block.normalizedBoundingBox.y;
+
+    // Only consider total lines in the bottom 60% of the receipt
+    // This avoids "TOTAL ARTICULOS: 5" type lines near the header
+    if (blockY < 0.4) continue;
+
+    // Must have both "total" keyword AND a price to be the totals section
+    // Use preset keywords if available
+    const upper = block.text.toUpperCase();
+    const lower = block.text.toLowerCase();
+    const hasTotalKeyword =
+      totalKeywords.some((kw) => upper.includes(kw.toUpperCase())) && !lower.includes('articul');
+    const hasPrice = containsPrice(block.text);
+
+    if (hasTotalKeyword && hasPrice) {
+      totalsStartY = Math.min(totalsStartY, blockY - 0.02);
+      logger.log(`Found totals line at Y=${blockY.toFixed(3)}: "${block.text.substring(0, 40)}"`);
+    }
+  }
+
+  logger.log('Totals section starts at Y:', totalsStartY.toFixed(3));
+
+  // Try to find items using the new inline detection method first
+  const itemsYRange = findItemsYRange(sortedBlocks, totalsStartY);
+
+  // Also do traditional detection for comparison/fallback
+  const productBlocks: NormalizedBlock[] = [];
+  const priceOnlyBlocks: NormalizedBlock[] = [];
+  let inlineItemCount = 0;
+
+  // Determine header end (after store name and date)
+  let headerEndY = 0.15; // Default: top 15% is header
+
+  // Analyze all blocks for products and prices
   for (const block of sortedBlocks) {
     const y = block.normalizedBoundingBox.y;
 
-    // Skip header and footer regions
-    if (y < headerEndY || y > totalsStartY) continue;
+    // Skip totals section
+    if (y > totalsStartY) continue;
 
     // Check each line in the block
     for (const line of block.lines) {
-      if (isStandalonePrice(line.text)) {
+      // Skip lines too high (likely header)
+      if (line.normalizedY < headerEndY) continue;
+
+      if (isItemLine(line.text)) {
+        // This line has both product name and price inline
+        inlineItemCount++;
+        productBlocks.push({
+          ...block,
+          normalizedBoundingBox: {
+            ...block.normalizedBoundingBox,
+            y: line.normalizedY,
+            height: line.normalizedHeight,
+          },
+        });
+        debug.productsFound++;
+      } else if (isStandalonePrice(line.text)) {
         priceOnlyBlocks.push({
           ...block,
           normalizedBoundingBox: {
@@ -336,7 +720,7 @@ export function autoDetectZones(
           },
         });
         debug.pricesFound++;
-      } else if (isProductName(line.text)) {
+      } else if (isProductName(line.text) && !isHeaderLine(line.text)) {
         productBlocks.push({
           ...block,
           normalizedBoundingBox: {
@@ -351,10 +735,45 @@ export function autoDetectZones(
   }
 
   logger.log('Product blocks found:', productBlocks.length);
+  logger.log('Inline item lines found:', inlineItemCount);
   logger.log('Price-only blocks found:', priceOnlyBlocks.length);
 
   // 5. Create product_names zone
-  if (productBlocks.length > 0) {
+  // Determine if this is a columnar layout (many product blocks + price blocks)
+  // vs inline layout (product names and prices on same line)
+  const isLikelyColumnar =
+    productBlocks.length >= 5 && priceOnlyBlocks.length >= productBlocks.length * 0.5;
+
+  // Prefer columnar detection when we have many product/price blocks
+  // Even if we found some inline items, columnar is more accurate for receipts with separated columns
+  if (isLikelyColumnar && productBlocks.length > inlineItemCount * 3) {
+    logger.log(
+      'Using columnar detection (product blocks:',
+      productBlocks.length,
+      'vs inline:',
+      inlineItemCount,
+      ')'
+    );
+    // Fall through to columnar handling below
+  } else if (itemsYRange && inlineItemCount >= 2) {
+    // Create a full-width zone covering the detected items area
+    const itemsZone: NormalizedBoundingBox = {
+      x: 0.02, // Almost full width
+      y: itemsYRange.startY,
+      width: 0.96,
+      height: itemsYRange.endY - itemsYRange.startY + 0.03, // Add some padding
+    };
+    zones.push(createZone('product_names', itemsZone, 0.02));
+    logger.log('Created items zone from inline detection:', {
+      startY: itemsYRange.startY.toFixed(3),
+      endY: itemsYRange.endY.toFixed(3),
+      height: (itemsYRange.endY - itemsYRange.startY).toFixed(3),
+    });
+  }
+
+  // Use columnar detection if we didn't create a zone yet
+  if (zones.filter((z) => z.type === 'product_names').length === 0 && productBlocks.length > 0) {
+    // Fall back to traditional detection
     // Check if receipt is columnar (prices in separate column)
     const isColumnar = priceOnlyBlocks.length >= productBlocks.length * 0.5;
 
@@ -399,8 +818,18 @@ export function autoDetectZones(
       );
       const itemsMerged = mergeBoundingBoxes(allItemBboxes);
       zones.push(createZone('product_names', itemsMerged, 0.02));
-      logger.log('Detected inline layout');
+      logger.log('Detected inline layout (fallback)');
     }
+  } else {
+    // No products found - create a default items zone in the middle section
+    logger.log('No products detected, creating default items zone');
+    const defaultItemsZone: NormalizedBoundingBox = {
+      x: 0.02,
+      y: headerEndY,
+      width: 0.96,
+      height: totalsStartY - headerEndY - 0.02,
+    };
+    zones.push(createZone('product_names', defaultItemsZone, 0.02));
   }
 
   // Calculate confidence based on what was detected
@@ -413,11 +842,13 @@ export function autoDetectZones(
 
   logger.log('Auto-detected zones:', zones.length);
   logger.log('Detection confidence:', confidence);
+  logger.log('Detected total value:', detectedTotal);
   logger.log('Debug info:', debug);
 
   return {
     zones,
     confidence: Math.min(100, confidence),
+    detectedTotal,
     debug,
   };
 }

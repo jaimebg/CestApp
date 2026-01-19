@@ -1,11 +1,13 @@
 import type { OcrBlock } from './index';
 import type { ParsedReceipt, ParsedItem } from './parser';
 import { parseReceipt } from './parser';
+import { parseItemsSpatially } from './spatialCorrelator';
 import type { ZoneDefinition, NormalizedBoundingBox } from '../../types/zones';
 import type {
   StoreParsingTemplate,
   TemplateDimensions,
 } from '../../db/schema/storeParsingTemplates';
+import { detectRegionFromText, type RegionalPreset } from '../../config/regionalPresets';
 import { createScopedLogger } from '../../utils/debug';
 
 const logger = createScopedLogger('TemplateParser');
@@ -275,6 +277,76 @@ function extractPrice(lines: string[], decimalSeparator: '.' | ','): number | nu
   return null;
 }
 
+/**
+ * Extract the total price from a total zone
+ * More sophisticated than extractPrice - prefers standalone prices and larger values
+ */
+function extractTotalPrice(lines: string[], decimalSeparator: '.' | ','): number | null {
+  const pricePattern = decimalSeparator === ',' ? /[\d.]+,\d{2}/ : /\d+[.,]?\d{2}/;
+
+  // Standalone price pattern (just a number, optionally with currency symbol)
+  const standalonePattern =
+    decimalSeparator === ','
+      ? /^\s*[€$]?\s*[\d.]+,\d{2}\s*[€$]?\s*$/
+      : /^\s*[€$]?\s*\d+\.?\d{2}\s*[€$]?\s*$/;
+
+  let bestPrice: number | null = null;
+  let foundStandalone = false;
+
+  logger.log('[extractTotalPrice] Lines to check:', lines);
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    // Check if this is a standalone price (highly preferred for totals)
+    const isStandalone = standalonePattern.test(trimmed);
+
+    // Skip lines that look like item lines (have letters before the price)
+    // Unless it contains "total" keyword
+    const hasLettersBeforePrice = /\p{L}.*\d+[.,]\d{2}/u.test(trimmed);
+    const hasTotalKeyword = /total|importe|suma/i.test(trimmed);
+
+    if (hasLettersBeforePrice && !hasTotalKeyword && !isStandalone) {
+      // This looks like an item line, skip it for total extraction
+      logger.log('[extractTotalPrice] Skipping item-like line:', trimmed);
+      continue;
+    }
+
+    const match = trimmed.match(pricePattern);
+    if (match) {
+      const price = parsePrice(match[0], decimalSeparator);
+      logger.log(
+        '[extractTotalPrice] Found price:',
+        price,
+        'standalone:',
+        isStandalone,
+        'in:',
+        trimmed
+      );
+      if (price !== null && price > 0) {
+        // Prefer standalone prices
+        if (isStandalone && !foundStandalone) {
+          bestPrice = price;
+          foundStandalone = true;
+        } else if (isStandalone && foundStandalone) {
+          // Multiple standalone prices - take the larger one (likely the total)
+          if (price > (bestPrice || 0)) {
+            bestPrice = price;
+          }
+        } else if (!foundStandalone) {
+          // No standalone found yet, take largest price seen
+          if (price > (bestPrice || 0)) {
+            bestPrice = price;
+          }
+        }
+      }
+    }
+  }
+
+  logger.log('[extractTotalPrice] Best price found:', bestPrice);
+  return bestPrice;
+}
+
 function parseDate(lines: string[], dateFormat: 'DMY' | 'MDY' | 'YMD'): Date | null {
   const datePatterns = [
     /(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/,
@@ -319,6 +391,41 @@ function parseDate(lines: string[], dateFormat: 'DMY' | 'MDY' | 'YMD'): Date | n
   return null;
 }
 
+/**
+ * Check if a line is a header/metadata line that shouldn't be matched as a product
+ * Uses generic patterns that work for any receipt
+ */
+function isHeaderLine(text: string): boolean {
+  const lower = text.toLowerCase();
+  const upper = text.toUpperCase();
+
+  // Generic patterns for header lines
+  const headerPatterns = [
+    /\bNIF\b/i, // Tax ID
+    /\bCIF\b/i, // Tax ID
+    /\bS\.?A\.?U?\.?\s*$/i, // Legal entity suffix
+    /\bS\.?L\.?\s*$/i, // Legal entity suffix
+    /^www\./i, // URL
+    /^http/i, // URL
+    /\.es\s*$/i, // Spanish domain
+    /\.com\s*$/i, // Domain
+    /^C\/\s*\p{L}/iu, // Street address "C/ ..."
+    /^Calle\s/i, // Street
+    /^Avda\.?\s/i, // Avenue
+    /^\d{5}\p{L}/u, // Postal code + city
+    /SUPERMERCADOS/i, // Store type
+    /HIPERMERCADOS/i, // Store type
+  ];
+
+  for (const pattern of headerPatterns) {
+    if (pattern.test(text)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 function correlateProductsWithPrices(
   productBlocks: OcrBlockWithNormalized[],
   priceBlocks: OcrBlockWithNormalized[],
@@ -332,13 +439,15 @@ function correlateProductsWithPrices(
   logger.log('[correlateProducts] Price/all blocks:', priceBlocks.length);
   logger.log('[correlateProducts] imageHeight for normalization:', imageHeight);
 
-  // Extract lines with their normalized Y positions
+  // Extract lines with their normalized Y positions, filtering header lines
   const productLines = productBlocks.flatMap((block) =>
-    block.lines.map((line) => ({
-      text: line.text.trim(),
-      // Line boundingBox.top is in absolute image pixels, normalize it
-      y: line.boundingBox.top / imageHeight,
-    }))
+    block.lines
+      .filter((line) => !isHeaderLine(line.text.trim()))
+      .map((line) => ({
+        text: line.text.trim(),
+        // Line boundingBox.top is in absolute image pixels, normalize it
+        y: line.boundingBox.top / imageHeight,
+      }))
   );
 
   const priceLines = priceBlocks.flatMap((block) =>
@@ -453,8 +562,19 @@ export function parseWithTemplate(
 
   const zones = scaledZones;
   const hints = template.parsingHints || {};
-  const decimalSeparator = hints.decimalSeparator || '.';
-  const dateFormat = hints.dateFormat || 'DMY';
+
+  // Detect regional preset if no template hints are set
+  const detectedPreset = detectRegionFromText(rawText);
+
+  // Use template hints if available, otherwise fall back to detected preset or defaults
+  const decimalSeparator = hints.decimalSeparator || detectedPreset?.decimalSeparator || '.';
+  const dateFormat = hints.dateFormat || detectedPreset?.dateFormat || 'DMY';
+
+  logger.log(
+    'Using decimal separator:',
+    decimalSeparator,
+    hints.decimalSeparator ? '(from template)' : detectedPreset ? '(from preset)' : '(default)'
+  );
 
   // Start with text-based results
   let storeName: string | null = textBasedResult.storeName;
@@ -491,10 +611,17 @@ export function parseWithTemplate(
         break;
 
       case 'total':
-        const zoneTotal = extractPrice(textLines, decimalSeparator);
+        const zoneTotal = extractTotalPrice(textLines, decimalSeparator);
         if (zoneTotal !== null) {
           total = zoneTotal;
           logger.log('Zone extracted total:', total);
+        } else {
+          // Fallback to simple extraction if smart extraction fails
+          const fallbackTotal = extractPrice(textLines, decimalSeparator);
+          if (fallbackTotal !== null) {
+            total = fallbackTotal;
+            logger.log('Zone extracted total (fallback):', total);
+          }
         }
         break;
 
@@ -510,37 +637,57 @@ export function parseWithTemplate(
 
       case 'product_names':
       case 'prices': {
-        // For product/price zones, use the text-based parser on JUST the zone's lines
-        // This combines zone targeting with proven text parsing
+        // Only process once (when we hit product_names zone)
+        if (zone.type !== 'product_names') break;
+
         const productZone = zones.find((z) => z.type === 'product_names');
         const priceZone = zones.find((z) => z.type === 'prices');
 
-        if (productZone && zone.type === 'product_names') {
-          // Get all lines from the product zone
-          const productLines = extractTextFromZone(normalizedBlocks, productZone, imageDimensions);
+        if (!productZone) break;
 
-          // If there's a price zone, also get those lines
-          let combinedLines = productLines;
-          if (priceZone) {
-            const priceLines = extractTextFromZone(normalizedBlocks, priceZone, imageDimensions);
-            // For columnar receipts, we might need to combine lines by position
-            // For now, just include all lines and let the text parser handle it
-            combinedLines = [...productLines, ...priceLines];
-          }
+        // Get blocks in each zone for spatial correlation
+        const productBlocks = getBlocksInZone(normalizedBlocks, productZone);
 
-          logger.log('Zone-filtered lines for item parsing:', combinedLines.length);
+        // For price blocks: use ALL blocks, not just those in the narrow prices zone
+        // The spatial correlation will match by Y position anyway, and the prices zone
+        // might be too narrow due to zone detection/transformation issues
+        const priceBlocks = normalizedBlocks;
 
-          // Use text-based parser on the zone-filtered lines
-          const zoneItemsResult = parseReceipt(combinedLines);
-          logger.log('Zone-based item parsing result:', zoneItemsResult.items.length, 'items');
+        logger.log('Product blocks in zone:', productBlocks.length);
+        logger.log('All blocks for price matching:', priceBlocks.length);
 
-          // Use zone items if we got more or similar count with better quality
-          if (zoneItemsResult.items.length > 0) {
-            // If zone parsing found items, use them
-            if (zoneItemsResult.items.length >= items.length || items.length === 0) {
-              items = zoneItemsResult.items;
-              logger.log('Using zone-extracted items');
+        // COLUMNAR LAYOUT: Use spatial correlation when we have separate zones
+        if (priceZone && productBlocks.length > 0) {
+          logger.log('Using spatial correlation for columnar layout');
+          const correlatedItems = correlateProductsWithPrices(
+            productBlocks,
+            priceBlocks,
+            decimalSeparator,
+            inferredDims.height
+          );
+
+          logger.log('Spatially correlated items:', correlatedItems.length);
+
+          if (correlatedItems.length > 0) {
+            // Use correlated items if we got a good result
+            if (correlatedItems.length >= items.length * 0.5 || items.length === 0) {
+              items = correlatedItems;
+              logger.log('Using spatially correlated items');
             }
+          }
+        }
+
+        // INLINE LAYOUT FALLBACK: If no price zone or correlation failed, try text parsing
+        if (items.length === 0 || (priceZone === undefined && productBlocks.length > 0)) {
+          const productLines = extractTextFromZone(normalizedBlocks, productZone, imageDimensions);
+          logger.log('Trying inline text parsing on', productLines.length, 'lines');
+
+          const zoneItemsResult = parseReceipt(productLines);
+          logger.log('Inline parsing result:', zoneItemsResult.items.length, 'items');
+
+          if (zoneItemsResult.items.length > items.length) {
+            items = zoneItemsResult.items;
+            logger.log('Using inline-parsed items');
           }
         }
         break;
@@ -603,4 +750,96 @@ export function shouldUseTemplate(
   if (template.confidence < 40) return false;
   if (template.useCount < 2 && template.confidence < 60) return false;
   return true;
+}
+
+/**
+ * Enhanced parsing using spatial correlation
+ * Combines text-based parsing with spatial analysis for better accuracy
+ */
+export function parseWithSpatialCorrelation(
+  blocks: OcrBlock[],
+  rawText: string,
+  imageDimensions: { width: number; height: number },
+  options?: {
+    preset?: RegionalPreset;
+    template?: StoreParsingTemplate;
+  }
+): ParsedReceipt {
+  logger.log('Starting enhanced spatial parsing');
+
+  // First, get text-based result as baseline
+  const allLines = blocks.flatMap((block) => block.lines.map((line) => line.text));
+  const textBasedResult = parseReceipt(allLines);
+
+  // Detect regional preset if not provided
+  const preset = options?.preset || detectRegionFromText(rawText);
+
+  // Infer dimensions from blocks
+  const inferredDims = inferImageDimensionsFromBlocks(blocks, imageDimensions);
+
+  // Run spatial analysis
+  const spatialResult = parseItemsSpatially(blocks, inferredDims, preset || undefined);
+
+  const spatialItemsSum = spatialResult.items.reduce((sum, i) => sum + i.totalPrice, 0);
+  const textItemsSum = textBasedResult.items.reduce((sum, i) => sum + i.totalPrice, 0);
+
+  logger.log('Spatial analysis results:', {
+    textItems: textBasedResult.items.length,
+    textItemsSum: textItemsSum.toFixed(2),
+    spatialItems: spatialResult.items.length,
+    spatialItemsSum: spatialItemsSum.toFixed(2),
+    detectedTotal: textBasedResult.total,
+    isColumnar: spatialResult.layout.isColumnar,
+    presetUsed: preset?.id || 'none',
+  });
+
+  // Decide which items to use based on quality
+  let finalItems: ParsedItem[];
+
+  // If spatial found more items and they have reasonable quality, prefer spatial
+  if (
+    spatialResult.items.length > textBasedResult.items.length &&
+    spatialResult.items.length >= 2
+  ) {
+    // Check which sum is closer to detected total
+    if (textBasedResult.total !== null) {
+      const spatialDiff = Math.abs(spatialItemsSum - textBasedResult.total);
+      const textDiff = Math.abs(textItemsSum - textBasedResult.total);
+
+      finalItems = spatialDiff <= textDiff ? spatialResult.items : textBasedResult.items;
+      logger.log(
+        `Selected ${spatialDiff <= textDiff ? 'spatial' : 'text'} items based on total match`
+      );
+    } else {
+      // No total to compare, use spatial if it found more
+      finalItems = spatialResult.items;
+      logger.log('Selected spatial items (more items found)');
+    }
+  } else if (spatialResult.layout.isColumnar && spatialResult.items.length > 0) {
+    // For columnar layouts, prefer spatial correlation
+    finalItems = spatialResult.items;
+    logger.log('Selected spatial items (columnar layout)');
+  } else {
+    // Stick with text-based
+    finalItems = textBasedResult.items;
+    logger.log('Selected text-based items');
+  }
+
+  // Calculate combined confidence
+  let confidence = textBasedResult.confidence;
+
+  // Boost confidence if spatial analysis agrees with text analysis
+  if (
+    spatialResult.items.length > 0 &&
+    textBasedResult.items.length > 0 &&
+    Math.abs(spatialResult.items.length - textBasedResult.items.length) <= 2
+  ) {
+    confidence = Math.min(100, confidence + 10);
+  }
+
+  return {
+    ...textBasedResult,
+    items: finalItems,
+    confidence,
+  };
 }

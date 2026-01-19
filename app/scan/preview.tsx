@@ -3,7 +3,6 @@ import {
   Text,
   Pressable,
   ActivityIndicator,
-  useColorScheme,
   Image as RNImage,
   useWindowDimensions,
 } from 'react-native';
@@ -22,6 +21,7 @@ import { extractTextFromPdf } from '@/src/services/pdf';
 import { autoDetectZones } from '@/src/services/ocr/autoZoneDetector';
 import { Button } from '@/src/components/ui/Button';
 import { ZONE_COLORS, type ZoneDefinition } from '@/src/types/zones';
+import { useAppColors } from '@/src/hooks/useAppColors';
 import Pdf from 'react-native-pdf';
 
 const logger = createScopedLogger('Preview');
@@ -62,8 +62,7 @@ export default function ScanPreviewScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const colors = useAppColors();
   const { width: screenWidth } = useWindowDimensions();
 
   const [isProcessing, setIsProcessing] = useState(false);
@@ -80,6 +79,9 @@ export default function ScanPreviewScreen() {
     blocks: OcrBlock[];
     inferredDimensions: { width: number; height: number } | null;
   } | null>(null);
+
+  // Store detected total from auto zone detection (bypasses zone transformation issues)
+  const [detectedTotal, setDetectedTotal] = useState<number | null>(null);
 
   const hasAutoDetected = useRef(false);
   const isPdf = uri ? isPdfFile(uri) : false;
@@ -144,9 +146,13 @@ export default function ScanPreviewScreen() {
           const detected = autoDetectZones(result.blocks, effectiveDims);
           logger.log('Auto-detected zones:', detected.zones.length);
           logger.log('Detection confidence:', detected.confidence);
+          logger.log('Detected total:', detected.detectedTotal);
 
           if (detected.zones.length > 0) {
             setZones(detected.zones);
+          }
+          if (detected.detectedTotal !== null) {
+            setDetectedTotal(detected.detectedTotal);
           }
         } else {
           logger.log('OCR failed or no blocks found');
@@ -160,15 +166,6 @@ export default function ScanPreviewScreen() {
 
     runAutoDetection();
   }, [uri, isPdf, dimensions, zones.length, isDetectingZones]);
-
-  const colors = {
-    background: isDark ? '#1A1918' : '#FFFDE1',
-    surface: isDark ? '#2D2A26' : '#FFFFFF',
-    text: isDark ? '#FFFDE1' : '#2D2A26',
-    textSecondary: isDark ? '#B8B4A9' : '#6B6560',
-    border: isDark ? '#4A4640' : '#E8E4D9',
-    primary: '#93BD57',
-  };
 
   const handleCancel = async () => {
     if (uri) {
@@ -275,6 +272,8 @@ export default function ScanPreviewScreen() {
             originalImageDimensions: JSON.stringify(imageDims),
             // Pass zones if detected (auto or manual) - hybrid parser will use them to refine results
             ...(zones.length > 0 && { manualZones: JSON.stringify(zones) }),
+            // Pass detected total from auto zone detection (bypasses zone transformation issues)
+            ...(detectedTotal !== null && { detectedTotal: detectedTotal.toString() }),
           },
         });
       }

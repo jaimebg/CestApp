@@ -1,6 +1,7 @@
-import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 import { stores } from './stores';
 import type { ZoneDefinition, ParsingHints } from '../../types/zones';
+import type { StoreFingerprint } from '../../services/ocr/storeFingerprint';
 
 export type TemplateDimensions = {
   width: number;
@@ -20,8 +21,13 @@ export const storeParsingTemplates = sqliteTable('store_parsing_templates', {
   templateImageDimensions: text('template_image_dimensions', {
     mode: 'json',
   }).$type<TemplateDimensions>(),
+  // Store fingerprint for pattern matching
+  fingerprint: text('fingerprint', { mode: 'json' }).$type<StoreFingerprint>(),
   confidence: integer('confidence').notNull().default(50),
   useCount: integer('use_count').notNull().default(0),
+  // Track successful vs failed parses for learning
+  successCount: integer('success_count').notNull().default(0),
+  failureCount: integer('failure_count').notNull().default(0),
   createdAt: integer('created_at', { mode: 'timestamp' })
     .notNull()
     .$defaultFn(() => new Date()),

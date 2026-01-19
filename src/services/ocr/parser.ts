@@ -1,7 +1,10 @@
 /**
  * Receipt Parser Service
  * Smart, self-adapting parser that auto-detects format from receipt content
+ * Enhanced with regional presets and spatial correlation
  */
+
+import { type RegionalPreset, detectRegionFromText } from '../../config/regionalPresets';
 
 export interface ParsedItem {
   name: string;
@@ -101,6 +104,48 @@ const SKIP_KEYWORDS = [
   'hora',
   'date',
   'time',
+  // Company/legal identifiers
+  's.l.',
+  's.a.',
+  'c.i.f',
+  'cif:',
+  'n.i.f',
+  'nif:',
+  'supermercados',
+  'hipermercados',
+  // Store info
+  'centro vend',
+  'articulo',
+  'artículo',
+];
+
+// Patterns that indicate header/metadata lines (not products)
+// These should be GENERIC patterns that work across all receipts, not store-specific
+const HEADER_PATTERNS = [
+  /^\d{4,}-[A-Z]{2}/i, // Store codes like "9232-HD"
+  /^[A-Z]{2,4}\d{4,}/i, // Codes like "HD9232"
+  /\d{9,}/, // Long numbers (phone, CIF, etc.)
+  /^www\./i, // URLs
+  /^http/i,
+  /@/, // Email
+  /c\.?i\.?f\.?:?\s*[A-Z]\d/i, // CIF pattern
+  /n\.?i\.?f\.?:?\s*\d/i, // NIF pattern
+  /^\d+[.,]\d+\s*x\s*\d+[.,]\d+/i, // Quantity lines like "1,000 x 1,50"
+  /^x\s*\d+[.,]\d+/i, // Lines starting with "x 1,50"
+  // Generic address patterns (work for any country)
+  /^\d{5}\p{L}/u, // 5-digit postal code directly followed by text (no space)
+  /^C\/\s*\p{L}/iu, // Street address "C/ ..." (Spanish format)
+  /^Calle\s/i, // Street "Calle ..."
+  /^Avda\.?\s/i, // Avenue "Avda ..."
+  /^Avenida\s/i, // Avenue "Avenida ..."
+  /^Plaza\s/i, // Plaza
+  /^Pol[íi]gono\s/i, // Industrial area "Polígono ..."
+  // Legal entity suffixes (end of line)
+  /\bS\.A\.U\.?\s*$/i, // S.A.U.
+  /\bS\.L\.U?\.?\s*$/i, // S.L. / S.L.U.
+  // Tax IDs anywhere in text
+  /\bNIF\s*[A-Z]\d/i, // NIF + letter + digit
+  /\bCIF\s*[A-Z]\d/i, // CIF + letter + digit
 ];
 
 const UNIT_PATTERNS: { pattern: RegExp; unit: ParsedItem['unit'] }[] = [
@@ -341,6 +386,17 @@ function isProductLine(line: string): boolean {
   if (/^[\d\s\-\/\.\:]+$/.test(cleaned)) return false;
 
   const lowerLine = cleaned.toLowerCase();
+
+  // Check skip keywords
+  for (const keyword of SKIP_KEYWORDS) {
+    if (lowerLine.includes(keyword)) return false;
+  }
+
+  // Check header patterns
+  for (const pattern of HEADER_PATTERNS) {
+    if (pattern.test(cleaned)) return false;
+  }
+
   const skipPatterns = [
     /^total/i,
     /^subtotal/i,
@@ -349,10 +405,6 @@ function isProductLine(line: string): boolean {
     /^fecha/i,
     /^hora/i,
     /^documento/i,
-    /^telefono/i,
-    /^c\.i\.f/i,
-    /^cif/i,
-    /^nif/i,
     /^tarjeta/i,
     /^efectivo/i,
     /^cambio/i,
@@ -360,12 +412,12 @@ function isProductLine(line: string): boolean {
     /^operaci[oó]n/i,
     /^contactless/i,
     /^importe/i,
-    /^centro\s+vend/i,
-    /^art[ií]cul/i,
     /^detalle/i,
     /^pagos?$/i,
     /^venta$/i,
     /^compra$/i,
+    /dinosol/i, // Company name
+    /hiperdino/i, // Store name
   ];
 
   for (const pattern of skipPatterns) {
@@ -681,6 +733,10 @@ function parseLineItem(line: string, decimalSep: '.' | ',' = '.'): ParsedItem | 
   for (const keyword of TOTAL_KEYWORDS) {
     if (lowerLine.includes(keyword)) return null;
   }
+  // Check header patterns
+  for (const pattern of HEADER_PATTERNS) {
+    if (pattern.test(line)) return null;
+  }
 
   const pricePatterns = [
     /^(.+?)\s+\$\s*(\d+[.,]\d{2})\s*$/,
@@ -822,6 +878,51 @@ function extractStoreName(lines: string[]): string | null {
 }
 
 /**
+ * Extract store name with regional preset awareness
+ * First checks for known stores from preset, then falls back to heuristics
+ */
+function extractStoreNameWithPreset(
+  lines: string[],
+  preset?: RegionalPreset | null
+): string | null {
+  const headerLines = lines.slice(0, 10);
+
+  // If preset has common stores, try to match them first
+  if (preset?.commonStores) {
+    // First pass: look for exact/full matches (most reliable)
+    for (const line of headerLines) {
+      const cleaned = line.trim().toUpperCase();
+
+      for (const storeName of preset.commonStores) {
+        // Check if line contains the full store name
+        if (cleaned.includes(storeName)) {
+          // Return the matched store name (normalized)
+          return storeName.charAt(0) + storeName.slice(1).toLowerCase();
+        }
+      }
+    }
+
+    // Second pass: look for partial matches only for longer store names
+    // Sort by length descending to match longer names first
+    const sortedStores = [...preset.commonStores].sort((a, b) => b.length - a.length);
+    for (const line of headerLines) {
+      const cleaned = line.trim().toUpperCase();
+
+      for (const storeName of sortedStores) {
+        // Only use partial matching for stores with 6+ characters
+        // This prevents "LIDL" from partially matching other things
+        if (storeName.length >= 6 && cleaned.includes(storeName.slice(0, 5))) {
+          return storeName.charAt(0) + storeName.slice(1).toLowerCase();
+        }
+      }
+    }
+  }
+
+  // Fall back to heuristic extraction
+  return extractStoreName(lines);
+}
+
+/**
  * Extract payment method from text
  */
 function extractPaymentMethod(text: string): 'cash' | 'card' | 'digital' | null {
@@ -927,6 +1028,200 @@ function extractTotals(
 export interface ParserOptions {
   preferredDateFormat?: 'DMY' | 'MDY' | 'YMD';
   preferredDecimalSeparator?: '.' | ',';
+  regionalPreset?: RegionalPreset;
+}
+
+/**
+ * Validation result for a parsed receipt
+ */
+export interface ReceiptValidation {
+  isValid: boolean;
+  itemsSumMatchesTotal: boolean;
+  itemsSum: number;
+  difference: number;
+  differencePercent: number;
+  suggestedTotal: number | null;
+  warnings: string[];
+  confidence: number;
+}
+
+/**
+ * Validate a parsed receipt
+ * Checks if items sum matches total and provides confidence scoring
+ */
+export function validateReceipt(receipt: ParsedReceipt): ReceiptValidation {
+  const warnings: string[] = [];
+  let isValid = true;
+
+  // Calculate items sum
+  const itemsSum = receipt.items.reduce((sum, item) => sum + item.totalPrice, 0);
+  const roundedItemsSum = Math.round(itemsSum * 100) / 100;
+
+  // Check if items sum matches total
+  let itemsSumMatchesTotal = false;
+  let difference = 0;
+  let differencePercent = 0;
+
+  if (receipt.total !== null && receipt.items.length > 0) {
+    difference = Math.abs(roundedItemsSum - receipt.total);
+    differencePercent = receipt.total > 0 ? (difference / receipt.total) * 100 : 0;
+
+    // Consider a match if within 5% (accounts for tax, discounts, rounding)
+    if (differencePercent <= 5) {
+      itemsSumMatchesTotal = true;
+    } else if (differencePercent <= 15) {
+      // Partial match - might be missing items or tax
+      warnings.push(
+        `Items sum (${roundedItemsSum.toFixed(2)}) differs from total (${receipt.total.toFixed(2)}) by ${differencePercent.toFixed(1)}%`
+      );
+    } else {
+      // Significant mismatch
+      warnings.push(
+        `Items sum (${roundedItemsSum.toFixed(2)}) significantly differs from total (${receipt.total.toFixed(2)})`
+      );
+      isValid = false;
+    }
+  }
+
+  // Check for missing critical fields
+  if (!receipt.storeName) {
+    warnings.push('Store name not detected');
+  }
+
+  if (!receipt.date) {
+    warnings.push('Date not detected');
+  }
+
+  if (receipt.items.length === 0) {
+    warnings.push('No items detected');
+    isValid = false;
+  }
+
+  if (receipt.total === null) {
+    warnings.push('Total not detected');
+  }
+
+  // Check for items with suspiciously high prices
+  const highPriceItems = receipt.items.filter((item) => item.totalPrice > 200);
+  if (highPriceItems.length > 0) {
+    warnings.push(`${highPriceItems.length} item(s) with price > 200`);
+  }
+
+  // Check for duplicate items (same name and price)
+  const seen = new Set<string>();
+  const duplicates: string[] = [];
+  for (const item of receipt.items) {
+    const key = `${item.name.toLowerCase()}:${item.totalPrice}`;
+    if (seen.has(key)) {
+      duplicates.push(item.name);
+    }
+    seen.add(key);
+  }
+  if (duplicates.length > 0) {
+    warnings.push(`Possible duplicates: ${duplicates.slice(0, 3).join(', ')}`);
+  }
+
+  // Calculate validation confidence
+  let confidence = 50;
+  if (itemsSumMatchesTotal) confidence += 30;
+  if (receipt.storeName) confidence += 5;
+  if (receipt.date) confidence += 5;
+  if (receipt.items.length > 0) confidence += 5;
+  if (receipt.total !== null) confidence += 5;
+  if (warnings.length === 0) confidence += 10;
+  confidence -= warnings.length * 5;
+
+  // Suggest total if items sum doesn't match
+  const suggestedTotal = !itemsSumMatchesTotal && receipt.items.length > 0 ? roundedItemsSum : null;
+
+  return {
+    isValid,
+    itemsSumMatchesTotal,
+    itemsSum: roundedItemsSum,
+    difference,
+    differencePercent,
+    suggestedTotal,
+    warnings,
+    confidence: Math.max(0, Math.min(100, confidence)),
+  };
+}
+
+/**
+ * Apply regional preset keywords to improve total/tax detection
+ */
+function extractTotalsWithPreset(
+  lines: string[],
+  decimalSep: '.' | ',',
+  preset?: RegionalPreset
+): {
+  subtotal: number | null;
+  tax: number | null;
+  discount: number | null;
+  total: number | null;
+} {
+  let subtotal: number | null = null;
+  let tax: number | null = null;
+  let discount: number | null = null;
+  let total: number | null = null;
+
+  const keywords = preset?.keywords || {
+    total: TOTAL_KEYWORDS,
+    subtotal: ['subtotal', 'sub-total', 'sub total', 'base'],
+    tax: ['tax', 'iva', 'impuesto', 'vat', 'mwst'],
+    discount: ['discount', 'descuento', 'ahorro', 'savings'],
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const upperLine = line.toUpperCase();
+    const lowerLine = line.toLowerCase();
+
+    let price = parsePrice(line);
+
+    // Check next line for standalone price
+    if (price === null && i + 1 < lines.length) {
+      const nextLine = lines[i + 1].trim();
+      if (isStandalonePrice(nextLine)) {
+        price = parsePrice(nextLine);
+      }
+    }
+
+    if (price !== null && price > 0) {
+      // Check for subtotal
+      if (keywords.subtotal.some((kw) => upperLine.includes(kw.toUpperCase()))) {
+        subtotal = price;
+        continue;
+      }
+
+      // Check for tax
+      if (keywords.tax.some((kw) => upperLine.includes(kw.toUpperCase()))) {
+        tax = price;
+        continue;
+      }
+
+      // Check for discount
+      if (keywords.discount.some((kw) => upperLine.includes(kw.toUpperCase()))) {
+        discount = price;
+        continue;
+      }
+
+      // Check for total (must not contain subtotal keywords)
+      const isSubtotal = lowerLine.includes('sub');
+      const isArticleCount = lowerLine.includes('artícul') || lowerLine.includes('articul');
+
+      if (
+        !isSubtotal &&
+        !isArticleCount &&
+        keywords.total.some((kw) => upperLine.includes(kw.toUpperCase()))
+      ) {
+        if (total === null || price > total) {
+          total = price;
+        }
+      }
+    }
+  }
+
+  return { subtotal, tax, discount, total };
 }
 
 /**
@@ -939,7 +1234,35 @@ export function parseReceipt(lines: string[], options?: ParserOptions): ParsedRe
   const processedLines = preprocessText(lines);
   const rawText = processedLines.join('\n');
 
+  // Try to detect regional preset from text
+  let preset = options?.regionalPreset || detectRegionFromText(rawText);
+
   const format = detectReceiptFormat(processedLines);
+
+  // Apply preset defaults if detected
+  if (preset) {
+    format.decimalSeparator = preset.decimalSeparator;
+    format.dateFormat = preset.dateFormat;
+    if (__DEV__) {
+      console.log(
+        '[Parser] Using preset:',
+        preset.id,
+        '- decimal:',
+        format.decimalSeparator,
+        '- date:',
+        format.dateFormat
+      );
+    }
+  } else {
+    if (__DEV__) {
+      console.log(
+        '[Parser] Auto-detected format - decimal:',
+        format.decimalSeparator,
+        '- columnar:',
+        format.isColumnar
+      );
+    }
+  }
 
   if (options?.preferredDateFormat) {
     const dateMatch = rawText.match(/\b(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})\b/);
@@ -962,11 +1285,13 @@ export function parseReceipt(lines: string[], options?: ParserOptions): ParsedRe
 
   const sections = extractSections(processedLines);
 
-  let storeName = extractStoreName(
-    sections.header.length > 0 ? sections.header : processedLines.slice(0, 10)
+  // Extract store name with regional preset awareness
+  let storeName = extractStoreNameWithPreset(
+    sections.header.length > 0 ? sections.header : processedLines.slice(0, 10),
+    preset
   );
   if (!storeName) {
-    storeName = extractStoreName(processedLines);
+    storeName = extractStoreNameWithPreset(processedLines, preset);
   }
 
   const storeAddress = extractStoreAddress(
@@ -1030,11 +1355,16 @@ export function parseReceipt(lines: string[], options?: ParserOptions): ParsedRe
     items = parseColumnarItems(processedLines);
   }
 
+  // Extract totals using preset-aware function if preset detected
   let totalsToProcess = sections.totals.length > 0 ? sections.totals : processedLines;
-  let { subtotal, tax, discount, total } = extractTotals(totalsToProcess, format.decimalSeparator);
+  let { subtotal, tax, discount, total } = preset
+    ? extractTotalsWithPreset(totalsToProcess, format.decimalSeparator, preset)
+    : extractTotals(totalsToProcess, format.decimalSeparator);
 
   if (total === null) {
-    const allTotals = extractTotals(processedLines, format.decimalSeparator);
+    const allTotals = preset
+      ? extractTotalsWithPreset(processedLines, format.decimalSeparator, preset)
+      : extractTotals(processedLines, format.decimalSeparator);
     subtotal = subtotal || allTotals.subtotal;
     tax = tax || allTotals.tax;
     discount = discount || allTotals.discount;
@@ -1137,5 +1467,26 @@ export function parseReceipt(lines: string[], options?: ParserOptions): ParsedRe
     confidence: Math.min(confidence, 100),
   };
 
+  if (__DEV__) {
+    console.log('[Parser] Parse result:', {
+      storeName,
+      itemsCount: items.length,
+      total,
+      confidence: result.confidence,
+      sampleItems: items
+        .slice(0, 3)
+        .map((i) => ({ name: i.name.substring(0, 25), price: i.totalPrice })),
+    });
+  }
+
   return result;
 }
+
+// Re-export types and utilities for external use
+export type { RegionalPreset };
+export {
+  SPAIN_PRESET,
+  detectRegionFromText,
+  matchStoreInPreset,
+  getRegionalPreset,
+} from '../../config/regionalPresets';
