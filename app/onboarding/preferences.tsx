@@ -1,5 +1,5 @@
 /**
- * Onboarding Screen
+ * Onboarding Preferences Screen
  * Collects user locale preferences on first launch
  */
 
@@ -18,7 +18,7 @@ import {
 import { SUPPORTED_LANGUAGES, SupportedLanguage } from '@/src/i18n';
 import { getSupportedCurrencies, Currency } from '@/src/config/currency';
 
-export default function OnboardingScreen() {
+export default function OnboardingPreferencesScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const router = useRouter();
@@ -67,12 +67,14 @@ export default function OnboardingScreen() {
   };
 
   const renderRadioOption = (
+    key: string,
     selected: boolean,
     label: string,
     description: string,
     onPress: () => void
   ) => (
     <Pressable
+      key={key}
       onPress={onPress}
       className="flex-row items-center p-4 rounded-xl mb-2"
       style={{
@@ -153,18 +155,18 @@ export default function OnboardingScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <View className="items-center mt-8 mb-8">
+        <View className="items-center mt-6 mb-6">
           <View
-            className="w-20 h-20 rounded-full items-center justify-center mb-4"
-            style={{ backgroundColor: colors.primaryDeep }}
+            className="w-14 h-14 rounded-full items-center justify-center mb-3"
+            style={{ backgroundColor: `${colors.primary}20` }}
           >
-            <Ionicons name="receipt-outline" size={40} color="#FFFFFF" />
+            <Ionicons name="settings-outline" size={28} color={colors.primary} />
           </View>
           <Text
-            className="text-3xl text-center"
+            className="text-2xl text-center"
             style={{ color: colors.text, fontFamily: 'Inter_700Bold' }}
           >
-            {t('onboarding.welcome')}
+            {t('onboarding.preferencesTitle')}
           </Text>
           <Text
             className="text-base text-center mt-2"
@@ -189,7 +191,7 @@ export default function OnboardingScreen() {
             {t('onboarding.languageDesc')}
           </Text>
           {SUPPORTED_LANGUAGES.map((lang) =>
-            renderRadioOption(language === lang.code, lang.nativeName, lang.name, () =>
+            renderRadioOption(lang.code, language === lang.code, lang.nativeName, lang.name, () =>
               setLanguage(lang.code as SupportedLanguage)
             )
           )}
@@ -249,10 +251,10 @@ export default function OnboardingScreen() {
           >
             {t('onboarding.dateFormatDesc')}
           </Text>
-          {renderRadioOption(dateFormat === 'DMY', t('onboarding.dmy'), '31/12/2024', () =>
+          {renderRadioOption('DMY', dateFormat === 'DMY', t('onboarding.dmy'), '31/12/2024', () =>
             setDateFormat('DMY')
           )}
-          {renderRadioOption(dateFormat === 'MDY', t('onboarding.mdy'), '12/31/2024', () =>
+          {renderRadioOption('MDY', dateFormat === 'MDY', t('onboarding.mdy'), '12/31/2024', () =>
             setDateFormat('MDY')
           )}
         </View>
@@ -272,12 +274,14 @@ export default function OnboardingScreen() {
             {t('onboarding.numberFormatDesc')}
           </Text>
           {renderRadioOption(
+            'dot',
             decimalSeparator === '.',
             t('onboarding.decimalDot'),
             '$1,234.56',
             () => setDecimalSeparator('.')
           )}
           {renderRadioOption(
+            'comma',
             decimalSeparator === ',',
             t('onboarding.decimalComma'),
             '1.234,56 EUR',

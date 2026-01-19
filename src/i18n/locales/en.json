@@ -16,7 +16,8 @@
     "none": "None",
     "yes": "Yes",
     "no": "No",
-    "ok": "OK"
+    "ok": "OK",
+    "skip": "Skip"
   },
   "tabs": {
     "dashboard": "Dashboard",
@@ -93,7 +94,10 @@
     "year": "Year",
     "itemsSum": "Items Sum",
     "totalsMismatch": "Total doesn't match items sum. Please adjust items or edit the total.",
-    "matchToItemsSum": "Set total to items sum"
+    "matchToItemsSum": "Set total to items sum",
+    "configureZones": "Improve parsing for this store",
+    "configureZonesDesc": "Define zones to help understand receipts better",
+    "defineZones": "Define Zones"
   },
   "history": {
     "title": "History",
@@ -212,6 +216,27 @@
   "onboarding": {
     "welcome": "Welcome to CestApp",
     "subtitle": "Let's set up your preferences",
+    "preferencesTitle": "Set Your Preferences",
+    "continue": "Continue",
+    "features": {
+      "subtitle": "Your personal receipt tracker that keeps your data private",
+      "scan": {
+        "title": "Scan Receipts",
+        "desc": "Capture receipts with your camera, import from gallery, or upload PDFs"
+      },
+      "track": {
+        "title": "Track Every Purchase",
+        "desc": "Automatically extract items, prices, and organize by store and category"
+      },
+      "analytics": {
+        "title": "View Spending Insights",
+        "desc": "See where your money goes with charts and analytics by category or store"
+      },
+      "privacy": {
+        "title": "100% Private & Local",
+        "desc": "All data stays on your device. No cloud, no accounts, no tracking"
+      }
+    },
     "language": "Language",
     "languageDesc": "Choose your preferred language",
     "currency": "Currency",

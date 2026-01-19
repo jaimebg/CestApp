@@ -16,7 +16,8 @@
     "none": "Ninguno",
     "yes": "Sí",
     "no": "No",
-    "ok": "OK"
+    "ok": "OK",
+    "skip": "Omitir"
   },
   "tabs": {
     "dashboard": "Inicio",
@@ -93,7 +94,10 @@
     "year": "Año",
     "itemsSum": "Suma de Artículos",
     "totalsMismatch": "El total no coincide con la suma de artículos. Ajusta los artículos o edita el total.",
-    "matchToItemsSum": "Igualar total a suma de artículos"
+    "matchToItemsSum": "Igualar total a suma de artículos",
+    "configureZones": "Mejorar parseo para esta tienda",
+    "configureZonesDesc": "Define zonas para entender mejor los recibos",
+    "defineZones": "Definir Zonas"
   },
   "history": {
     "title": "Historial",
@@ -212,6 +216,27 @@
   "onboarding": {
     "welcome": "Bienvenido a CestApp",
     "subtitle": "Configuremos tus preferencias",
+    "preferencesTitle": "Configura tus Preferencias",
+    "continue": "Continuar",
+    "features": {
+      "subtitle": "Tu rastreador personal de recibos que mantiene tus datos privados",
+      "scan": {
+        "title": "Escanea Recibos",
+        "desc": "Captura recibos con tu cámara, importa desde la galería o sube PDFs"
+      },
+      "track": {
+        "title": "Rastrea Cada Compra",
+        "desc": "Extrae automáticamente artículos, precios y organiza por tienda y categoría"
+      },
+      "analytics": {
+        "title": "Ve tus Estadísticas",
+        "desc": "Observa a dónde va tu dinero con gráficas por categoría o tienda"
+      },
+      "privacy": {
+        "title": "100% Privado y Local",
+        "desc": "Todos los datos se quedan en tu dispositivo. Sin nube, sin cuentas, sin rastreo"
+      }
+    },
     "language": "Idioma",
     "languageDesc": "Elige tu idioma preferido",
     "currency": "Moneda",
