@@ -45,6 +45,7 @@ export async function upsertStoreTemplate(
     parsingHints?: ParsingHints;
     sampleImagePath?: string;
     confidence?: number;
+    imageDimensions?: { width: number; height: number };
   }
 ) {
   const existing = await getTemplateByStoreId(storeId);
@@ -56,6 +57,7 @@ export async function upsertStoreTemplate(
         zones: data.zones,
         parsingHints: data.parsingHints,
         sampleImagePath: data.sampleImagePath,
+        templateImageDimensions: data.imageDimensions,
         confidence: data.confidence ?? existing.confidence,
         updatedAt: new Date(),
       })
@@ -71,6 +73,7 @@ export async function upsertStoreTemplate(
       zones: data.zones,
       parsingHints: data.parsingHints,
       sampleImagePath: data.sampleImagePath,
+      templateImageDimensions: data.imageDimensions,
       confidence: data.confidence ?? 50,
     })
     .returning();

@@ -17,6 +17,13 @@ export default function ScanLayout() {
     >
       <Stack.Screen name="preview" />
       <Stack.Screen name="review" />
+      <Stack.Screen
+        name="zones"
+        options={{
+          presentation: 'fullScreenModal',
+          animation: 'slide_from_bottom',
+        }}
+      />
     </Stack>
   );
 }

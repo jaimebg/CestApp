@@ -83,10 +83,37 @@ export const createTablesSQL = `
   CREATE INDEX IF NOT EXISTS idx_items_receipt ON items(receipt_id);
   CREATE INDEX IF NOT EXISTS idx_items_category ON items(category_id);
   CREATE UNIQUE INDEX IF NOT EXISTS user_learned_items_unique_idx ON user_learned_items(normalized_name, store_id);
+
+  CREATE TABLE IF NOT EXISTS store_parsing_templates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    store_id INTEGER NOT NULL UNIQUE REFERENCES stores(id),
+    zones TEXT NOT NULL,
+    parsing_hints TEXT,
+    sample_image_path TEXT,
+    template_image_dimensions TEXT,
+    confidence INTEGER NOT NULL DEFAULT 50,
+    use_count INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+    updated_at INTEGER NOT NULL DEFAULT (unixepoch())
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_store_parsing_templates_store ON store_parsing_templates(store_id);
+`;
+
+// Migration for existing databases - add template_image_dimensions column
+const migrationSQL = `
+  ALTER TABLE store_parsing_templates ADD COLUMN template_image_dimensions TEXT;
 `;
 
 export function initializeDatabase() {
   expoDb.execSync(createTablesSQL);
+
+  // Run migrations for existing databases
+  try {
+    expoDb.execSync(migrationSQL);
+  } catch {
+    // Column already exists, migration not needed
+  }
 }
 
 export { schema };

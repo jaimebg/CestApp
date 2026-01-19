@@ -27,10 +27,16 @@ async function getImageDimensions(uri: string): Promise<{ width: number; height:
     RNImage.getSize(
       uri,
       (width, height) => {
+        console.log('[Preview] getImageDimensions success:', {
+          width,
+          height,
+          uri: uri.substring(0, 50),
+        });
         resolve({ width, height });
       },
-      () => {
+      (error) => {
         // Fallback if getSize fails
+        console.log('[Preview] getImageDimensions FAILED, using fallback:', error);
         resolve({ width: 1000, height: 1500 });
       }
     );
@@ -156,13 +162,19 @@ export default function ScanPreviewScreen() {
 
         if (result.success) {
           const imageDims = dimensions || (await getImageDimensions(uri));
+          // Prefer OCR-inferred dimensions for accurate zone matching
+          const effectiveDims = result.inferredDimensions || imageDims;
+
           console.log('[Preview] Processing image with:');
-          console.log('[Preview] - Dimensions:', imageDims);
+          console.log('[Preview] - getImageDimensions:', imageDims);
+          console.log('[Preview] - OCR inferredDimensions:', result.inferredDimensions);
+          console.log('[Preview] - Using effectiveDims:', effectiveDims);
           console.log('[Preview] - Zones:', zones.length);
           console.log('[Preview] - Blocks from OCR:', result.blocks.length);
           if (result.blocks.length > 0) {
             console.log('[Preview] - First block bbox:', result.blocks[0].boundingBox);
           }
+
           router.push({
             pathname: '/scan/review',
             params: {
@@ -171,7 +183,9 @@ export default function ScanPreviewScreen() {
               ocrText: result.text,
               ocrLines: JSON.stringify(result.lines),
               ocrBlocks: JSON.stringify(result.blocks),
-              imageDimensions: JSON.stringify(imageDims),
+              imageDimensions: JSON.stringify(effectiveDims),
+              // Also pass original dimensions for zone scaling if needed
+              originalImageDimensions: JSON.stringify(imageDims),
               // Pass zones if defined
               ...(zones.length > 0 && { manualZones: JSON.stringify(zones) }),
             },
@@ -250,60 +264,49 @@ export default function ScanPreviewScreen() {
             />
           </View>
         ) : (
-          <View className="flex-1 rounded-2xl overflow-hidden">
-            {/* Image with zones overlay */}
-            <View
-              className="flex-1"
-              onLayout={(e) => {
-                // We can use this for overlay sizing if needed
-              }}
-            >
-              <Image source={{ uri }} style={{ flex: 1 }} contentFit="contain" transition={200} />
-              {/* Zones overlay */}
-              {zones.length > 0 && dimensions && (
-                <View
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}
-                >
-                  {(() => {
-                    const containerWidth = screenWidth - 32; // px-4 on each side
-                    const imageAspectRatio = dimensions.width / dimensions.height;
-                    // Approximate - assume container is roughly square-ish for preview
-                    // The actual fit is "contain" so we need to calculate
-                    const maxHeight = 500; // approximate max container height
-                    let previewWidth = containerWidth;
-                    let previewHeight = containerWidth / imageAspectRatio;
-                    if (previewHeight > maxHeight) {
-                      previewHeight = maxHeight;
-                      previewWidth = maxHeight * imageAspectRatio;
-                    }
-                    return (
-                      <Svg width={previewWidth} height={previewHeight}>
-                        {zones.map((zone) => (
-                          <Rect
-                            key={zone.id}
-                            x={zone.boundingBox.x * previewWidth}
-                            y={zone.boundingBox.y * previewHeight}
-                            width={zone.boundingBox.width * previewWidth}
-                            height={zone.boundingBox.height * previewHeight}
-                            fill={`${ZONE_COLORS[zone.type]}40`}
-                            stroke={ZONE_COLORS[zone.type]}
-                            strokeWidth={2}
-                          />
-                        ))}
-                      </Svg>
-                    );
-                  })()}
+          <View className="flex-1 rounded-2xl overflow-hidden items-center justify-center">
+            {/* Image with zones overlay - uses same sizing as ZoneSelectionCanvas */}
+            {(() => {
+              const displayWidth = screenWidth - 32;
+              const aspectRatio = dimensions ? dimensions.width / dimensions.height : 1.5;
+              const displayHeight = displayWidth / aspectRatio;
+
+              return (
+                <View style={{ width: displayWidth, height: displayHeight }}>
+                  <Image
+                    source={{ uri }}
+                    style={{ width: displayWidth, height: displayHeight }}
+                    contentFit="fill"
+                    transition={200}
+                  />
+                  {/* Zones overlay */}
+                  {zones.length > 0 && (
+                    <Svg
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: displayWidth,
+                        height: displayHeight,
+                      }}
+                    >
+                      {zones.map((zone) => (
+                        <Rect
+                          key={zone.id}
+                          x={zone.boundingBox.x * displayWidth}
+                          y={zone.boundingBox.y * displayHeight}
+                          width={zone.boundingBox.width * displayWidth}
+                          height={zone.boundingBox.height * displayHeight}
+                          fill={`${ZONE_COLORS[zone.type]}40`}
+                          stroke={ZONE_COLORS[zone.type]}
+                          strokeWidth={2}
+                        />
+                      ))}
+                    </Svg>
+                  )}
                 </View>
-              )}
-            </View>
+              );
+            })()}
           </View>
         )}
       </View>

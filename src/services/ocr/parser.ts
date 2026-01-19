@@ -1043,19 +1043,82 @@ export function parseReceipt(lines: string[], options?: ParserOptions): ParsedRe
 
   const paymentMethod = extractPaymentMethod(rawText);
 
-  let confidence = 40;
-  if (storeName) confidence += 10;
-  if (storeAddress) confidence += 5;
-  if (dateResult.date) confidence += 10;
-  if (time) confidence += 5;
-  if (items.length > 0) confidence += 15;
-  if (items.length > 3) confidence += 5;
-  if (total !== null) confidence += 10;
-  if (subtotal !== null || tax !== null) confidence += 5;
+  // Quality-based confidence calculation
+  let confidence = 30;
 
+  // Store name quality check
+  if (storeName) {
+    const hasLetters = /[a-zA-Z]{2,}/.test(storeName);
+    const reasonableLength = storeName.length >= 3 && storeName.length <= 50;
+    const notJustNumbers = !/^\d+$/.test(storeName);
+    if (hasLetters && reasonableLength && notJustNumbers) {
+      confidence += 10;
+    } else {
+      confidence += 3; // Found something but it's low quality
+    }
+  }
+
+  if (storeAddress) confidence += 5;
+
+  // Date quality check
+  if (dateResult.date) {
+    const now = new Date();
+    const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+    const isReasonableDate = dateResult.date <= now && dateResult.date >= oneYearAgo;
+    confidence += isReasonableDate ? 10 : 3;
+  }
+
+  if (time) confidence += 3;
+
+  // Items quality checks
+  if (items.length > 0) {
+    confidence += 10;
+
+    // Check if item prices are reasonable (between $0.10 and $500)
+    const reasonablePrices = items.filter(
+      (item) => item.totalPrice >= 0.1 && item.totalPrice <= 500
+    );
+    const priceQuality = reasonablePrices.length / items.length;
+    confidence += Math.round(priceQuality * 10);
+
+    // Check if item names look valid (have letters, reasonable length)
+    const validNames = items.filter((item) => {
+      const hasLetters = /[a-zA-Z]{2,}/.test(item.name);
+      const reasonableLength = item.name.length >= 2 && item.name.length <= 60;
+      return hasLetters && reasonableLength;
+    });
+    const nameQuality = validNames.length / items.length;
+    confidence += Math.round(nameQuality * 10);
+
+    // Bonus for having multiple items
+    if (items.length >= 3) confidence += 3;
+    if (items.length >= 5) confidence += 2;
+  }
+
+  // Total quality checks
+  if (total !== null) {
+    confidence += 5;
+
+    // Check if items sum roughly matches total (within 20%)
+    if (items.length > 0) {
+      const itemsSum = items.reduce((sum, item) => sum + item.totalPrice, 0);
+      const difference = Math.abs(itemsSum - total);
+      const tolerance = total * 0.2; // 20% tolerance for tax/discounts
+      if (difference <= tolerance) {
+        confidence += 10; // Good match
+      } else if (difference <= total * 0.5) {
+        confidence += 3; // Partial match
+      }
+      // No bonus if way off
+    }
+  }
+
+  if (subtotal !== null || tax !== null) confidence += 3;
+
+  // Average with item confidence scores
   if (items.length > 0) {
     const avgItemConfidence = items.reduce((sum, item) => sum + item.confidence, 0) / items.length;
-    confidence = Math.round((confidence + avgItemConfidence) / 2);
+    confidence = Math.round(confidence * 0.7 + avgItemConfidence * 0.3);
   }
 
   const result = {

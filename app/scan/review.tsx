@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,20 +10,27 @@ import {
   KeyboardAvoidingView,
   Platform,
   useColorScheme,
+  useWindowDimensions,
 } from 'react-native';
+import { Image } from 'expo-image';
+import Svg, { Rect } from 'react-native-svg';
+import { ZONE_COLORS, type ZoneDefinition } from '@/src/types/zones';
 import { showSuccessToast, showErrorToast } from '@/src/utils/toast';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, Badge } from '@/src/components/ui';
 import { parseReceipt, ParsedReceipt, ParsedItem, ParserOptions } from '@/src/services/ocr/parser';
+import { parseWithTemplate, shouldUseTemplate } from '@/src/services/ocr/templateParser';
+import type { OcrBlock } from '@/src/services/ocr';
 import { useFormatPrice, usePreferencesStore } from '@/src/store/preferences';
 import { getSupportedCurrencies } from '@/src/config/currency';
-import { findOrCreateStore } from '@/src/db/queries/stores';
+import { findOrCreateStore, getStoreByNormalizedName } from '@/src/db/queries/stores';
 import { createReceipt } from '@/src/db/queries/receipts';
 import { createItems } from '@/src/db/queries/items';
 import { getCategories } from '@/src/db/queries/categories';
+import { getTemplateByStoreId, deleteTemplate } from '@/src/db/queries/storeParsingTemplates';
 import { getCategoryForItem, normalizeItemName, recordUserCorrection } from '@/src/db/seed';
 
 type Category = {
@@ -34,10 +41,24 @@ type Category = {
 };
 
 export default function ScanReviewScreen() {
-  const { uri, ocrText, ocrLines } = useLocalSearchParams<{
+  const {
+    uri,
+    ocrText,
+    ocrLines,
+    ocrBlocks,
+    imageDimensions,
+    originalImageDimensions,
+    isPdf,
+    manualZones,
+  } = useLocalSearchParams<{
     uri: string;
     ocrText?: string;
     ocrLines?: string;
+    ocrBlocks?: string;
+    imageDimensions?: string;
+    originalImageDimensions?: string; // Original dimensions used for zone drawing
+    isPdf?: string;
+    manualZones?: string; // Zones defined manually in preview screen
   }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -61,7 +82,78 @@ export default function ScanReviewScreen() {
   };
 
   const lines: string[] = ocrLines ? JSON.parse(ocrLines) : [];
+  const blocks: OcrBlock[] = ocrBlocks ? JSON.parse(ocrBlocks) : [];
+  const dimensions = imageDimensions ? JSON.parse(imageDimensions) : { width: 1000, height: 1500 };
+  const origDimensions = originalImageDimensions ? JSON.parse(originalImageDimensions) : dimensions;
   const hasOcrResult = ocrText && ocrText.length > 0;
+
+  // Debug: Log what dimensions we received
+  console.log('[Review] Received dimensions (OCR-effective):', dimensions);
+  console.log('[Review] Original dimensions (zone-drawing):', origDimensions);
+  console.log('[Review] Raw imageDimensions param:', imageDimensions);
+  if (blocks.length > 0) {
+    console.log('[Review] First OCR block raw bbox:', blocks[0].boundingBox);
+  }
+
+  // Parse manual zones from preview screen and transform if aspect ratios differ
+  const previewZones: ZoneDefinition[] = useMemo(() => {
+    if (manualZones) {
+      try {
+        const rawZones: ZoneDefinition[] = JSON.parse(manualZones);
+
+        // Check if we need to transform zones due to aspect ratio difference
+        const origAspect = origDimensions.width / origDimensions.height;
+        const ocrAspect = dimensions.width / dimensions.height;
+        const aspectDiff = Math.abs(origAspect - ocrAspect) / origAspect;
+
+        console.log('[Review] Zone transformation check:');
+        console.log('[Review] - Original aspect:', origAspect.toFixed(3));
+        console.log('[Review] - OCR aspect:', ocrAspect.toFixed(3));
+        console.log('[Review] - Difference:', (aspectDiff * 100).toFixed(1), '%');
+
+        // If aspect ratios are very different (>10%), zones need transformation
+        if (aspectDiff > 0.1) {
+          console.log('[Review] Transforming zones due to aspect ratio mismatch');
+
+          // Check if it looks like a 90-degree rotation
+          const isRotated = (origAspect > 1 && ocrAspect < 1) || (origAspect < 1 && ocrAspect > 1);
+
+          if (isRotated) {
+            console.log(
+              '[Review] Image appears rotated 90 degrees - transforming zone coordinates'
+            );
+            // Transform zones for 90-degree rotation: (x, y) -> (y, 1-x-width)
+            return rawZones.map((zone) => ({
+              ...zone,
+              boundingBox: {
+                x: zone.boundingBox.y,
+                y: 1 - zone.boundingBox.x - zone.boundingBox.width,
+                width: zone.boundingBox.height,
+                height: zone.boundingBox.width,
+              },
+            }));
+          } else {
+            // Just scale proportionally
+            const scaleX = ocrAspect / origAspect;
+            return rawZones.map((zone) => ({
+              ...zone,
+              boundingBox: {
+                ...zone.boundingBox,
+                x: zone.boundingBox.x * scaleX,
+                width: zone.boundingBox.width * scaleX,
+              },
+            }));
+          }
+        }
+
+        return rawZones;
+      } catch (e) {
+        console.error('[Review] Error parsing zones:', e);
+        return [];
+      }
+    }
+    return [];
+  }, [manualZones, dimensions, origDimensions]);
 
   const parserOptions: ParserOptions = useMemo(
     () => ({
@@ -72,11 +164,58 @@ export default function ScanReviewScreen() {
   );
 
   const initialParsedData = useMemo(() => {
-    if (lines.length > 0) {
-      return parseReceipt(lines, parserOptions);
+    if (lines.length === 0) return null;
+
+    // If manual zones were defined in preview, use them for parsing
+    if (previewZones.length > 0 && blocks.length > 0) {
+      console.log('[Review] Using manual zones for parsing');
+      console.log('[Review] Preview zones:', previewZones.length);
+      console.log('[Review] Blocks available:', blocks.length);
+      console.log('[Review] Dimensions:', dimensions);
+      console.log(
+        '[Review] First block sample:',
+        blocks[0]
+          ? {
+              text: blocks[0].lines
+                ?.map((l: { text: string }) => l.text)
+                .join(' ')
+                .substring(0, 50),
+              bbox: blocks[0].boundingBox,
+            }
+          : 'none'
+      );
+
+      // Create a fake template object to use with parseWithTemplate
+      const manualTemplate = {
+        id: 0,
+        storeId: 0,
+        zones: previewZones,
+        parsingHints: null,
+        sampleImagePath: null,
+        templateImageDimensions: dimensions,
+        confidence: 70,
+        useCount: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      const result = parseWithTemplate(
+        blocks,
+        manualTemplate,
+        ocrText || lines.join('\n'),
+        dimensions
+      );
+      console.log('[Review] Parse result:', {
+        storeName: result.storeName,
+        itemsCount: result.items.length,
+        total: result.total,
+        confidence: result.confidence,
+      });
+      return result;
     }
-    return null;
-  }, [lines, parserOptions]);
+
+    // Otherwise use standard parsing
+    return parseReceipt(lines, parserOptions);
+  }, [lines, parserOptions, previewZones, blocks, ocrText, dimensions]);
 
   const setCurrency = usePreferencesStore((state) => state.setCurrency);
   const currencies = useMemo(() => getSupportedCurrencies(), []);
@@ -97,6 +236,115 @@ export default function ScanReviewScreen() {
   const [showItemModal, setShowItemModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showTotalModal, setShowTotalModal] = useState(false);
+  const [showZonePrompt, setShowZonePrompt] = useState(false);
+  const [currentStoreId, setCurrentStoreId] = useState<number | null>(null);
+  const [hasExistingTemplate, setHasExistingTemplate] = useState(false);
+  const [templateApplied, setTemplateApplied] = useState(false);
+  const [manualZonesApplied] = useState(previewZones.length > 0); // Set once based on initial zones
+  const [appliedZones, setAppliedZones] = useState<ZoneDefinition[]>(previewZones);
+  const [showZonesPreview, setShowZonesPreview] = useState(false);
+
+  const { width: screenWidth } = useWindowDimensions();
+
+  // Re-check for template when returning from zones screen (PDF only)
+  useFocusEffect(
+    useCallback(() => {
+      // Templates only apply to PDF imports - camera images vary too much
+      if (isPdf !== 'true') return;
+
+      // If we haven't applied a template yet and a store was identified,
+      // re-check for templates (user might have just created one)
+      if (!templateApplied && currentStoreId) {
+        getTemplateByStoreId(currentStoreId).then((template) => {
+          if (
+            template &&
+            blocks.length > 0 &&
+            parsedData &&
+            shouldUseTemplate(template, parsedData.confidence)
+          ) {
+            const templateParsedData = parseWithTemplate(
+              blocks,
+              template,
+              ocrText || lines.join('\n'),
+              dimensions
+            );
+            setParsedData(templateParsedData);
+            setTemplateApplied(true);
+            setHasExistingTemplate(true);
+            setShowZonePrompt(false);
+            setAppliedZones(template.zones);
+          }
+        });
+      }
+    }, [templateApplied, currentStoreId, blocks, parsedData, ocrText, lines, dimensions, isPdf])
+  );
+
+  useEffect(() => {
+    async function checkStoreTemplate() {
+      if (!parsedData?.storeName) return;
+
+      const normalizedName = parsedData.storeName
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]/g, '');
+
+      const store = await getStoreByNormalizedName(normalizedName);
+      if (store) {
+        setCurrentStoreId(store.id);
+
+        // Templates only apply to PDF imports - camera images vary too much
+        if (isPdf === 'true') {
+          const template = await getTemplateByStoreId(store.id);
+          setHasExistingTemplate(!!template);
+
+          // Apply template if one exists and we haven't already applied it
+          if (
+            template &&
+            !templateApplied &&
+            blocks.length > 0 &&
+            shouldUseTemplate(template, parsedData.confidence)
+          ) {
+            const templateParsedData = parseWithTemplate(
+              blocks,
+              template,
+              ocrText || lines.join('\n'),
+              dimensions
+            );
+            setParsedData(templateParsedData);
+            setTemplateApplied(true);
+            setAppliedZones(template.zones);
+            // Don't show zone prompt if template was successfully applied
+            setShowZonePrompt(false);
+            return;
+          }
+
+          // Only show zone prompt for PDFs with low confidence and no template
+          const shouldShowPrompt = !template && parsedData.confidence < 90;
+          setShowZonePrompt(shouldShowPrompt);
+        } else {
+          // For camera images, don't use templates
+          setHasExistingTemplate(false);
+          setShowZonePrompt(false);
+        }
+      } else {
+        setCurrentStoreId(null);
+        setHasExistingTemplate(false);
+        // Only show zone prompt for PDFs with low confidence
+        setShowZonePrompt(isPdf === 'true' && parsedData.confidence < 90);
+      }
+    }
+
+    checkStoreTemplate();
+  }, [
+    parsedData?.storeName,
+    parsedData?.confidence,
+    isPdf,
+    templateApplied,
+    blocks,
+    dimensions,
+    ocrText,
+    lines,
+  ]);
 
   const [editStoreName, setEditStoreName] = useState('');
   const [editDay, setEditDay] = useState('');
@@ -324,6 +572,47 @@ export default function ScanReviewScreen() {
     setShowCategoryModal(true);
   };
 
+  const handleConfigureZones = async () => {
+    let storeId = currentStoreId;
+
+    if (!storeId && parsedData?.storeName) {
+      storeId = await findOrCreateStore(parsedData.storeName);
+      setCurrentStoreId(storeId);
+    }
+
+    if (!storeId) return;
+
+    router.push({
+      pathname: '/scan/zones',
+      params: {
+        uri,
+        storeId: storeId.toString(),
+        imageDimensions: imageDimensions || JSON.stringify({ width: 1000, height: 1500 }),
+      },
+    });
+  };
+
+  const handleDeleteTemplate = async () => {
+    if (!currentStoreId) return;
+
+    try {
+      await deleteTemplate(currentStoreId);
+      setHasExistingTemplate(false);
+      setTemplateApplied(false);
+
+      // Re-parse with generic parser
+      if (lines.length > 0) {
+        const genericParsed = parseReceipt(lines, parserOptions);
+        setParsedData(genericParsed);
+      }
+
+      showSuccessToast(t('common.success'), t('scan.templateDeleted'));
+    } catch (error) {
+      console.error('Error deleting template:', error);
+      showErrorToast(t('common.error'), t('errors.deleteFailed'));
+    }
+  };
+
   const selectCategory = (categoryId: number) => {
     setEditItemCategoryId(categoryId);
     setShowCategoryModal(false);
@@ -445,6 +734,202 @@ export default function ScanReviewScreen() {
                 <Badge variant="warning" size="sm" label={t('scan.lowConfidence')} />
               )}
             </View>
+
+            {/* Manual Zones Applied Indicator (from preview screen) */}
+            {manualZonesApplied && !templateApplied && (
+              <Card variant="outlined" padding="md" className="mb-4">
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-row items-center flex-1">
+                    <View
+                      className="rounded-full p-2 mr-3"
+                      style={{ backgroundColor: colors.accent + '30' }}
+                    >
+                      <Ionicons name="grid" size={20} color="#B8860B" />
+                    </View>
+                    <View className="flex-1">
+                      <Text
+                        className="text-sm"
+                        style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
+                      >
+                        {t('scan.zonesApplied')}
+                      </Text>
+                      <Text
+                        className="text-xs mt-0.5"
+                        style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
+                      >
+                        {appliedZones.length} {appliedZones.length === 1 ? 'zone' : 'zones'}
+                      </Text>
+                    </View>
+                  </View>
+                  <Pressable
+                    onPress={() => setShowZonesPreview(true)}
+                    className="p-2 rounded-lg"
+                    style={{ backgroundColor: colors.surface }}
+                    hitSlop={8}
+                  >
+                    <Ionicons name="eye-outline" size={18} color={colors.textSecondary} />
+                  </Pressable>
+                </View>
+              </Card>
+            )}
+
+            {/* Template Applied Indicator (PDF only) */}
+            {templateApplied && isPdf === 'true' && (
+              <Card variant="outlined" padding="md" className="mb-4">
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-row items-center flex-1">
+                    <View
+                      className="rounded-full p-2 mr-3"
+                      style={{ backgroundColor: colors.primary + '20' }}
+                    >
+                      <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
+                    </View>
+                    <View className="flex-1">
+                      <Text
+                        className="text-sm"
+                        style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
+                      >
+                        {t('scan.templateApplied')}
+                      </Text>
+                      <Text
+                        className="text-xs mt-0.5"
+                        style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
+                      >
+                        {appliedZones.length} {appliedZones.length === 1 ? 'zone' : 'zones'}
+                      </Text>
+                    </View>
+                  </View>
+                  <View className="flex-row gap-2">
+                    <Pressable
+                      onPress={() => setShowZonesPreview(true)}
+                      className="p-2 rounded-lg"
+                      style={{ backgroundColor: colors.surface }}
+                      hitSlop={8}
+                    >
+                      <Ionicons name="eye-outline" size={18} color={colors.textSecondary} />
+                    </Pressable>
+                    <Pressable
+                      onPress={handleConfigureZones}
+                      className="p-2 rounded-lg"
+                      style={{ backgroundColor: colors.surface }}
+                      hitSlop={8}
+                    >
+                      <Ionicons name="pencil" size={18} color={colors.textSecondary} />
+                    </Pressable>
+                    <Pressable
+                      onPress={handleDeleteTemplate}
+                      className="p-2 rounded-lg"
+                      style={{ backgroundColor: colors.error + '15' }}
+                      hitSlop={8}
+                    >
+                      <Ionicons name="trash-outline" size={18} color={colors.error} />
+                    </Pressable>
+                  </View>
+                </View>
+              </Card>
+            )}
+
+            {/* Existing Template (not yet applied) - Show edit/delete options (PDF only) */}
+            {hasExistingTemplate && !templateApplied && isPdf === 'true' && (
+              <Card variant="outlined" padding="md" className="mb-4">
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-row items-center flex-1">
+                    <View
+                      className="rounded-full p-2 mr-3"
+                      style={{ backgroundColor: colors.accent + '30' }}
+                    >
+                      <Ionicons name="grid-outline" size={20} color="#B8860B" />
+                    </View>
+                    <View className="flex-1">
+                      <Text
+                        className="text-sm"
+                        style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
+                      >
+                        {t('scan.hasTemplate')}
+                      </Text>
+                      <Text
+                        className="text-xs mt-0.5"
+                        style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
+                      >
+                        {t('scan.hasTemplateDesc')}
+                      </Text>
+                    </View>
+                  </View>
+                  <View className="flex-row gap-2">
+                    <Pressable
+                      onPress={handleConfigureZones}
+                      className="p-2 rounded-lg"
+                      style={{ backgroundColor: colors.surface }}
+                      hitSlop={8}
+                    >
+                      <Ionicons name="pencil" size={18} color={colors.textSecondary} />
+                    </Pressable>
+                    <Pressable
+                      onPress={handleDeleteTemplate}
+                      className="p-2 rounded-lg"
+                      style={{ backgroundColor: colors.error + '15' }}
+                      hitSlop={8}
+                    >
+                      <Ionicons name="trash-outline" size={18} color={colors.error} />
+                    </Pressable>
+                  </View>
+                </View>
+              </Card>
+            )}
+
+            {/* Zone Configuration Prompt - No template exists (PDF only) */}
+            {showZonePrompt && !hasExistingTemplate && !templateApplied && isPdf === 'true' && (
+              <Card variant="outlined" padding="md" className="mb-4">
+                <View className="flex-row items-center mb-2">
+                  <View
+                    className="rounded-full p-2 mr-3"
+                    style={{ backgroundColor: colors.accent + '30' }}
+                  >
+                    <Ionicons name="grid-outline" size={20} color="#B8860B" />
+                  </View>
+                  <View className="flex-1">
+                    <Text
+                      className="text-sm"
+                      style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
+                    >
+                      {t('scan.configureZones')}
+                    </Text>
+                    <Text
+                      className="text-xs mt-0.5"
+                      style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
+                    >
+                      {t('scan.configureZonesDesc')}
+                    </Text>
+                  </View>
+                </View>
+                <View className="flex-row gap-2 mt-2">
+                  <Pressable
+                    onPress={() => setShowZonePrompt(false)}
+                    className="flex-1 py-2 rounded-lg items-center"
+                    style={{ backgroundColor: colors.surface }}
+                  >
+                    <Text
+                      className="text-sm"
+                      style={{ color: colors.textSecondary, fontFamily: 'Inter_500Medium' }}
+                    >
+                      {t('common.skip')}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={handleConfigureZones}
+                    className="flex-1 py-2 rounded-lg items-center"
+                    style={{ backgroundColor: colors.primary }}
+                  >
+                    <Text
+                      className="text-sm text-white"
+                      style={{ fontFamily: 'Inter_600SemiBold' }}
+                    >
+                      {t('scan.defineZones')}
+                    </Text>
+                  </Pressable>
+                </View>
+              </Card>
+            )}
 
             {/* Store and Date Info */}
             <Card variant="filled" padding="md" className="mb-4">
@@ -1354,6 +1839,104 @@ export default function ScanReviewScreen() {
             }}
             contentContainerStyle={{ paddingBottom: 40 }}
           />
+        </SafeAreaView>
+      </Modal>
+
+      {/* Zones Preview Modal */}
+      <Modal
+        visible={showZonesPreview}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowZonesPreview(false)}
+      >
+        <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+          {/* Header */}
+          <View
+            className="flex-row items-center justify-between px-4 py-4 border-b"
+            style={{ borderColor: colors.border }}
+          >
+            <Pressable onPress={() => setShowZonesPreview(false)} hitSlop={8}>
+              <Ionicons name="close" size={24} color={colors.text} />
+            </Pressable>
+            <Text
+              className="text-lg"
+              style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
+            >
+              {t('scan.appliedZones')}
+            </Text>
+            <View style={{ width: 24 }} />
+          </View>
+
+          {/* Zones Preview */}
+          <ScrollView className="flex-1 p-4">
+            {uri && isPdf !== 'true' && (
+              <View className="items-center">
+                {(() => {
+                  const imageAspectRatio = dimensions.width / dimensions.height;
+                  const previewWidth = screenWidth - 32;
+                  const previewHeight = previewWidth / imageAspectRatio;
+                  return (
+                    <View style={{ width: previewWidth, height: previewHeight }}>
+                      <Image
+                        source={{ uri }}
+                        style={{ width: previewWidth, height: previewHeight }}
+                        contentFit="contain"
+                      />
+                      <Svg
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: previewWidth,
+                          height: previewHeight,
+                        }}
+                      >
+                        {appliedZones.map((zone) => {
+                          const bb = zone.boundingBox;
+                          return (
+                            <Rect
+                              key={zone.id}
+                              x={bb.x * previewWidth}
+                              y={bb.y * previewHeight}
+                              width={bb.width * previewWidth}
+                              height={bb.height * previewHeight}
+                              fill={`${ZONE_COLORS[zone.type]}40`}
+                              stroke={ZONE_COLORS[zone.type]}
+                              strokeWidth={2}
+                            />
+                          );
+                        })}
+                      </Svg>
+                    </View>
+                  );
+                })()}
+              </View>
+            )}
+
+            {/* Zone Legend */}
+            <View className="mt-4">
+              <Text
+                className="text-sm mb-3"
+                style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
+              >
+                {t('scan.zoneTypes')}
+              </Text>
+              {appliedZones.map((zone) => (
+                <View key={zone.id} className="flex-row items-center mb-2">
+                  <View
+                    className="w-4 h-4 rounded mr-3"
+                    style={{ backgroundColor: ZONE_COLORS[zone.type] }}
+                  />
+                  <Text
+                    className="text-sm capitalize"
+                    style={{ color: colors.text, fontFamily: 'Inter_400Regular' }}
+                  >
+                    {zone.type.replace('_', ' ')}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </ScrollView>
         </SafeAreaView>
       </Modal>
     </View>
