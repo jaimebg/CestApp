@@ -32,11 +32,14 @@
 - **100% on-device** — ML Kit OCR runs locally. No cloud uploads.
 - **Any format** — Camera, gallery, or PDF.
 - **Smart categories** — Auto-sorts items. Learns from your corrections.
-- **Multi-language** — English & Spanish with regional format detection.
+- **Spanish supermarkets** — Pre-trained templates for Mercadona, Carrefour, Lidl, and more.
+- **Multi-language** — English & Spanish UI.
 
 ## Features
 
 **Capture**: Camera scanning, gallery import, PDF parsing via ML Kit OCR.
+
+**Smart Parsing**: Chain-specific templates detect Mercadona, Carrefour, Lidl, Eroski, Dia, Consum, Alcampo, Aldi, HiperDino by NIF/name patterns.
 
 **Organize**: 10 built-in categories, auto-categorization, user learning, store detection.
 
@@ -44,7 +47,7 @@
 
 **Privacy**: Offline-first, local SQLite, no tracking, no ads.
 
-**Details**: Dark mode, 140+ currencies, flexible date formats, smooth animations.
+**Details**: Dark mode, Spanish regional formats (EUR, DD/MM/YYYY, decimal comma), smooth animations.
 
 ## Installation
 
@@ -89,11 +92,14 @@ src/
 
 ## How It Works
 
-1. **Detect** — Auto-detects decimal separators, date formats, receipt layout
-2. **Extract** — ML Kit for images, custom parser for PDFs
-3. **Categorize** — User corrections → keyword matching → default
+1. **Detect Chain** — Identifies supermarket by NIF (tax ID), store name patterns, or fingerprints (brand names like "Hacendado" for Mercadona)
+2. **Apply Template** — Uses chain-specific parsing rules (layout, item patterns, OCR corrections)
+3. **Extract** — ML Kit OCR for images, custom parser for PDFs
+4. **Categorize** — User corrections → keyword matching → default
 
 Learning is store-aware: same item can have different categories at different stores.
+
+**Supported Chains**: Mercadona, Carrefour, Lidl, Eroski, Dia, Consum, Alcampo, Aldi, HiperDino (with IGIC tax for Canarias).
 
 ## Contributing
 

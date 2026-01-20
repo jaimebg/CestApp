@@ -4,9 +4,16 @@ This document provides instructions for AI coding agents working on the CestApp 
 
 ## Project Overview
 
-CestApp is a supermarket receipt scanner app built with React Native and Expo. It uses on-device ML Kit OCR to extract data from receipts, parse items/totals, and categorize items automatically with user learning capabilities.
+CestApp is a **Spain-focused** supermarket receipt scanner app built with React Native and Expo. It uses on-device ML Kit OCR to extract data from receipts, with **pre-trained chain-specific templates** for major Spanish supermarkets (Mercadona, Carrefour, Lidl, etc.).
 
-**Current Status:** Production-ready with ~9,600+ lines of TypeScript across 54 files. All core features implemented (Phases 1-10 complete).
+**Key Design Decisions:**
+
+- **Spain-only**: Hardcoded EUR currency, DD/MM/YYYY date format, decimal comma
+- **Pre-trained templates**: Chain knowledge is static in code, not learned at runtime
+- **Tax regions**: IVA (Peninsula/Baleares), IGIC (Canarias), IPSI (Ceuta/Melilla)
+- **Language**: English & Spanish UI only
+
+**Current Status:** Production-ready. Core features implemented.
 
 ## Key Technologies
 
@@ -146,8 +153,10 @@ src/
   services/
     ocr/
       index.ts                 # ML Kit OCR wrapper
-      parser.ts                # Receipt parsing (1,086 lines)
-      templateParser.ts        # Template-based parsing
+      parser.ts                # Receipt parsing with chain detection
+      chainDetector.ts         # Detects chain by NIF/name/fingerprints
+      chainParser.ts           # Chain-specific parsing using templates
+      templateParser.ts        # Zone-based parsing
     pdf/
       index.ts                 # PDF text extraction (648 lines)
     capture/
@@ -174,7 +183,10 @@ src/
     stores.ts                  # Store types
 
   config/
-    currency.ts                # 140+ currency definitions
+    currency.ts                # EUR currency (Spain-focused)
+    spanishChains.ts           # Pre-trained chain templates (Mercadona, Lidl, etc.)
+    taxRegions.ts              # IVA/IGIC/IPSI tax definitions
+    regionalPresets.ts         # Spain-only regional settings
 
   i18n/
     index.ts                   # i18next setup
@@ -246,15 +258,51 @@ findTotalLine(lines: string[]): string | null
 findDateLine(lines: string[]): string | null
 ```
 
+### Chain Detection (`src/services/ocr/chainDetector.ts`)
+
+Identifies Spanish supermarket chains using multiple strategies (in order of reliability):
+
+1. **NIF Matching** (98% confidence): Tax ID like "A46103834" → Mercadona
+2. **Name Matching** (90% confidence): "MERCADONA S.A." patterns
+3. **Fingerprint Matching** (70-85%): Brand names like "HACENDADO", "DELIPLUS"
+4. **Heuristic Matching** (50-65%): Keywords like "CLUB CARREFOUR"
+
+```typescript
+detectChain(blocks: TextBlock[]): ChainDetectionResult
+detectChainFromText(text: string): ChainDetectionResult
+```
+
+### Spanish Chain Templates (`src/config/spanishChains.ts`)
+
+Pre-trained templates for major Spanish supermarkets:
+
+| Chain     | Market Share | NIF       | Key Features                     |
+| --------- | ------------ | --------- | -------------------------------- |
+| Mercadona | 27.3%        | A46103834 | Columnar layout, unit prices     |
+| Carrefour | 9.0%         | A28425270 | Mixed layout, multiple variants  |
+| Lidl      | 6.9%         | A60195278 | Compact columnar, DD.MM.YY dates |
+| Eroski    | 5.5%         | F20033361 | Includes Caprabo                 |
+| Dia       | 4.5%         | A28164754 | ClubDia discounts                |
+| Consum    | 3.8%         | F46078986 | Regional (Valencia)              |
+| Alcampo   | 3.2%         | A28581882 | Hypermarket format               |
+| Aldi      | 2.8%         | B82258301 | German discount style            |
+| HiperDino | 2.1%         | A35032517 | Canarias (uses IGIC tax)         |
+
+Each template includes: `namePatterns`, `nifPatterns`, `layout`, `parsing.itemPatterns`, `ocrCorrections`, `fingerprints`
+
 ### Receipt Parser (`src/services/ocr/parser.ts`)
 
-Sophisticated 1,086-line parser that handles:
+Main parsing orchestrator:
 
-- **Format Detection**: Auto-detects decimal separator (./,), date format, layout type
-- **Store Extraction**: Heuristic-based store name detection
-- **Date/Time Parsing**: 10+ date format patterns (DD/MM/YYYY, MM/DD/YYYY, etc.)
-- **Item Parsing**: Two strategies - inline ("Item $12.34") and columnar (price on separate line)
-- **Unit Detection**: kg, lb, oz, g, l, ml
+1. **Chain Detection**: Tries to identify supermarket chain first
+2. **Chain-Specific Parsing**: Uses template if chain detected with high confidence
+3. **Generic Fallback**: Standard parsing if chain unknown
+
+Features:
+
+- **Spanish Defaults**: DD/MM/YYYY dates, decimal comma, EUR
+- **Item Parsing**: Inline and columnar strategies
+- **Unit Detection**: kg, g, l, ml
 - **Payment Method**: cash/card/digital detection
 - **Confidence Scoring**: Weighted based on extracted fields
 
@@ -330,21 +378,21 @@ Key functions in `src/db/seed.ts`:
 
 ```typescript
 interface PreferencesState {
-  language: 'en' | 'es';
-  currencyCode: string;
-  currency: Currency;
-  dateFormat: 'DMY' | 'MDY' | 'YMD';
-  decimalSeparator: '.' | ',';
+  language: 'en' | 'es'; // Only setting user can change
   hasCompletedOnboarding: boolean;
+
+  // Hardcoded Spanish defaults (not configurable)
+  // - Currency: EUR
+  // - Date format: DMY (DD/MM/YYYY)
+  // - Decimal separator: comma (1.234,56)
 
   // Actions
   setLanguage(lang: string): void;
-  setCurrency(code: string): void;
   formatPrice(cents: number): string;
 }
 ```
 
-Persisted to AsyncStorage. Auto-detects device locale on first launch.
+Persisted to AsyncStorage. Language is the only user-configurable preference.
 
 ### Receipts Store (`src/store/receipts.ts`)
 
@@ -437,12 +485,22 @@ See `.prettierrc`:
 
 **Note**: This app requires a development build due to native modules (ML Kit OCR). Expo Go is not sufficient.
 
+## Spanish Tax Regions (`src/config/taxRegions.ts`)
+
+| Region             | Tax Type | Rates           |
+| ------------------ | -------- | --------------- |
+| Peninsula/Baleares | IVA      | 4% / 10% / 21%  |
+| Canarias           | IGIC     | 0% / 3% / 7%    |
+| Ceuta/Melilla      | IPSI     | 0.5% / 4% / 10% |
+
+Detection by postal code prefix, tax keywords (IGIC vs IVA), or store name (HiperDino → Canarias).
+
 ## Potential Future Work
 
 - Cloud sync with user accounts
 - Receipt export (CSV, PDF reports)
 - Budget tracking and alerts
-- More languages support
+- More chain templates (regional supermarkets)
 - Barcode/QR code scanning
 - Store loyalty card integration
 - Receipt sharing
