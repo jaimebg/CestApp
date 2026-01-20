@@ -229,7 +229,9 @@
     "templatesCount": "{{count}} template(s) saved",
     "deleteTemplate": "Delete Template",
     "deleteTemplateConfirm": "Delete the parsing template for {{store}}? This cannot be undone.",
-    "confidence": "Confidence"
+    "confidence": "Confidence",
+    "spanishDefaults": "Spanish Region Settings",
+    "spanishDefaultsDesc": "Date format DD/MM/YYYY, decimal comma, and Euro (€) are set automatically."
   },
   "errors": {
     "cameraPermission": "Camera permission is required to take photos",
@@ -277,6 +279,8 @@
     "dmy": "Day / Month / Year",
     "mdy": "Month / Day / Year",
     "decimalDot": "Dot as decimal (1,234.56)",
-    "decimalComma": "Comma as decimal (1.234,56)"
+    "decimalComma": "Comma as decimal (1.234,56)",
+    "spanishDefaults": "Optimized for Spain",
+    "spanishDefaultsDesc": "The app uses European date format (DD/MM/YYYY), decimal comma, and Euro (€) by default."
   }
 }

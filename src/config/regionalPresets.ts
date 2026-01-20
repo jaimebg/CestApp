@@ -1,6 +1,6 @@
 /**
  * Regional Presets for Receipt Parsing
- * Pre-configured settings optimized for specific regions
+ * Simplified for Spanish-focused receipt parsing
  */
 
 export interface RegionalKeywords {
@@ -67,6 +67,9 @@ export const SPAIN_PRESET: RegionalPreset = {
       'IVA 10%',
       'IVA 4%',
       'CUOTA',
+      'IGIC',
+      'I.G.I.C.',
+      'IPSI',
     ],
     discount: [
       'DESCUENTO',
@@ -151,6 +154,8 @@ export const SPAIN_PRESET: RegionalPreset = {
     'SUPERSOL',
     'CASH FRESH',
     'CASH & CARRY',
+    'HIPERDINO',
+    'DINOSOL',
   ],
 
   // Keywords to skip when parsing item names
@@ -208,84 +213,35 @@ export const SPAIN_PRESET: RegionalPreset = {
 };
 
 /**
- * All available regional presets
+ * Get the Spain preset (the only supported preset)
  */
-export const REGIONAL_PRESETS: Record<string, RegionalPreset> = {
-  spain: SPAIN_PRESET,
-};
-
-/**
- * Get regional preset by ID
- */
-export function getRegionalPreset(id: string): RegionalPreset | null {
-  return REGIONAL_PRESETS[id.toLowerCase()] || null;
+export function getRegionalPreset(_id?: string): RegionalPreset {
+  return SPAIN_PRESET;
 }
 
 /**
- * Get regional preset by country code (ISO 3166-1 alpha-2)
+ * Get regional preset by country code
+ * Returns Spain preset for ES, defaults to Spain for all others
  */
-export function getPresetByCountryCode(countryCode: string): RegionalPreset | null {
-  const mapping: Record<string, string> = {
-    ES: 'spain',
-    // Future presets can be added here
-    // DE: 'germany',
-    // FR: 'france',
-    // IT: 'italy',
-    // US: 'usa',
-  };
-
-  const presetId = mapping[countryCode.toUpperCase()];
-  return presetId ? REGIONAL_PRESETS[presetId] : null;
+export function getPresetByCountryCode(_countryCode?: string): RegionalPreset {
+  return SPAIN_PRESET;
 }
 
 /**
- * Detect if text contains keywords from a specific region
+ * Detect region from text
+ * Simplified: Always returns Spain preset
  */
-export function detectRegionFromText(text: string): RegionalPreset | null {
-  const lowerText = text.toLowerCase();
-
-  // Check for Spain-specific indicators
-  const spainIndicators = [
-    'iva',
-    'i.v.a',
-    'importe',
-    'mercadona',
-    'carrefour',
-    'lidl',
-    'eroski',
-    'dia',
-    'alcampo',
-    'euros',
-    '€',
-    'nif',
-    'cif',
-    'total',
-    'precio',
-    'unidades',
-  ];
-
-  const matchedIndicators = spainIndicators.filter((indicator) => lowerText.includes(indicator));
-
-  // Debug log
-  if (__DEV__ && matchedIndicators.length > 0) {
-    console.log('[RegionalPresets] Spain indicators found:', matchedIndicators);
-  }
-
-  // If we find multiple Spain indicators, use Spain preset
-  if (matchedIndicators.length >= 2) {
-    if (__DEV__) {
-      console.log('[RegionalPresets] Using SPAIN preset');
-    }
-    return SPAIN_PRESET;
-  }
-
-  return null;
+export function detectRegionFromText(_text: string): RegionalPreset {
+  return SPAIN_PRESET;
 }
 
 /**
- * Check if a store name matches known stores in a preset
+ * Check if a store name matches known stores in the preset
  */
-export function matchStoreInPreset(storeName: string, preset: RegionalPreset): string | null {
+export function matchStoreInPreset(
+  storeName: string,
+  preset: RegionalPreset = SPAIN_PRESET
+): string | null {
   const normalizedName = storeName.toUpperCase().trim();
 
   for (const store of preset.commonStores) {
@@ -312,7 +268,7 @@ export function matchStoreInPreset(storeName: string, preset: RegionalPreset): s
 export function matchesKeyword(
   text: string,
   category: keyof RegionalKeywords,
-  preset: RegionalPreset
+  preset: RegionalPreset = SPAIN_PRESET
 ): boolean {
   const upperText = text.toUpperCase().trim();
   const keywords = preset.keywords[category];
@@ -323,7 +279,7 @@ export function matchesKeyword(
 /**
  * Check if text should be skipped based on preset skip keywords
  */
-export function shouldSkipText(text: string, preset: RegionalPreset): boolean {
+export function shouldSkipText(text: string, preset: RegionalPreset = SPAIN_PRESET): boolean {
   const upperText = text.toUpperCase().trim();
 
   return preset.skipKeywords.some((keyword) => upperText.includes(keyword));

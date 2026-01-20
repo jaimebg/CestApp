@@ -1,6 +1,7 @@
 /**
  * Currency Configuration
- * Defines supported currencies and locale-based defaults
+ * Simplified for Spanish-focused receipt parsing
+ * Primary: EUR | Display reference: USD
  */
 
 export interface Currency {
@@ -13,16 +14,12 @@ export interface Currency {
   decimals: number;
 }
 
+/**
+ * Supported currencies
+ * EUR: Primary currency for Spain
+ * USD: Display reference for international comparison
+ */
 export const CURRENCIES: Record<string, Currency> = {
-  USD: {
-    code: 'USD',
-    symbol: '$',
-    name: 'US Dollar',
-    symbolPosition: 'before',
-    decimalSeparator: '.',
-    thousandsSeparator: ',',
-    decimals: 2,
-  },
   EUR: {
     code: 'EUR',
     symbol: '€',
@@ -32,223 +29,57 @@ export const CURRENCIES: Record<string, Currency> = {
     thousandsSeparator: '.',
     decimals: 2,
   },
-  GBP: {
-    code: 'GBP',
-    symbol: '£',
-    name: 'British Pound',
-    symbolPosition: 'before',
-    decimalSeparator: '.',
-    thousandsSeparator: ',',
-    decimals: 2,
-  },
-  MXN: {
-    code: 'MXN',
+  USD: {
+    code: 'USD',
     symbol: '$',
-    name: 'Mexican Peso',
+    name: 'US Dollar',
     symbolPosition: 'before',
     decimalSeparator: '.',
     thousandsSeparator: ',',
-    decimals: 2,
-  },
-  CAD: {
-    code: 'CAD',
-    symbol: '$',
-    name: 'Canadian Dollar',
-    symbolPosition: 'before',
-    decimalSeparator: '.',
-    thousandsSeparator: ',',
-    decimals: 2,
-  },
-  AUD: {
-    code: 'AUD',
-    symbol: '$',
-    name: 'Australian Dollar',
-    symbolPosition: 'before',
-    decimalSeparator: '.',
-    thousandsSeparator: ',',
-    decimals: 2,
-  },
-  JPY: {
-    code: 'JPY',
-    symbol: '¥',
-    name: 'Japanese Yen',
-    symbolPosition: 'before',
-    decimalSeparator: '.',
-    thousandsSeparator: ',',
-    decimals: 0,
-  },
-  CNY: {
-    code: 'CNY',
-    symbol: '¥',
-    name: 'Chinese Yuan',
-    symbolPosition: 'before',
-    decimalSeparator: '.',
-    thousandsSeparator: ',',
-    decimals: 2,
-  },
-  BRL: {
-    code: 'BRL',
-    symbol: 'R$',
-    name: 'Brazilian Real',
-    symbolPosition: 'before',
-    decimalSeparator: ',',
-    thousandsSeparator: '.',
-    decimals: 2,
-  },
-  ARS: {
-    code: 'ARS',
-    symbol: '$',
-    name: 'Argentine Peso',
-    symbolPosition: 'before',
-    decimalSeparator: ',',
-    thousandsSeparator: '.',
-    decimals: 2,
-  },
-  COP: {
-    code: 'COP',
-    symbol: '$',
-    name: 'Colombian Peso',
-    symbolPosition: 'before',
-    decimalSeparator: ',',
-    thousandsSeparator: '.',
-    decimals: 0,
-  },
-  CLP: {
-    code: 'CLP',
-    symbol: '$',
-    name: 'Chilean Peso',
-    symbolPosition: 'before',
-    decimalSeparator: ',',
-    thousandsSeparator: '.',
-    decimals: 0,
-  },
-  PEN: {
-    code: 'PEN',
-    symbol: 'S/',
-    name: 'Peruvian Sol',
-    symbolPosition: 'before',
-    decimalSeparator: '.',
-    thousandsSeparator: ',',
-    decimals: 2,
-  },
-  INR: {
-    code: 'INR',
-    symbol: '₹',
-    name: 'Indian Rupee',
-    symbolPosition: 'before',
-    decimalSeparator: '.',
-    thousandsSeparator: ',',
-    decimals: 2,
-  },
-  KRW: {
-    code: 'KRW',
-    symbol: '₩',
-    name: 'South Korean Won',
-    symbolPosition: 'before',
-    decimalSeparator: '.',
-    thousandsSeparator: ',',
-    decimals: 0,
-  },
-  CHF: {
-    code: 'CHF',
-    symbol: 'Fr.',
-    name: 'Swiss Franc',
-    symbolPosition: 'before',
-    decimalSeparator: '.',
-    thousandsSeparator: "'",
     decimals: 2,
   },
 };
 
-const LOCALE_CURRENCY_MAP: Record<string, string> = {
-  // North America
-  US: 'USD',
-  CA: 'CAD',
-  MX: 'MXN',
-  // Europe
-  GB: 'GBP',
-  DE: 'EUR',
-  FR: 'EUR',
-  IT: 'EUR',
-  ES: 'EUR',
-  IC: 'EUR', // Canary Islands (Spain)
-  NL: 'EUR',
-  BE: 'EUR',
-  AT: 'EUR',
-  PT: 'EUR',
-  IE: 'EUR',
-  GR: 'EUR',
-  FI: 'EUR',
-  LU: 'EUR',
-  MT: 'EUR',
-  CY: 'EUR',
-  SK: 'EUR',
-  SI: 'EUR',
-  EE: 'EUR',
-  LV: 'EUR',
-  LT: 'EUR',
-  CH: 'CHF',
-  // Asia
-  JP: 'JPY',
-  CN: 'CNY',
-  KR: 'KRW',
-  // Oceania
-  AU: 'AUD',
-  NZ: 'AUD',
-  // South Asia
-  IN: 'INR',
-  // Latin America
-  BR: 'BRL',
-  AR: 'ARS',
-  CO: 'COP',
-  CL: 'CLP',
-  PE: 'PEN',
-  VE: 'USD', // Venezuela uses USD widely due to inflation
-  EC: 'USD', // Ecuador uses USD
-  UY: 'USD',
-  PY: 'USD',
-  BO: 'USD',
-  // Central America & Caribbean
-  PA: 'USD', // Panama uses USD
-  CR: 'USD',
-  GT: 'USD',
-  HN: 'USD',
-  SV: 'USD', // El Salvador uses USD
-  NI: 'USD',
-  DO: 'USD',
-  CU: 'USD',
-  PR: 'USD', // Puerto Rico (US territory)
+/**
+ * Default currency for Spain
+ */
+export const DEFAULT_CURRENCY = 'EUR';
+
+/**
+ * Spanish number formatting
+ * Decimal separator: comma (,)
+ * Thousands separator: period (.)
+ */
+export const SPANISH_NUMBER_FORMAT = {
+  decimalSeparator: ',' as const,
+  thousandsSeparator: '.' as const,
 };
 
-// Language fallback when region is unknown
-// Uses the currency of the language's country of origin
-const LANGUAGE_CURRENCY_MAP: Record<string, string> = {
-  en: 'USD',
-  es: 'EUR', // Spanish originates from Spain (EUR)
-  pt: 'EUR', // Portuguese originates from Portugal (EUR)
-  fr: 'EUR',
-  de: 'EUR',
-  it: 'EUR',
-  ja: 'JPY',
-  zh: 'CNY',
-  ko: 'KRW',
-};
-
+/**
+ * Get default currency from locale
+ * Simplified: Returns EUR for Spanish-speaking regions, USD otherwise
+ */
 export function getDefaultCurrencyFromLocale(
   regionCode: string | null,
   languageCode: string | null
 ): string {
-  if (regionCode && LOCALE_CURRENCY_MAP[regionCode.toUpperCase()]) {
-    return LOCALE_CURRENCY_MAP[regionCode.toUpperCase()];
+  // Spanish-speaking European regions use EUR
+  if (regionCode?.toUpperCase() === 'ES' || regionCode?.toUpperCase() === 'IC') {
+    return 'EUR';
   }
 
-  if (languageCode && LANGUAGE_CURRENCY_MAP[languageCode.toLowerCase()]) {
-    return LANGUAGE_CURRENCY_MAP[languageCode.toLowerCase()];
+  // Spanish language defaults to EUR (Spain origin)
+  if (languageCode?.toLowerCase() === 'es') {
+    return 'EUR';
   }
 
-  return 'USD';
+  // Default to EUR for this Spanish-focused app
+  return 'EUR';
 }
 
+/**
+ * Format price with currency
+ */
 export function formatPrice(
   amount: number | null,
   currency: Currency,
@@ -276,10 +107,36 @@ export function formatPrice(
   return `${sign}${result}`;
 }
 
+/**
+ * Get list of supported currencies
+ */
 export function getSupportedCurrencies(): Currency[] {
   return Object.values(CURRENCIES).sort((a, b) => a.name.localeCompare(b.name));
 }
 
+/**
+ * Get currency by code
+ * Defaults to EUR if not found
+ */
 export function getCurrency(code: string): Currency {
-  return CURRENCIES[code] || CURRENCIES.USD;
+  return CURRENCIES[code] || CURRENCIES.EUR;
+}
+
+/**
+ * Parse a price string using Spanish format (comma decimal)
+ * @param priceString - Price string like "12,50" or "1.234,50"
+ * @returns Parsed number or null
+ */
+export function parseSpanishPrice(priceString: string): number | null {
+  // Remove currency symbols and whitespace
+  let cleaned = priceString.replace(/[$€£¥]/g, '').trim();
+
+  // Remove thousands separators (periods in Spanish format)
+  cleaned = cleaned.replace(/\./g, '');
+
+  // Convert decimal comma to period
+  cleaned = cleaned.replace(',', '.');
+
+  const parsed = parseFloat(cleaned);
+  return isNaN(parsed) ? null : parsed;
 }

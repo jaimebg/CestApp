@@ -229,7 +229,9 @@
     "templatesCount": "{{count}} plantilla(s) guardada(s)",
     "deleteTemplate": "Eliminar Plantilla",
     "deleteTemplateConfirm": "¿Eliminar la plantilla de parseo para {{store}}? Esto no se puede deshacer.",
-    "confidence": "Confianza"
+    "confidence": "Confianza",
+    "spanishDefaults": "Configuración para España",
+    "spanishDefaultsDesc": "Formato de fecha DD/MM/AAAA, coma decimal y Euro (€) configurados automáticamente."
   },
   "errors": {
     "cameraPermission": "Se requiere permiso de cámara para tomar fotos",
@@ -277,6 +279,8 @@
     "dmy": "Día / Mes / Año",
     "mdy": "Mes / Día / Año",
     "decimalDot": "Punto decimal (1,234.56)",
-    "decimalComma": "Coma decimal (1.234,56)"
+    "decimalComma": "Coma decimal (1.234,56)",
+    "spanishDefaults": "Optimizado para España",
+    "spanishDefaultsDesc": "La app usa formato de fecha europeo (DD/MM/AAAA), coma decimal y Euro (€) por defecto."
   }
 }

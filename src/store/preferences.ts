@@ -1,6 +1,7 @@
 /**
  * User Preferences Store
- * Manages all user preferences including locale, currency, and onboarding state
+ * Manages user preferences, simplified for Spanish-focused app
+ * Defaults: DMY date format, comma decimal separator, EUR currency
  */
 
 import { create } from 'zustand';
@@ -10,8 +11,8 @@ import * as Localization from 'expo-localization';
 import {
   Currency,
   getCurrency,
-  getDefaultCurrencyFromLocale,
   formatPrice as formatPriceUtil,
+  DEFAULT_CURRENCY,
 } from '../config/currency';
 import {
   changeLanguage as i18nChangeLanguage,
@@ -41,46 +42,18 @@ interface PreferencesState {
   formatPrice: (amount: number | null, options?: { showCode?: boolean }) => string;
 }
 
-const MDY_REGIONS = ['US', 'FM', 'PW', 'PH', 'MH'];
-
-const YMD_REGIONS = ['CN', 'JP', 'KR', 'TW', 'HU', 'LT', 'CA'];
-
-const COMMA_DECIMAL_REGIONS = [
-  'DE',
-  'FR',
-  'ES',
-  'IT',
-  'PT',
-  'NL',
-  'BE',
-  'AT',
-  'CH',
-  'BR',
-  'AR',
-  'CL',
-  'CO',
-  'PE',
-  'VE',
-  'EC',
-  'UY',
-  'PY',
-  'PL',
-  'CZ',
-  'SK',
-  'HU',
-  'RO',
-  'BG',
-  'HR',
-  'SI',
-  'RS',
-  'GR',
-  'TR',
-  'RU',
-  'UA',
-];
+/**
+ * Spanish defaults
+ */
+const SPAIN_DEFAULTS = {
+  dateFormat: 'DMY' as DateFormat,
+  decimalSeparator: ',' as DecimalSeparator,
+  currencyCode: DEFAULT_CURRENCY,
+};
 
 /**
  * Detect initial preferences from device locale
+ * Simplified: Uses Spanish defaults with language detection
  */
 function getInitialPreferences(): {
   language: SupportedLanguage;
@@ -89,26 +62,21 @@ function getInitialPreferences(): {
   decimalSeparator: DecimalSeparator;
 } {
   const locale = Localization.getLocales()[0];
-  const regionCode = locale?.regionCode?.toUpperCase() || '';
-  const languageCode = locale?.languageCode?.toLowerCase() || 'en';
+  const languageCode = locale?.languageCode?.toLowerCase() || 'es';
 
+  // Detect language, default to Spanish
   const supportedLangs = SUPPORTED_LANGUAGES.map((l) => l.code);
   const language: SupportedLanguage = supportedLangs.includes(languageCode as SupportedLanguage)
     ? (languageCode as SupportedLanguage)
-    : 'en';
+    : 'es';
 
-  const currencyCode = getDefaultCurrencyFromLocale(regionCode, languageCode);
-
-  let dateFormat: DateFormat = 'DMY';
-  if (MDY_REGIONS.includes(regionCode)) {
-    dateFormat = 'MDY';
-  } else if (YMD_REGIONS.includes(regionCode)) {
-    dateFormat = 'YMD';
-  }
-
-  const decimalSeparator: DecimalSeparator = COMMA_DECIMAL_REGIONS.includes(regionCode) ? ',' : '.';
-
-  return { language, currencyCode, dateFormat, decimalSeparator };
+  // Always use Spanish defaults for number/date formatting
+  return {
+    language,
+    currencyCode: SPAIN_DEFAULTS.currencyCode,
+    dateFormat: SPAIN_DEFAULTS.dateFormat,
+    decimalSeparator: SPAIN_DEFAULTS.decimalSeparator,
+  };
 }
 
 const initialPrefs = getInitialPreferences();

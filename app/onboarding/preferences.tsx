@@ -1,22 +1,15 @@
 /**
  * Onboarding Preferences Screen
- * Collects user locale preferences on first launch
+ * Simplified: Only language selection (Spanish defaults for everything else)
  */
 
-import { View, Text, Pressable, ScrollView, Modal, FlatList, useColorScheme } from 'react-native';
+import { View, Text, Pressable, ScrollView, useColorScheme } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import {
-  usePreferencesStore,
-  DateFormat,
-  DecimalSeparator,
-  getInitialPreferences,
-} from '@/src/store/preferences';
+import { usePreferencesStore } from '@/src/store/preferences';
 import { SUPPORTED_LANGUAGES, SupportedLanguage } from '@/src/i18n';
-import { getSupportedCurrencies, Currency } from '@/src/config/currency';
 
 export default function OnboardingPreferencesScreen() {
   const insets = useSafeAreaInsets();
@@ -25,23 +18,13 @@ export default function OnboardingPreferencesScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
-  const initialPrefs = getInitialPreferences();
+  // Use language directly from store so changes are reflected immediately
+  const { language, setLanguage, completeOnboarding } = usePreferencesStore();
 
-  const [language, setLanguage] = useState<SupportedLanguage>(initialPrefs.language);
-  const [currencyCode, setCurrencyCode] = useState(initialPrefs.currencyCode);
-  const [dateFormat, setDateFormat] = useState<DateFormat>(initialPrefs.dateFormat);
-  const [decimalSeparator, setDecimalSeparator] = useState<DecimalSeparator>(
-    initialPrefs.decimalSeparator
-  );
-  const [showCurrencyModal, setShowCurrencyModal] = useState(false);
-
-  const {
-    setLanguage: saveLanguage,
-    setCurrency: saveCurrency,
-    setDateFormat: saveDateFormat,
-    setDecimalSeparator: saveDecimalSeparator,
-    completeOnboarding,
-  } = usePreferencesStore();
+  // Handle language selection - changes language immediately
+  const handleLanguageChange = (lang: SupportedLanguage) => {
+    setLanguage(lang); // This calls i18n.changeLanguage internally
+  };
 
   const colors = {
     background: isDark ? '#1A1918' : '#FFFDE1',
@@ -53,16 +36,8 @@ export default function OnboardingPreferencesScreen() {
     primaryDeep: '#3D6B23',
   };
 
-  const currencies = getSupportedCurrencies();
-  const selectedCurrency = currencies.find((c) => c.code === currencyCode) || currencies[0];
-
   const handleGetStarted = () => {
-    saveLanguage(language);
-    saveCurrency(currencyCode);
-    saveDateFormat(dateFormat);
-    saveDecimalSeparator(decimalSeparator);
     completeOnboarding();
-
     router.replace('/(tabs)');
   };
 
@@ -115,38 +90,6 @@ export default function OnboardingPreferencesScreen() {
     </Pressable>
   );
 
-  const renderCurrencyItem = ({ item }: { item: Currency }) => {
-    const isSelected = item.code === currencyCode;
-    return (
-      <Pressable
-        onPress={() => {
-          setCurrencyCode(item.code);
-          setShowCurrencyModal(false);
-        }}
-        className="flex-row items-center px-4 py-3 border-b"
-        style={{ borderColor: colors.border }}
-      >
-        <View className="flex-1">
-          <Text
-            style={{
-              color: colors.text,
-              fontFamily: isSelected ? 'Inter_600SemiBold' : 'Inter_500Medium',
-              fontSize: 16,
-            }}
-          >
-            {item.symbol} - {item.name}
-          </Text>
-          <Text
-            style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular', fontSize: 14 }}
-          >
-            {item.code}
-          </Text>
-        </View>
-        {isSelected && <Ionicons name="checkmark-circle" size={24} color={colors.primary} />}
-      </Pressable>
-    );
-  };
-
   return (
     <View className="flex-1" style={{ backgroundColor: colors.background, paddingTop: insets.top }}>
       <ScrollView
@@ -155,12 +98,12 @@ export default function OnboardingPreferencesScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <View className="items-center mt-6 mb-6">
+        <View className="items-center mt-6 mb-8">
           <View
             className="w-14 h-14 rounded-full items-center justify-center mb-3"
             style={{ backgroundColor: `${colors.primary}20` }}
           >
-            <Ionicons name="settings-outline" size={28} color={colors.primary} />
+            <Ionicons name="language-outline" size={28} color={colors.primary} />
           </View>
           <Text
             className="text-2xl text-center"
@@ -172,121 +115,51 @@ export default function OnboardingPreferencesScreen() {
             className="text-base text-center mt-2"
             style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
           >
-            {t('onboarding.subtitle')}
+            {t('onboarding.languageDesc')}
           </Text>
         </View>
 
         {/* Language Section */}
         <View className="mb-6">
           <Text
-            className="text-lg mb-1"
+            className="text-lg mb-3"
             style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
           >
             {t('onboarding.language')}
           </Text>
-          <Text
-            className="text-sm mb-3"
-            style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-          >
-            {t('onboarding.languageDesc')}
-          </Text>
           {SUPPORTED_LANGUAGES.map((lang) =>
             renderRadioOption(lang.code, language === lang.code, lang.nativeName, lang.name, () =>
-              setLanguage(lang.code as SupportedLanguage)
+              handleLanguageChange(lang.code as SupportedLanguage)
             )
           )}
         </View>
 
-        {/* Currency Section */}
-        <View className="mb-6">
-          <Text
-            className="text-lg mb-1"
-            style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
-          >
-            {t('onboarding.currency')}
-          </Text>
-          <Text
-            className="text-sm mb-3"
-            style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-          >
-            {t('onboarding.currencyDesc')}
-          </Text>
-          <Pressable
-            onPress={() => setShowCurrencyModal(true)}
-            className="flex-row items-center justify-between p-4 rounded-xl"
-            style={{
-              backgroundColor: colors.surface,
-              borderWidth: 1,
-              borderColor: colors.border,
-            }}
-          >
-            <View className="flex-row items-center">
-              <Ionicons name="cash-outline" size={22} color={colors.textSecondary} />
+        {/* Info Card */}
+        <View
+          className="p-4 rounded-xl mt-4"
+          style={{
+            backgroundColor: `${colors.primary}10`,
+            borderWidth: 1,
+            borderColor: `${colors.primary}30`,
+          }}
+        >
+          <View className="flex-row items-start">
+            <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
+            <View className="flex-1 ml-2">
               <Text
-                className="ml-3"
-                style={{
-                  color: colors.text,
-                  fontFamily: 'Inter_500Medium',
-                  fontSize: 16,
-                }}
+                className="text-sm"
+                style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
               >
-                {selectedCurrency.symbol} - {selectedCurrency.name}
+                {t('onboarding.spanishDefaults')}
+              </Text>
+              <Text
+                className="text-sm mt-1"
+                style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
+              >
+                {t('onboarding.spanishDefaultsDesc')}
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-          </Pressable>
-        </View>
-
-        {/* Date Format Section */}
-        <View className="mb-6">
-          <Text
-            className="text-lg mb-1"
-            style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
-          >
-            {t('onboarding.dateFormat')}
-          </Text>
-          <Text
-            className="text-sm mb-3"
-            style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-          >
-            {t('onboarding.dateFormatDesc')}
-          </Text>
-          {renderRadioOption('DMY', dateFormat === 'DMY', t('onboarding.dmy'), '31/12/2024', () =>
-            setDateFormat('DMY')
-          )}
-          {renderRadioOption('MDY', dateFormat === 'MDY', t('onboarding.mdy'), '12/31/2024', () =>
-            setDateFormat('MDY')
-          )}
-        </View>
-
-        {/* Number Format Section */}
-        <View className="mb-6">
-          <Text
-            className="text-lg mb-1"
-            style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
-          >
-            {t('onboarding.numberFormat')}
-          </Text>
-          <Text
-            className="text-sm mb-3"
-            style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-          >
-            {t('onboarding.numberFormatDesc')}
-          </Text>
-          {renderRadioOption(
-            'dot',
-            decimalSeparator === '.',
-            t('onboarding.decimalDot'),
-            '$1,234.56',
-            () => setDecimalSeparator('.')
-          )}
-          {renderRadioOption(
-            'comma',
-            decimalSeparator === ',',
-            t('onboarding.decimalComma'),
-            '1.234,56 EUR',
-            () => setDecimalSeparator(',')
-          )}
+          </View>
         </View>
       </ScrollView>
 
@@ -308,38 +181,6 @@ export default function OnboardingPreferencesScreen() {
           </Text>
         </Pressable>
       </View>
-
-      {/* Currency Modal */}
-      <Modal
-        visible={showCurrencyModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowCurrencyModal(false)}
-      >
-        <View className="flex-1" style={{ backgroundColor: colors.background }}>
-          <View
-            className="flex-row items-center justify-between px-4 py-4 border-b"
-            style={{ borderColor: colors.border }}
-          >
-            <Pressable onPress={() => setShowCurrencyModal(false)} hitSlop={8}>
-              <Ionicons name="close" size={24} color={colors.text} />
-            </Pressable>
-            <Text
-              className="text-lg"
-              style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
-            >
-              {t('onboarding.currency')}
-            </Text>
-            <View style={{ width: 24 }} />
-          </View>
-          <FlatList
-            data={currencies}
-            keyExtractor={(item) => item.code}
-            renderItem={renderCurrencyItem}
-            contentContainerStyle={{ paddingBottom: 40 }}
-          />
-        </View>
-      </Modal>
     </View>
   );
 }
