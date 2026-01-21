@@ -1,6 +1,6 @@
-# Agent Guidelines for CestApp
+# Claude Guidelines for CestApp
 
-This document provides instructions for AI coding agents working on the CestApp project.
+This document provides instructions for Claude when working on the CestApp project.
 
 ## Project Overview
 
@@ -75,7 +75,6 @@ CestApp is a **Spain-focused** supermarket receipt scanner app built with React 
 ### Database
 
 - Schema files are in `src/db/schema/`
-- Use Drizzle ORM query syntax
 - Amounts are stored in cents (integer) to avoid floating point issues
 - Include `syncId` field for future cloud sync support
 
@@ -158,7 +157,7 @@ src/
       chainParser.ts           # Chain-specific parsing using templates
       templateParser.ts        # Zone-based parsing
     pdf/
-      index.ts                 # PDF text extraction (648 lines)
+      index.ts                 # PDF text extraction
     capture/
       index.ts                 # Camera/Gallery/PDF picker
     storage/
@@ -312,7 +311,7 @@ parseReceipt(lines: string[], options?: ParserOptions): ParsedReceipt
 
 ### PDF Service (`src/services/pdf/`)
 
-648-line PDF text extraction supporting:
+PDF text extraction supporting:
 
 - FlateDecode stream decompression (zlib via pako)
 - ToUnicode CMap parsing for character mapping
@@ -418,8 +417,8 @@ Before committing:
 
 ## Commit Guidelines
 
-- **Never commit automatically** - only commit when explicitly asked
-- **New features/fixes/chores must be in a new branch** and go through PR review first
+- **Never commit unless explicitly told**: Do not create commits automatically. Wait for the user to explicitly request a commit.
+- **Before committing**: When the user asks to commit, spawn the `code-simplifier:code-simplifier` agent to review and simplify recently modified code before creating the commit.
 - Use conventional commits: `feat:`, `fix:`, `refactor:`, `docs:`, `chore:`
 
 ## Common Pitfalls
