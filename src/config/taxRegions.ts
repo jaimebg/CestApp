@@ -116,6 +116,8 @@ export const IGIC_REGION: TaxRegion = {
     'SPAR CANARIAS',
     'MERCADONA CANARIAS',
     'ALCAMPO CANARIAS',
+    'LIDL CANARIAS',
+    'LIDL-CANARIAS',
   ],
 };
 
@@ -175,6 +177,7 @@ function detectFromPostalCode(postalCode: string): TaxRegionDetection | null {
  */
 function detectFromTaxKeywords(text: string): TaxRegionDetection | null {
   const upperText = text.toUpperCase();
+  const lowerText = text.toLowerCase();
 
   // Check for IGIC first (more specific than IVA)
   for (const keyword of IGIC_REGION.keywords) {
@@ -185,6 +188,15 @@ function detectFromTaxKeywords(text: string): TaxRegionDetection | null {
         detectionMethod: 'tax_keyword',
       };
     }
+  }
+
+  // Check for Canarias-specific URLs (strong indicator)
+  if (lowerText.includes('lidl-canarias.es') || lowerText.includes('canarias.es')) {
+    return {
+      region: IGIC_REGION,
+      confidence: 95,
+      detectionMethod: 'tax_keyword',
+    };
   }
 
   // Check for IPSI

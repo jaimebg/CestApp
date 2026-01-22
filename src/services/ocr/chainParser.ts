@@ -176,6 +176,17 @@ const SKIP_KEYWORDS = [
   'www.pass.carrefour',
 ];
 
+// Lidl weight line pattern: "0,656 kg x 2,65   EUR/kg" (weight line AFTER item)
+const LIDL_WEIGHT_PATTERN =
+  /^\s*(\d+[,\.]\d{3})\s*(kg|g|l|ml)\s*x\s*(\d+[,\.]\d{2})\s*EUR\/(kg|g|l|ml)$/i;
+
+// Mercadona weight continuation pattern: "1,102 kg 1,85 €/kg 2,04"
+const MERCADONA_WEIGHT_PATTERN =
+  /^\s*(\d+[,\.]\d{3})\s*(kg|g|l|ml)\s+(\d+[,\.]\d{2})\s*€?\/(kg|g|l|ml)\s+(\d+[,\.]\d{2})$/i;
+
+// Product line without price (weighted product first line): "1 PLATANO"
+const PRODUCT_ONLY_PATTERN = /^(\d+)\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]+)$/;
+
 function parseItemsWithPatterns(
   lines: string[],
   itemPatterns: ItemPattern[],
@@ -204,12 +215,12 @@ function parseItemsWithPatterns(
       continue;
     }
 
-    // Skip Lidl Plus discount lines - these are handled separately in totals
+    // Skip Lidl Plus discount lines - handled in totals
     if (/^Dto\.?\s*Lidl\s*Plus/i.test(line) || /^Descuento\s*\d+%/i.test(line)) {
       continue;
     }
 
-    // Skip Carrefour discount lines (DESCUENTO EN 2ª UNIDAD, etc.) - handled in totals
+    // Skip Carrefour discount lines - handled in totals
     if (/^DESCUENTO\s+EN\s+2[ªaA]\s+UNIDAD/i.test(line)) {
       continue;
     }
@@ -224,13 +235,7 @@ function parseItemsWithPatterns(
       continue;
     }
 
-    // ==========================================
-    // LIDL-SPECIFIC: Weight line AFTER item
-    // Format: "0,656 kg x 2,65   EUR/kg" (no total on this line)
-    // ==========================================
-    const lidlWeightPattern =
-      /^\s*(\d+[,\.]\d{3})\s*(kg|g|l|ml)\s*x\s*(\d+[,\.]\d{2})\s*EUR\/(kg|g|l|ml)$/i;
-    const lidlWeightMatch = line.match(lidlWeightPattern);
+    const lidlWeightMatch = line.match(LIDL_WEIGHT_PATTERN);
 
     if (lidlWeightMatch && lastItemForWeight && chain.chainId === 'lidl') {
       // Update the last item with weight info
@@ -249,16 +254,14 @@ function parseItemsWithPatterns(
       continue;
     }
 
-    // Check for weighted product continuation (Mercadona: "1,102 kg 1,85 €/kg 2,04")
-    const weightedPattern =
-      /^\s*(\d+[,\.]\d{3})\s*(kg|g|l|ml)\s+(\d+[,\.]\d{2})\s*€?\/(kg|g|l|ml)\s+(\d+[,\.]\d{2})$/i;
-    const weightedMatch = line.match(weightedPattern);
+    // Check for Mercadona weighted product continuation: "1,102 kg 1,85 €/kg 2,04"
+    const mercadonaWeightMatch = line.match(MERCADONA_WEIGHT_PATTERN);
 
-    if (weightedMatch && pendingWeightedProduct) {
-      const quantity = parseFloat(weightedMatch[1].replace(',', '.'));
-      const unit = weightedMatch[2].toLowerCase() as ParsedItem['unit'];
-      const unitPrice = parsePrice(weightedMatch[3]);
-      const totalPrice = parsePrice(weightedMatch[5]);
+    if (mercadonaWeightMatch && pendingWeightedProduct) {
+      const quantity = parseFloat(mercadonaWeightMatch[1].replace(',', '.'));
+      const unit = mercadonaWeightMatch[2].toLowerCase() as ParsedItem['unit'];
+      const unitPrice = parsePrice(mercadonaWeightMatch[3]);
+      const totalPrice = parsePrice(mercadonaWeightMatch[5]);
 
       if (totalPrice && totalPrice > 0) {
         items.push({
@@ -274,14 +277,11 @@ function parseItemsWithPatterns(
       }
     }
 
-    // Check for product line with just qty and name (weighted product first line)
-    // Format: "1 PLATANO" (no price on same line)
-    const productOnlyPattern = /^(\d+)\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]+)$/;
-    const productOnlyMatch = line.match(productOnlyPattern);
+    // Check for product line without price (weighted product first line): "1 PLATANO"
+    const productOnlyMatch = line.match(PRODUCT_ONLY_PATTERN);
     if (productOnlyMatch && i + 1 < lines.length) {
       const nextLine = lines[i + 1].trim();
-      // Check if next line is a weighted product continuation
-      if (weightedPattern.test(nextLine)) {
+      if (MERCADONA_WEIGHT_PATTERN.test(nextLine)) {
         pendingWeightedProduct = {
           name: productOnlyMatch[2].trim(),
           quantity: parseInt(productOnlyMatch[1], 10),
@@ -297,7 +297,6 @@ function parseItemsWithPatterns(
     }
 
     // Try each item pattern
-    let matched = false;
     for (const itemPattern of itemPatterns) {
       const match = line.match(itemPattern.pattern);
       if (match) {
@@ -359,13 +358,11 @@ function parseItemsWithPatterns(
 
           // For Lidl: track last item in case next line has weight info
           if (chain.chainId === 'lidl' && !unit) {
-            // Check if next line might have weight info
-            if (i + 1 < lines.length && lidlWeightPattern.test(lines[i + 1].trim())) {
+            if (i + 1 < lines.length && LIDL_WEIGHT_PATTERN.test(lines[i + 1].trim())) {
               lastItemForWeight = { name, price: totalPrice, index: items.length - 1 };
             }
           }
 
-          matched = true;
           break;
         }
       }
@@ -405,19 +402,14 @@ function extractChainDiscount(
 
   for (const { pattern, accumulate } of patterns) {
     const match = line.match(pattern);
-    if (match) {
-      const value = parsePrice(match[1]);
-      if (value === null) return null;
+    if (!match) continue;
 
-      const absValue = Math.abs(value);
-      if (accumulate) {
-        return { value: currentTotal + absValue, shouldContinue: true };
-      }
-      if (absValue > currentTotal) {
-        return { value: absValue, shouldContinue: true };
-      }
-      return { value: currentTotal, shouldContinue: true };
-    }
+    const value = parsePrice(match[1]);
+    if (value === null) return null;
+
+    const absValue = Math.abs(value);
+    const newTotal = accumulate ? currentTotal + absValue : Math.max(absValue, currentTotal);
+    return { value: newTotal, shouldContinue: true };
   }
 
   return null;
