@@ -100,13 +100,15 @@ export interface ChainTemplate {
 
 /**
  * Mercadona - Spain's largest supermarket chain (27.3% market share)
- * Known for: Consistent layout, unit prices shown, NIF A46103834
+ * Known for: Consistent columnar layout with qty prefix, unit prices for qty>1
+ * Format: "QTY PRODUCT_NAME [P.UNIT] TOTAL"
+ * NIF: A-46103834 (with hyphen) or A46103834
  */
 export const MERCADONA_TEMPLATE: ChainTemplate = {
   chainId: 'mercadona',
   name: 'Mercadona',
-  namePatterns: [/MERCADONA/i, /MERCADONA\s*S\.?A\.?/i],
-  nifPatterns: ['A46103834'],
+  namePatterns: [/MERCADONA/i, /MERCADONA\s*,?\s*S\.?A\.?/i],
+  nifPatterns: ['A46103834', 'A-46103834'],
   tier: 1,
   marketShare: 27.3,
 
@@ -125,40 +127,58 @@ export const MERCADONA_TEMPLATE: ChainTemplate = {
 
   parsing: {
     itemPatterns: [
-      // Standard item: NAME followed by price on same line or next
+      // Type 1: Qty + Name + Unit Price + Total (e.g., "2 QUESO COTTAGE 1,35 2,70")
       {
-        pattern: /^(.+?)\s+(\d+[,\.]\d{2})\s*€?$/,
+        pattern: /^(\d+)\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ0-9\s\.\/\-%+]+?)\s+(\d+,\d{2})\s+(\d+,\d{2})$/,
+        groups: { quantity: 1, name: 2, unitPrice: 3, totalPrice: 4 },
+        description: 'Qty + Name + unit price + total price',
+      },
+      // Type 2: Qty + Name + Total only (e.g., "1 MINI PIZZAS 2,90")
+      {
+        pattern: /^(\d+)\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ0-9\s\.\/\-%+]+?)\s+(\d+,\d{2})$/,
+        groups: { quantity: 1, name: 2, totalPrice: 3 },
+        description: 'Qty + Name + total price',
+      },
+      // Type 3: Weighted product line 2 (e.g., "1,102 kg 1,85 €/kg 2,04")
+      {
+        pattern: /^\s*(\d+,\d{3})\s*(kg|g|l|ml)\s+(\d+,\d{2})\s*€?\/(kg|g|l|ml)\s+(\d+,\d{2})$/i,
+        groups: { quantity: 1, unit: 2, unitPrice: 3, totalPrice: 5 },
+        description: 'Weight unit + price/unit + total (weighted products)',
+      },
+      // Type 4: Weighted product alternate (e.g., "0,530 kg 2,20 €/kg 1,17")
+      {
+        pattern: /^\s*(\d+[,\.]\d+)\s*(kg)\s+(\d+[,\.]\d{2})\s*€?\/kg\s+(\d+[,\.]\d{2})$/i,
+        groups: { quantity: 1, unit: 2, unitPrice: 3, totalPrice: 4 },
+        description: 'Weight kg + price/kg + total',
+      },
+      // Fallback: Name + price on same line (generic)
+      {
+        pattern: /^(.+?)\s+(\d+,\d{2})$/,
         groups: { name: 1, totalPrice: 2 },
-        description: 'Name + price on same line',
-      },
-      // Item with quantity: 2 x NAME @ 1,50
-      {
-        pattern: /^(\d+)\s*[xX×]\s*(.+?)\s*@?\s*(\d+[,\.]\d{2})/,
-        groups: { quantity: 1, name: 2, unitPrice: 3 },
-        description: 'Quantity x Name @ unit price',
-      },
-      // Weight item: 0,500 kg x 2,99 €/kg
-      {
-        pattern: /^(\d+[,\.]\d+)\s*(kg|g|l|ml)\s*[xX×]\s*(\d+[,\.]\d{2})/i,
-        groups: { quantity: 1, unit: 2, unitPrice: 3 },
-        description: 'Weight x unit price',
+        description: 'Name + price fallback',
       },
     ],
-    quantityFormats: [/^(\d+)\s*[xX×]/, /(\d+[,\.]\d+)\s*(kg|g|l|ml)/i, /(\d+)\s*ud[s]?\.?/i],
+    quantityFormats: [
+      /^(\d+)\s+[A-Z]/, // Qty at start before product name
+      /(\d+,\d{3})\s*(kg|g|l|ml)/i, // Weight with 3 decimals
+      /(\d+)\s*ud[s]?\.?/i, // Units
+    ],
     datePatterns: [
-      /(\d{2})[\/\-\.](\d{2})[\/\-\.](\d{4})/,
-      /(\d{2})[\/\-\.](\d{2})[\/\-\.](\d{2})/,
+      /(\d{2})\/(\d{2})\/(\d{4})/, // DD/MM/YYYY (primary format)
+      /(\d{2})-(\d{2})-(\d{4})/, // DD-MM-YYYY
+      /(\d{2})\.(\d{2})\.(\d{4})/, // DD.MM.YYYY
+      /(\d{2})\/(\d{2})\/(\d{2})(?!\d)/, // DD/MM/YY
     ],
-    totalKeywords: ['TOTAL', 'TOTAL COMPRA', 'IMPORTE TOTAL', 'A PAGAR'],
+    totalKeywords: ['TOTAL (€)', 'TOTAL', 'TOTAL COMPRA', 'IMPORTE', 'A PAGAR'],
     subtotalKeywords: ['SUBTOTAL', 'BASE IMPONIBLE', 'BASE'],
-    taxKeywords: ['IVA', 'I.V.A.', 'CUOTA IVA'],
-    discountKeywords: ['DESCUENTO', 'DTO', 'AHORRO', 'PROMOCION'],
+    taxKeywords: ['IVA', 'I.V.A.', 'CUOTA IVA', 'IGIC', 'I.G.I.C.', 'CUOTA'],
+    discountKeywords: ['DESCUENTO', 'DTO', 'AHORRO', 'PROMOCION', 'OFERTA'],
   },
 
   ocrCorrections: [
     { pattern: /MERCAD0NA/gi, replacement: 'MERCADONA', description: 'Fix O->0' },
-    { pattern: /MERCAD0NA/gi, replacement: 'MERCADONA', description: 'Fix O->0' },
-    { pattern: /A461O3834/g, replacement: 'A46103834', description: 'Fix NIF O->0' },
+    { pattern: /A-?461O3834/g, replacement: 'A-46103834', description: 'Fix NIF O->0' },
+    { pattern: /€\/KG/gi, replacement: '€/kg', description: 'Normalize unit' },
   ],
 
   taxType: 'IVA',
@@ -168,7 +188,11 @@ export const MERCADONA_TEMPLATE: ChainTemplate = {
     /DELIPLUS/i,
     /BOSQUE VERDE/i,
     /COMPY/i,
-    /precio\s*(?:con|sin)\s*tarjeta/i,
+    /FACTURA\s*SIMPLIFICADA/i,
+    /COMERCIANTE\s*MINORISTA/i,
+    /800\s*500\s*220/i,
+    /SE\s*ADMITEN\s*DEVOLUCIONES/i,
+    /TARJETA\s*BANCARIA/i,
   ],
 };
 
@@ -185,8 +209,9 @@ export const CARREFOUR_TEMPLATE: ChainTemplate = {
     /CARREFOUR\s*MARKET/i,
     /CARREFOUR\s*HIPER/i,
     /CENTROS\s*COMERCIALES\s*CARREFOUR/i,
+    /SUPERMERCADOS\s*CHAMPION/i,
   ],
-  nifPatterns: ['A28425270', 'A78947579'],
+  nifPatterns: ['A28425270', 'A78947579', 'A28090108'],
   addressPatterns: [/CENTROS\s*COMERCIALES/i],
   tier: 1,
   marketShare: 9.0,
@@ -206,15 +231,35 @@ export const CARREFOUR_TEMPLATE: ChainTemplate = {
 
   parsing: {
     itemPatterns: [
+      // Type 1: Name + price + optional tax code (e.g., "AGUA BEZOYA 1,5 L 0,69" or "AGUA SOLAN CABRAS EH70")
       {
-        pattern: /^(.+?)\s+(\d+[,\.]\d{2})\s*€?\s*[A-Z]?$/,
+        pattern: /^(.+?)\s+(\d+[,\.]\d{2})\s*€?$/,
         groups: { name: 1, totalPrice: 2 },
-        description: 'Name + price + optional tax code',
+        description: 'Name + price (simple item)',
       },
+      // Type 2: Name + tax code + price (e.g., "AGUA SOLAN CABRAS EH70 1,94")
       {
-        pattern: /^(\d+)\s*[xX×]\s*(.+?)\s+(\d+[,\.]\d{2})/,
+        pattern: /^(.+?)\s+[A-Z]{2}\d{2}\s+(\d+[,\.]\d{2})$/,
+        groups: { name: 1, totalPrice: 2 },
+        description: 'Name + tax code + price',
+      },
+      // Type 3: Qty + Name + price (e.g., "2 BOLIS SUPER GRIP 3,39")
+      {
+        pattern: /^(\d+)\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ0-9\s\.\/\-%]+?)\s+(\d+[,\.]\d{2})$/,
         groups: { quantity: 1, name: 2, totalPrice: 3 },
-        description: 'Quantity x Name + total',
+        description: 'Qty + Name + price',
+      },
+      // Type 4: Quantity x Name + total (e.g., "2 x ( 0,97 )")
+      {
+        pattern: /^(\d+)\s*[xX×]\s*\(\s*(\d+[,\.]\d{2})\s*\)/,
+        groups: { quantity: 1, unitPrice: 2 },
+        description: 'Quantity x (unit price) - continuation line',
+      },
+      // Type 5: Name + price + tax code (e.g., "GALLETAS TUC CRACKER 1,08")
+      {
+        pattern: /^([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ0-9\s\.\/\-%]+?)\s+(\d+[,\.]\d{2})\s*[A-Z]?$/,
+        groups: { name: 1, totalPrice: 2 },
+        description: 'Name + price + optional single tax letter',
       },
     ],
     quantityFormats: [/^(\d+)\s*[xX×]/, /(\d+[,\.]\d+)\s*(kg|g|l|ml)/i],
@@ -225,32 +270,55 @@ export const CARREFOUR_TEMPLATE: ChainTemplate = {
     totalKeywords: ['TOTAL', 'TOTAL A PAGAR', 'IMPORTE', 'A PAGAR'],
     subtotalKeywords: ['SUBTOTAL', 'BASE IMPONIBLE'],
     taxKeywords: ['IVA', 'I.V.A.'],
-    discountKeywords: ['DESCUENTO', 'AHORRO', 'PROMO', 'OFERTA', 'CLUB'],
+    discountKeywords: [
+      'DESCUENTO',
+      'DESCUENTO EN 2ª UNIDAD',
+      'DESCUENTO EN 2A UNIDAD',
+      'AHORRO',
+      'PROMO',
+      'OFERTA',
+      'CLUB',
+      'VENTAJAS OBTENIDAS',
+      'ACUMULADO CLUB',
+    ],
   },
 
-  ocrCorrections: [
-    { pattern: /CARREF0UR/gi, replacement: 'CARREFOUR', description: 'Fix O->0' },
-    { pattern: /CARREF0UR/gi, replacement: 'CARREFOUR', description: 'Fix O->0' },
-  ],
+  ocrCorrections: [{ pattern: /CARREF0UR/gi, replacement: 'CARREFOUR', description: 'Fix O->0' }],
 
   taxType: 'IVA',
 
   fingerprints: [
     /CARREFOUR\s*CLUB/i,
     /CLUB\s*CARREFOUR/i,
+    /SOCIO\s*CLUB\s*CARREFOUR/i,
     /TARJETA\s*PASS/i,
     /CENTROS\s*COMERCIALES/i,
+    /SUPERMERCADOS\s*CHAMPION/i,
+    /VENTAJAS\s*OBTENIDAS/i,
+    /ACUMULADO\s*CLUB/i,
+    /TOTAL\s*VENTAJAS\s*EN\s*ESTA\s*COMPRA/i,
+    /www\.pass\.carrefour/i,
+    /NRF:\s*N\d+/i,
   ],
 };
 
 /**
  * Lidl - Third largest chain (6.9% market share)
  * Known for: Compact columnar layout, date format DD.MM.YY
+ *
+ * Receipt formats identified:
+ * - Items with qty: "Nombre   precio_unitx   cantidad   total" (e.g., "Milbona/Leche sin la  0,91x   6   5,46")
+ * - Simple items: "Nombre   precio" (e.g., "Floralys/Papel higiénico   4,35")
+ * - Weighted items: Name line + "X,XXX kg x Y,YY   EUR/kg" on next line
+ * - Lidl Plus discounts: "Dto. Lidl Plus   -X,XX" on separate line
+ * - Percentage discounts: "Descuento XX%   -X,XX"
+ * - Private brands: Milbona, Alesto, Solevita, Floralys, Kania, Cien, etc.
+ * - Canarias stores: lidl-canarias.es uses IGIC instead of IVA
  */
 export const LIDL_TEMPLATE: ChainTemplate = {
   chainId: 'lidl',
   name: 'Lidl',
-  namePatterns: [/LIDL/i, /LIDL\s*SUPERMERCADOS/i],
+  namePatterns: [/LIDL/i, /LIDL\s*SUPERMERCADOS/i, /LIDL\s*SUPERMERCADOS\s*S\.?A\.?U?/i],
   nifPatterns: ['A60195278'],
   tier: 1,
   marketShare: 6.9,
@@ -258,7 +326,7 @@ export const LIDL_TEMPLATE: ChainTemplate = {
   layout: {
     type: 'columnar',
     priceAlignment: 'right',
-    hasUnitPrices: false,
+    hasUnitPrices: true,
     hasQuantityColumn: true,
     expectedZones: {
       header: { startY: 0, endY: 0.12 },
@@ -270,36 +338,88 @@ export const LIDL_TEMPLATE: ChainTemplate = {
 
   parsing: {
     itemPatterns: [
+      // Type 1: Name + unit_price x + quantity + total (e.g., "Milbona/Leche sin la  0,91x   6   5,46")
       {
-        pattern: /^(.+?)\s+(\d+[,\.]\d{2})\s*[AB]?$/,
-        groups: { name: 1, totalPrice: 2 },
-        description: 'Name + price + tax code (A/B)',
+        pattern: /^(.+?)\s+(\d+[,\.]\d{2})x\s+(\d+)\s+(\d+[,\.]\d{2})$/,
+        groups: { name: 1, unitPrice: 2, quantity: 3, totalPrice: 4 },
+        description: 'Name + unit_price x qty + total (Lidl format)',
       },
+      // Type 2: Name with weight + unit_price x + quantity + total (e.g., "Naranja 2 kg   3,15")
       {
-        pattern: /^(\d+)\s*[xX×]\s*(\d+[,\.]\d{2})\s+(.+)/,
-        groups: { quantity: 1, unitPrice: 2, name: 3 },
-        description: 'Qty x unit price + name',
+        pattern: /^(.+?\d+\s*(?:kg|g|l|ml))\s+(\d+[,\.]\d{2})$/,
+        groups: { name: 1, totalPrice: 2 },
+        description: 'Name with weight + price',
+      },
+      // Type 3: Weighted product line (e.g., "0,656 kg x 2,65   EUR/kg")
+      {
+        pattern: /^\s*(\d+[,\.]\d{3})\s*(kg|g|l|ml)\s*x\s*(\d+[,\.]\d{2})\s*EUR\/(kg|g|l|ml)$/i,
+        groups: { quantity: 1, unit: 2, unitPrice: 3 },
+        description: 'Weight x price/unit (weighted products continuation)',
+      },
+      // Type 4: Simple name + price (e.g., "Floralys/Papel higiénico   4,35")
+      {
+        pattern: /^(.+?)\s+(\d+[,\.]\d{2})$/,
+        groups: { name: 1, totalPrice: 2 },
+        description: 'Name + price fallback',
       },
     ],
-    quantityFormats: [/^(\d+)\s*[xX×]/, /(\d+[,\.]\d{3})\s*(kg)/i],
+    quantityFormats: [
+      /(\d+[,\.]\d{2})x\s+(\d+)/, // Lidl format: price x qty
+      /(\d+[,\.]\d{3})\s*(kg|g|l|ml)/i, // Weight with 3 decimals
+    ],
     datePatterns: [
-      /(\d{2})\.(\d{2})\.(\d{2})(?!\d)/, // Lidl uses DD.MM.YY
-      /(\d{2})[\/\-](\d{2})[\/\-](\d{4})/,
+      /(\d{2})\.(\d{2})\.(\d{2})(?!\d)/, // Lidl uses DD.MM.YY (e.g., 20.08.24)
+      /(\d{2})[\/\-](\d{2})[\/\-](\d{4})/, // DD/MM/YYYY fallback
+      /(\d{2})\.(\d{2})\.(\d{4})/, // DD.MM.YYYY
     ],
     totalKeywords: ['TOTAL', 'SUMME', 'IMPORTE'],
     subtotalKeywords: ['SUBTOTAL', 'NETO'],
-    taxKeywords: ['IVA', 'MwSt'],
-    discountKeywords: ['DESCUENTO', 'RABATT', 'AHORRO'],
+    taxKeywords: ['IVA', 'IGIC', 'MwSt'],
+    discountKeywords: [
+      'DESCUENTO',
+      'DTO',
+      'DTO.',
+      'LIDL PLUS',
+      'DTO. LIDL PLUS',
+      'AHORRO',
+      'RABATT',
+    ],
   },
 
   ocrCorrections: [
     { pattern: /L1DL/gi, replacement: 'LIDL', description: 'Fix I->1' },
     { pattern: /LIDUL/gi, replacement: 'LIDL', description: 'Fix common OCR error' },
+    { pattern: /LlDL/gi, replacement: 'LIDL', description: 'Fix l->I' },
+    { pattern: /EUR\/KG/gi, replacement: 'EUR/kg', description: 'Normalize unit' },
+    { pattern: /EUR\/G/gi, replacement: 'EUR/g', description: 'Normalize unit' },
   ],
 
   taxType: 'IVA',
 
-  fingerprints: [/LIDL\s*PLUS/i, /A60195278/, /EUR-Betrag/i],
+  fingerprints: [
+    /LIDL\s*PLUS/i,
+    /DTO\.?\s*LIDL\s*PLUS/i,
+    /A60195278/,
+    /lidl-canarias\.es/i,
+    /MILBONA/i,
+    /ALESTO/i,
+    /SOLEVITA/i,
+    /FLORALYS/i,
+    /FAVORINA/i,
+    /SNACK\s*DAY/i,
+    /CROWNFIELD/i,
+    /CIEN\//i,
+    /KANIA/i,
+    /BELBAKE/i,
+    /NIXE/i,
+    /REALVALLE/i,
+    /CAMPO\s*LARGO/i,
+    /MONISSA/i,
+    /AEROCELL/i,
+    /AROMATA/i,
+    /GRACIAS\s*POR\s*SU\s*VISITA/i,
+    /COMERCIO\s*MINORISTA/i,
+  ],
 };
 
 /**
@@ -582,11 +702,14 @@ export const CHAIN_TEMPLATES: Record<string, ChainTemplate> = {
 
 /**
  * All NIF patterns for quick lookup
+ * Includes variants with and without hyphens
  */
 export const NIF_TO_CHAIN: Record<string, string> = {
   A46103834: 'mercadona',
+  'A-46103834': 'mercadona',
   A28425270: 'carrefour',
   A78947579: 'carrefour',
+  A28090108: 'carrefour',
   A60195278: 'lidl',
   F20033361: 'eroski',
   A08207769: 'eroski', // Caprabo

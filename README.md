@@ -5,11 +5,11 @@
 <h1 align="center">CestApp</h1>
 
 <p align="center">
-  <strong>Receipt scanner that respects your privacy.</strong>
+  <strong>Receipt scanner for Spanish supermarkets that respects your privacy.</strong>
 </p>
 
 <p align="center">
-  Scan receipts. Track spending. Keep your data local.
+  Scan receipts from Mercadona, Carrefour, Lidl, and more. Track spending. Keep your data local.
 </p>
 
 <p align="center">

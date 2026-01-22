@@ -15,6 +15,9 @@ import {
   NIF_TO_CHAIN,
   getAllTemplates,
 } from '../../config/spanishChains';
+import { createScopedLogger } from '../../utils/debug';
+
+const logger = createScopedLogger('ChainDetector');
 
 /**
  * Detection result
@@ -59,23 +62,29 @@ function extractTextFromBlocks(blocks: OcrBlock[]): string {
 /**
  * Strategy 1: Detect chain by NIF/CIF
  * Most reliable method (98% confidence)
+ * Handles both formats: A12345678 and A-12345678 (with hyphen)
  */
 function detectByNif(text: string): ChainDetectionResult | null {
-  // NIF patterns: Letter + 8 digits or 8 digits + letter
+  // NIF patterns: Letter + optional hyphen + 8 digits, or 8 digits + letter
   const nifPatterns = [
-    /\b([A-Z]\d{8})\b/gi, // A12345678
+    /\b([A-Z]-?\d{8})\b/gi, // A12345678 or A-12345678
     /\b(\d{8}[A-Z])\b/gi, // 12345678A
-    /NIF[:\s]*([A-Z]\d{8})/gi, // NIF: A12345678
-    /CIF[:\s]*([A-Z]\d{8})/gi, // CIF: A12345678
-    /N\.?I\.?F\.?[:\s]*([A-Z]\d{8})/gi,
-    /C\.?I\.?F\.?[:\s]*([A-Z]\d{8})/gi,
+    /NIF[:\s]*([A-Z]-?\d{8})/gi, // NIF: A12345678 or A-12345678
+    /CIF[:\s]*([A-Z]-?\d{8})/gi, // CIF: A12345678
+    /N\.?I\.?F\.?[:\s]*([A-Z]-?\d{8})/gi,
+    /C\.?I\.?F\.?[:\s]*([A-Z]-?\d{8})/gi,
   ];
 
   for (const pattern of nifPatterns) {
     const matches = text.matchAll(pattern);
     for (const match of matches) {
       const nif = match[1].toUpperCase();
-      const chainId = NIF_TO_CHAIN[nif];
+      // Try both with and without hyphen
+      const nifWithHyphen = nif.includes('-') ? nif : `${nif[0]}-${nif.slice(1)}`;
+      const nifWithoutHyphen = nif.replace('-', '');
+
+      const chainId =
+        NIF_TO_CHAIN[nif] || NIF_TO_CHAIN[nifWithHyphen] || NIF_TO_CHAIN[nifWithoutHyphen];
 
       if (chainId) {
         const chain = CHAIN_TEMPLATES[chainId];
@@ -213,55 +222,37 @@ export function detectChain(blocks: OcrBlock[]): ChainDetectionResult {
   // Strategy 1: NIF/CIF matching (98% confidence)
   const nifResult = detectByNif(text);
   if (nifResult) {
-    if (__DEV__) {
-      console.log('[ChainDetector] Detected by NIF:', nifResult.chainId, nifResult.matchedPattern);
-    }
+    logger.log('Detected by NIF:', nifResult.chainId, nifResult.matchedPattern);
     return nifResult;
   }
 
   // Strategy 2: Exact name matching (90% confidence)
   const nameResult = detectByName(text);
   if (nameResult) {
-    if (__DEV__) {
-      console.log(
-        '[ChainDetector] Detected by name:',
-        nameResult.chainId,
-        nameResult.matchedPattern
-      );
-    }
+    logger.log('Detected by name:', nameResult.chainId, nameResult.matchedPattern);
     return nameResult;
   }
 
   // Strategy 3: Fingerprint matching (70-85% confidence)
   const fingerprintResult = detectByFingerprint(text);
   if (fingerprintResult) {
-    if (__DEV__) {
-      console.log(
-        '[ChainDetector] Detected by fingerprint:',
-        fingerprintResult.chainId,
-        fingerprintResult.matchedPattern
-      );
-    }
+    logger.log(
+      'Detected by fingerprint:',
+      fingerprintResult.chainId,
+      fingerprintResult.matchedPattern
+    );
     return fingerprintResult;
   }
 
   // Strategy 4: Heuristic detection (50-65% confidence)
   const heuristicResult = detectByHeuristic(text);
   if (heuristicResult) {
-    if (__DEV__) {
-      console.log(
-        '[ChainDetector] Detected by heuristic:',
-        heuristicResult.chainId,
-        heuristicResult.matchedPattern
-      );
-    }
+    logger.log('Detected by heuristic:', heuristicResult.chainId, heuristicResult.matchedPattern);
     return heuristicResult;
   }
 
   // No chain detected
-  if (__DEV__) {
-    console.log('[ChainDetector] No chain detected');
-  }
+  logger.log('No chain detected');
   return {
     chain: null,
     chainId: null,

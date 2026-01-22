@@ -108,31 +108,86 @@ function parseTime(text: string): string | null {
 
 /**
  * Parse items using chain-specific patterns
+ * Handles Mercadona format: "QTY PRODUCT_NAME [P.UNIT] TOTAL"
+ * Handles Lidl format: "PRODUCT_NAME  price x qty  TOTAL"
+ * And weighted products in 2 lines: "1 PLATANO" + "1,102 kg 1,85 €/kg 2,04"
  */
+const SKIP_KEYWORDS = [
+  // Totals and taxes
+  'total',
+  'subtotal',
+  'iva',
+  'igic',
+  'ipsi',
+  'importe',
+  'base imponible',
+  'cuota',
+  'exento',
+  // Payment
+  'tarjeta',
+  'efectivo',
+  'cambio',
+  'cambio recibido',
+  'venta visa',
+  'sale debit',
+  'contactless',
+  'firma no necesaria',
+  'tarjeta pass',
+  'entregado',
+  'venta',
+  // Receipt metadata
+  'fecha',
+  'hora',
+  'nif',
+  'cif',
+  'ticket',
+  'factura',
+  'simplificada',
+  'descripcion',
+  'descripción',
+  'p. unit',
+  'tipo base cuota',
+  'art. total a pagar',
+  // Store info
+  'comerciante',
+  'minorista',
+  'teléfono',
+  'telefono',
+  'gracias',
+  'devoluciones',
+  'atención al cliente',
+  'atencion al cliente',
+  'recibo para el cliente',
+  'codigo de barras',
+  'código de barras',
+  'le atendio',
+  // Chain-specific
+  'mercadona',
+  'lidl supermercados',
+  'www.lidl',
+  'carrefour',
+  'centros comerciales',
+  'supermercados champion',
+  'socio club',
+  'ventajas obtenidas',
+  'acumulado club',
+  'total ventajas',
+  'saldo acumulado',
+  'www.pass.carrefour',
+];
+
 function parseItemsWithPatterns(
   lines: string[],
   itemPatterns: ItemPattern[],
   chain: ChainTemplate
 ): ParsedItem[] {
   const items: ParsedItem[] = [];
-  const skipKeywords = [
-    'total',
-    'subtotal',
-    'iva',
-    'igic',
-    'ipsi',
-    'importe',
-    'tarjeta',
-    'efectivo',
-    'cambio',
-    'fecha',
-    'hora',
-    'nif',
-    'cif',
-    'gracias',
-    'ticket',
-    'factura',
-  ];
+
+  // Track pending weighted product for Lidl (weight line appears AFTER the item)
+  let lastItemForWeight: { name: string; price: number; index: number } | null = null;
+
+  // Track pending weighted product name (for Mercadona where qty+name comes first)
+  let pendingWeightedProduct: { name: string; quantity: number; lineIndex: number } | null = null;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
@@ -140,11 +195,109 @@ function parseItemsWithPatterns(
 
     // Skip non-item lines
     const lowerLine = line.toLowerCase();
-    if (skipKeywords.some((kw) => lowerLine.includes(kw))) {
+    if (SKIP_KEYWORDS.some((kw) => lowerLine.includes(kw))) {
       continue;
     }
 
+    // Skip lines that look like addresses or header info
+    if (/^C\/\s/i.test(line) || /^\d{5}\s/.test(line) || /^OP:\s/i.test(line)) {
+      continue;
+    }
+
+    // Skip Lidl Plus discount lines - these are handled separately in totals
+    if (/^Dto\.?\s*Lidl\s*Plus/i.test(line) || /^Descuento\s*\d+%/i.test(line)) {
+      continue;
+    }
+
+    // Skip Carrefour discount lines (DESCUENTO EN 2ª UNIDAD, etc.) - handled in totals
+    if (/^DESCUENTO\s+EN\s+2[ªaA]\s+UNIDAD/i.test(line)) {
+      continue;
+    }
+
+    // Skip Carrefour multi-unit continuation lines (e.g., "2 x ( 0,97 )")
+    if (/^\d+\s*[xX×]\s*\(\s*\d+[,\.]\d{2}\s*\)/.test(line)) {
+      continue;
+    }
+
+    // Skip card payment info lines
+    if (/^\d{6,}X+\d{4}/i.test(line) || /^A\d{10,}/i.test(line) || /^\d{4}\s+\d{6}/i.test(line)) {
+      continue;
+    }
+
+    // ==========================================
+    // LIDL-SPECIFIC: Weight line AFTER item
+    // Format: "0,656 kg x 2,65   EUR/kg" (no total on this line)
+    // ==========================================
+    const lidlWeightPattern =
+      /^\s*(\d+[,\.]\d{3})\s*(kg|g|l|ml)\s*x\s*(\d+[,\.]\d{2})\s*EUR\/(kg|g|l|ml)$/i;
+    const lidlWeightMatch = line.match(lidlWeightPattern);
+
+    if (lidlWeightMatch && lastItemForWeight && chain.chainId === 'lidl') {
+      // Update the last item with weight info
+      const weight = parseFloat(lidlWeightMatch[1].replace(',', '.'));
+      const unit = lidlWeightMatch[2].toLowerCase() as ParsedItem['unit'];
+      const pricePerUnit = parsePrice(lidlWeightMatch[3]);
+
+      // Find and update the last item
+      const lastItem = items[items.length - 1];
+      if (lastItem && lastItem.name === lastItemForWeight.name) {
+        lastItem.quantity = weight;
+        lastItem.unit = unit;
+        lastItem.unitPrice = pricePerUnit || lastItem.totalPrice / weight;
+      }
+      lastItemForWeight = null;
+      continue;
+    }
+
+    // Check for weighted product continuation (Mercadona: "1,102 kg 1,85 €/kg 2,04")
+    const weightedPattern =
+      /^\s*(\d+[,\.]\d{3})\s*(kg|g|l|ml)\s+(\d+[,\.]\d{2})\s*€?\/(kg|g|l|ml)\s+(\d+[,\.]\d{2})$/i;
+    const weightedMatch = line.match(weightedPattern);
+
+    if (weightedMatch && pendingWeightedProduct) {
+      const quantity = parseFloat(weightedMatch[1].replace(',', '.'));
+      const unit = weightedMatch[2].toLowerCase() as ParsedItem['unit'];
+      const unitPrice = parsePrice(weightedMatch[3]);
+      const totalPrice = parsePrice(weightedMatch[5]);
+
+      if (totalPrice && totalPrice > 0) {
+        items.push({
+          name: pendingWeightedProduct.name,
+          quantity,
+          unitPrice: unitPrice || totalPrice / quantity,
+          totalPrice,
+          unit,
+          confidence: 85,
+        });
+        pendingWeightedProduct = null;
+        continue;
+      }
+    }
+
+    // Check for product line with just qty and name (weighted product first line)
+    // Format: "1 PLATANO" (no price on same line)
+    const productOnlyPattern = /^(\d+)\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]+)$/;
+    const productOnlyMatch = line.match(productOnlyPattern);
+    if (productOnlyMatch && i + 1 < lines.length) {
+      const nextLine = lines[i + 1].trim();
+      // Check if next line is a weighted product continuation
+      if (weightedPattern.test(nextLine)) {
+        pendingWeightedProduct = {
+          name: productOnlyMatch[2].trim(),
+          quantity: parseInt(productOnlyMatch[1], 10),
+          lineIndex: i,
+        };
+        continue;
+      }
+    }
+
+    // Reset pending if we moved past it
+    if (pendingWeightedProduct && i > pendingWeightedProduct.lineIndex + 1) {
+      pendingWeightedProduct = null;
+    }
+
     // Try each item pattern
+    let matched = false;
     for (const itemPattern of itemPatterns) {
       const match = line.match(itemPattern.pattern);
       if (match) {
@@ -165,15 +318,6 @@ function parseItemsWithPatterns(
           else if (unitStr === 'ml') unit = 'ml';
         }
 
-        // If we only have unit price, look for total price on next line
-        if (unitPrice && !totalPrice && i + 1 < lines.length) {
-          const nextLine = lines[i + 1].trim();
-          const nextPrice = parsePrice(nextLine);
-          if (nextPrice && /^\d+[,\.]\d{2}/.test(nextLine)) {
-            totalPrice = nextPrice;
-          }
-        }
-
         // Calculate missing values
         if (totalPrice && !unitPrice && quantity) {
           unitPrice = totalPrice / quantity;
@@ -192,22 +336,91 @@ function parseItemsWithPatterns(
             continue;
           }
 
-          items.push({
+          // Skip if name looks like a header/footer element
+          if (/^(visa|mastercard|debit|importe|arc|aut|aid|n\.c|imp\.)/i.test(name)) {
+            continue;
+          }
+
+          // Skip names that are just "kg" or similar units
+          if (/^(kg|g|l|ml|EUR)$/i.test(name)) {
+            continue;
+          }
+
+          const item: ParsedItem = {
             name,
             quantity: quantity || 1,
             unitPrice: unitPrice ? Math.round(unitPrice * 100) / 100 : totalPrice,
             totalPrice: Math.round(totalPrice * 100) / 100,
             unit,
-            confidence: 80, // Higher confidence for chain-specific parsing
-          });
+            confidence: 85,
+          };
 
-          break; // Found a match, move to next line
+          items.push(item);
+
+          // For Lidl: track last item in case next line has weight info
+          if (chain.chainId === 'lidl' && !unit) {
+            // Check if next line might have weight info
+            if (i + 1 < lines.length && lidlWeightPattern.test(lines[i + 1].trim())) {
+              lastItemForWeight = { name, price: totalPrice, index: items.length - 1 };
+            }
+          }
+
+          matched = true;
+          break;
         }
       }
     }
   }
 
   return items;
+}
+
+interface DiscountPattern {
+  pattern: RegExp;
+  accumulate: boolean;
+}
+
+const CHAIN_DISCOUNT_PATTERNS: Record<string, DiscountPattern[]> = {
+  carrefour: [
+    {
+      pattern: /DESCUENTO\s+EN\s+2[ªaA]\s+UNIDAD\s+[A-Z]{0,2}\d{0,2}\s*(-?\d+[,\.]\d{2})/i,
+      accumulate: true,
+    },
+    { pattern: /DESCUENTOS:\s*(\d+[,\.]\d{2})/i, accumulate: false },
+  ],
+  lidl: [
+    { pattern: /Dto\.?\s*Lidl\s*Plus\s+(-?\d+[,\.]\d{2})/i, accumulate: true },
+    { pattern: /Descuento\s*\d+%\s+(-?\d+[,\.]\d{2})/i, accumulate: true },
+    { pattern: /(\d+[,\.]\d{2})\s*EUR\s*en\s*esta\s*compra/i, accumulate: false },
+  ],
+};
+
+function extractChainDiscount(
+  line: string,
+  chainId: string,
+  currentTotal: number
+): { value: number; shouldContinue: boolean } | null {
+  const patterns = CHAIN_DISCOUNT_PATTERNS[chainId];
+  if (!patterns) return null;
+
+  for (const { pattern, accumulate } of patterns) {
+    const match = line.match(pattern);
+    if (match) {
+      const value = parsePrice(match[1]);
+      if (value === null) return null;
+
+      const absValue = Math.abs(value);
+      if (accumulate) {
+        return { value: currentTotal + absValue, shouldContinue: true };
+      }
+      if (absValue > currentTotal) {
+        return { value: absValue, shouldContinue: true };
+      }
+      return { value: currentTotal, shouldContinue: true };
+    }
+  }
+
+  return null;
 }
 
 /**
@@ -232,16 +445,32 @@ function extractTotalsWithChain(
   const taxKeywords = chain.parsing.taxKeywords.map((k) => k.toUpperCase());
   const discountKeywords = chain.parsing.discountKeywords.map((k) => k.toUpperCase());
 
+  let totalAccumulatedDiscount = 0;
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const upperLine = line.toUpperCase();
 
+    // Handle chain-specific discount patterns
+    const discountResult = extractChainDiscount(line, chain.chainId, totalAccumulatedDiscount);
+    if (discountResult) {
+      totalAccumulatedDiscount = discountResult.value;
+      if (discountResult.shouldContinue) continue;
+    }
+
+    // Extract price from line
     let price = parsePrice(line);
+
+    // Try to extract price after keywords like "TOTAL (€)"
+    const priceAfterKeyword = line.match(/(?:TOTAL|IMPORTE)\s*\(?\s*€?\s*\)?\s*(\d+[,\.]\d{2})/i);
+    if (priceAfterKeyword) {
+      price = parsePrice(priceAfterKeyword[1]);
+    }
 
     // Check next line for standalone price
     if (price === null && i + 1 < lines.length) {
       const nextLine = lines[i + 1].trim();
-      if (/^\d+[,\.]\d{2}/.test(nextLine)) {
+      if (/^\d+[,\.]\d{2}$/.test(nextLine)) {
         price = parsePrice(nextLine);
       }
     }
@@ -253,26 +482,36 @@ function extractTotalsWithChain(
         continue;
       }
 
-      // Check for tax
-      if (taxKeywords.some((kw) => upperLine.includes(kw))) {
+      // Check for tax (but not if it's the totals line)
+      const isTaxLine = taxKeywords.some((kw) => upperLine.includes(kw));
+      const isTotalLine = totalKeywords.some((kw) => upperLine.includes(kw));
+      if (isTaxLine && !isTotalLine && !upperLine.includes('TOTAL') && price < 50) {
         tax = price;
         continue;
       }
 
-      // Check for discount
-      if (discountKeywords.some((kw) => upperLine.includes(kw))) {
+      // Check for discount (chains without specific patterns)
+      const hasChainPatterns = chain.chainId in CHAIN_DISCOUNT_PATTERNS;
+      if (!hasChainPatterns && discountKeywords.some((kw) => upperLine.includes(kw))) {
         discount = price;
         continue;
       }
 
       // Check for total (must not be subtotal)
       const isSubtotal = upperLine.includes('SUB');
-      if (!isSubtotal && totalKeywords.some((kw) => upperLine.includes(kw))) {
-        if (total === null || price > total) {
+      const isTarjetaLine = upperLine.includes('TARJETA');
+      const isEntregadoLine = upperLine.includes('ENTREGADO');
+      if (!isSubtotal && !isEntregadoLine && (isTotalLine || isTarjetaLine)) {
+        if (total === null || price >= total) {
           total = price;
         }
       }
     }
+  }
+
+  // Set accumulated discount for chains with line-item discounts
+  if (chain.chainId in CHAIN_DISCOUNT_PATTERNS && totalAccumulatedDiscount > 0) {
+    discount = totalAccumulatedDiscount;
   }
 
   return { subtotal, tax, discount, total };
