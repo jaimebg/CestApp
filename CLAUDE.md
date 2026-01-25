@@ -418,7 +418,6 @@ Before committing:
 ## Commit Guidelines
 
 - **Never commit unless explicitly told**: Do not create commits automatically. Wait for the user to explicitly request a commit.
-- **Before committing**: When the user asks to commit, spawn the `code-simplifier:code-simplifier` agent to review and simplify recently modified code before creating the commit.
 - Use conventional commits: `feat:`, `fix:`, `refactor:`, `docs:`, `chore:`
 
 ## Common Pitfalls
