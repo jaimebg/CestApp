@@ -58,13 +58,13 @@ export async function getSpendingByDay(
 
   const result = await db
     .select({
-      date: sql<string>`DATE(${receipts.dateTime})`.as('date'),
+      date: sql<string>`DATE(${receipts.dateTime}, 'unixepoch')`.as('date'),
       amount: sql<number>`COALESCE(SUM(${receipts.totalAmount}), 0)`.as('amount'),
     })
     .from(receipts)
     .where(and(gte(receipts.dateTime, start), lte(receipts.dateTime, end)))
-    .groupBy(sql`DATE(${receipts.dateTime})`)
-    .orderBy(sql`DATE(${receipts.dateTime})`);
+    .groupBy(sql`DATE(${receipts.dateTime}, 'unixepoch')`)
+    .orderBy(sql`DATE(${receipts.dateTime}, 'unixepoch')`);
 
   return result.map((r) => ({
     date: r.date,

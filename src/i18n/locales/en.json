@@ -231,7 +231,17 @@
     "deleteTemplateConfirm": "Delete the parsing template for {{store}}? This cannot be undone.",
     "confidence": "Confidence",
     "spanishDefaults": "Spanish Region Settings",
-    "spanishDefaultsDesc": "Date format DD/MM/YYYY, decimal comma, and Euro (€) are set automatically."
+    "spanishDefaultsDesc": "Date format DD/MM/YYYY, decimal comma, and Euro (€) are set automatically.",
+    "devMenu": "Developer Options",
+    "devMenuDesc": "These options are for development and testing purposes.",
+    "addDemoData": "Add Demo Data",
+    "addDemoDataDesc": "Add sample receipts for screenshots and testing",
+    "clearAllData": "Clear All Data",
+    "clearAllDataDesc": "Delete all receipts, items, and stores",
+    "clearDataTitle": "Clear All Data?",
+    "clearDataMessage": "This will permanently delete all receipts, items, and stores. This action cannot be undone.",
+    "dataCleared": "All data cleared",
+    "demoDataAdded": "Added {{receipts}} receipts with {{items}} items"
   },
   "errors": {
     "cameraPermission": "Camera permission is required to take photos",

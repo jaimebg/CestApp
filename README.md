@@ -29,6 +29,16 @@
 
 ---
 
+<p align="center">
+  <img src="assets/screenshots/dashboard.jpg" alt="Dashboard" width="240" />
+  &nbsp;&nbsp;
+  <img src="assets/screenshots/analytics.jpg" alt="Analytics" width="240" />
+  &nbsp;&nbsp;
+  <img src="assets/screenshots/scan-preview.jpg" alt="Scan Preview" width="240" />
+</p>
+
+---
+
 ## Why CestApp?
 
 - **100% on-device** — ML Kit OCR runs locally. No cloud uploads.

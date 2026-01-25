@@ -231,7 +231,17 @@
     "deleteTemplateConfirm": "¿Eliminar la plantilla de parseo para {{store}}? Esto no se puede deshacer.",
     "confidence": "Confianza",
     "spanishDefaults": "Configuración para España",
-    "spanishDefaultsDesc": "Formato de fecha DD/MM/AAAA, coma decimal y Euro (€) configurados automáticamente."
+    "spanishDefaultsDesc": "Formato de fecha DD/MM/AAAA, coma decimal y Euro (€) configurados automáticamente.",
+    "devMenu": "Opciones de Desarrollo",
+    "devMenuDesc": "Estas opciones son para desarrollo y pruebas.",
+    "addDemoData": "Agregar Datos de Prueba",
+    "addDemoDataDesc": "Agrega recibos de ejemplo para capturas y pruebas",
+    "clearAllData": "Borrar Todos los Datos",
+    "clearAllDataDesc": "Elimina todos los recibos, artículos y tiendas",
+    "clearDataTitle": "¿Borrar Todos los Datos?",
+    "clearDataMessage": "Esto eliminará permanentemente todos los recibos, artículos y tiendas. Esta acción no se puede deshacer.",
+    "dataCleared": "Todos los datos borrados",
+    "demoDataAdded": "Se agregaron {{receipts}} recibos con {{items}} artículos"
   },
   "errors": {
     "cameraPermission": "Se requiere permiso de cámara para tomar fotos",
