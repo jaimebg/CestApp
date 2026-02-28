@@ -4,17 +4,9 @@
  * Enhanced with chain-specific templates for Spanish supermarkets
  */
 
-import {
-  type RegionalPreset,
-  detectRegionFromText,
-  SPAIN_PRESET,
-} from '../../config/regionalPresets';
-import { detectChainFromLines, type ChainDetectionResult } from './chainDetector';
-import {
-  parseWithChainTemplate,
-  shouldUseChainParsing,
-  type ChainParseResult,
-} from './chainParser';
+import { type RegionalPreset, SPAIN_PRESET } from '../../config/regionalPresets';
+import { detectChainFromLines } from './chainDetector';
+import { parseWithChainTemplate, shouldUseChainParsing } from './chainParser';
 
 export interface ParsedItem {
   name: string;

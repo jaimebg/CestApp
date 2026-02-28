@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, Pressable, ActivityIndicator, useColorScheme } from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +7,7 @@ import { BarChart, PieChart } from 'react-native-gifted-charts';
 import { useDatabaseReady } from '@/src/db/provider';
 import { getAnalyticsSummary, TimePeriod } from '@/src/db/queries/analytics';
 import { useFormatPrice } from '@/src/store/preferences';
+import { useAppColors } from '@/src/hooks/useAppColors';
 import { createScopedLogger } from '@/src/utils/debug';
 
 const logger = createScopedLogger('Analytics');
@@ -16,26 +17,13 @@ type AnalyticsData = Awaited<ReturnType<typeof getAnalyticsSummary>>;
 export default function AnalyticsScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const colors = useAppColors();
   const { isReady } = useDatabaseReady();
   const { formatPrice } = useFormatPrice();
 
   const [period, setPeriod] = useState<TimePeriod>('month');
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  const colors = {
-    background: isDark ? '#1A1918' : '#FFFDE1',
-    surface: isDark ? '#2D2A26' : '#FFFFFF',
-    text: isDark ? '#FFFDE1' : '#2D2A26',
-    textSecondary: isDark ? '#B8B4A9' : '#6B6560',
-    border: isDark ? '#4A4640' : '#E8E4D9',
-    primary: '#93BD57',
-    primaryLight: isDark ? '#A8CE6F' : '#7AA042',
-    accent: '#FBE580',
-    error: isDark ? '#C94444' : '#980404',
-  };
 
   const categoryColors = [
     '#93BD57',

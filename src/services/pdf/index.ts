@@ -1,5 +1,5 @@
 import { readAsStringAsync } from 'expo-file-system/legacy';
-import pako from 'pako';
+import { inflate, inflateRaw } from 'pako';
 import { createScopedLogger } from '../../utils/debug';
 
 const logger = createScopedLogger('PDF');
@@ -126,10 +126,10 @@ function extractTextFromPdfBytes(bytes: Uint8Array): string {
 
           let decompressed: Uint8Array;
           try {
-            decompressed = pako.inflate(compressedData);
+            decompressed = inflate(compressedData);
           } catch {
             try {
-              decompressed = pako.inflateRaw(compressedData);
+              decompressed = inflateRaw(compressedData);
             } catch {
               continue;
             }
@@ -240,12 +240,12 @@ function extractToUnicodeMaps(pdfString: string, bytes: Uint8Array): Map<string,
           if (streamEnd !== -1) {
             try {
               const compressed = bytes.slice(streamStart, streamEnd);
-              const decompressed = pako.inflate(compressed);
+              const decompressed = inflate(compressed);
               cmapContent = bytesToString(decompressed);
             } catch {
               try {
                 const compressed = bytes.slice(streamStart, streamEnd);
-                const decompressed = pako.inflateRaw(compressed);
+                const decompressed = inflateRaw(compressed);
                 cmapContent = bytesToString(decompressed);
               } catch {
                 return;

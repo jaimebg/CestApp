@@ -15,18 +15,18 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useDatabaseReady } from '../../src/db/provider';
+import { useDatabaseReady } from '@/src/db/provider';
 import {
   getReceiptsWithItemCount,
   getFilteredReceipts,
   getStoresWithReceipts,
   type ReceiptFilters,
-} from '../../src/db/queries/receipts';
-import { ReceiptCard } from '../../src/components/receipt/ReceiptCard';
-import { ReceiptListSkeleton } from '../../src/components/receipt/ReceiptCardSkeleton';
-import { createScopedLogger } from '../../src/utils/debug';
-import type { Receipt } from '../../src/db/schema/receipts';
-import type { Store } from '../../src/db/schema/stores';
+} from '@/src/db/queries/receipts';
+import { ReceiptCard } from '@/src/components/receipt/ReceiptCard';
+import { ReceiptListSkeleton } from '@/src/components/receipt/ReceiptCardSkeleton';
+import { createScopedLogger } from '@/src/utils/debug';
+import type { Receipt } from '@/src/db/schema/receipts';
+import type { Store } from '@/src/db/schema/stores';
 
 const logger = createScopedLogger('History');
 
@@ -157,13 +157,6 @@ export default function HistoryScreen() {
     setSelectedDatePreset('all');
     setSearchQuery('');
   }, []);
-
-  useEffect(() => {
-    if (isReady) {
-      loadReceipts();
-      loadStores();
-    }
-  }, [isReady, loadReceipts, loadStores]);
 
   useFocusEffect(
     useCallback(() => {

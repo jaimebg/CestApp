@@ -265,14 +265,6 @@ function isHeaderLine(text: string): boolean {
 }
 
 /**
- * Check if text contains letters (including Unicode/accented characters)
- */
-function hasLetters(text: string): boolean {
-  // Match any letter including accented characters, ñ, etc.
-  return /\p{L}/u.test(text);
-}
-
-/**
  * Check if text has at least N letters
  */
 function hasMinLetters(text: string, minCount: number): boolean {
@@ -493,14 +485,12 @@ export function autoDetectZones(
   // 1. Detect store name (usually the first text block at the top)
   // First, try to find a block with a known store name (prioritize this)
   let storeNameBlock: NormalizedBlock | null = null;
-  let foundStoreName: string | null = null;
 
   for (const block of sortedBlocks.slice(0, 5)) {
     const text = block.text.trim();
     const knownStore = findKnownStoreName(text, preset);
     if (knownStore) {
       storeNameBlock = block;
-      foundStoreName = knownStore;
       logger.log('Found known store name:', knownStore, 'in:', text.substring(0, 40));
       break;
     }

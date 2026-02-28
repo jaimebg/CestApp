@@ -39,14 +39,6 @@ function scaleZonesForAspectRatio(
     return zones;
   }
 
-  // Calculate scaling factors
-  // If current image is wider (larger aspect ratio), horizontal zones need to expand
-  // If current image is taller (smaller aspect ratio), vertical zones need to expand
-  const widthScale =
-    currentAspectRatio > templateAspectRatio ? currentAspectRatio / templateAspectRatio : 1;
-  const heightScale =
-    currentAspectRatio < templateAspectRatio ? templateAspectRatio / currentAspectRatio : 1;
-
   // Add padding to zones to account for aspect ratio differences
   const paddingFactor = Math.max(ratioDifference * 0.5, 0.05);
 
@@ -396,9 +388,6 @@ function parseDate(lines: string[], dateFormat: 'DMY' | 'MDY' | 'YMD'): Date | n
  * Uses generic patterns that work for any receipt
  */
 function isHeaderLine(text: string): boolean {
-  const lower = text.toLowerCase();
-  const upper = text.toUpperCase();
-
   // Generic patterns for header lines
   const headerPatterns = [
     /\bNIF\b/i, // Tax ID

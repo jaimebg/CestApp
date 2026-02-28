@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { View, Text, useColorScheme } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -49,9 +49,10 @@ export default function ZoneSelectionScreen() {
     primary: '#3D6B23',
   };
 
-  const parsedDimensions = imageDimensions
-    ? JSON.parse(imageDimensions)
-    : { width: 1000, height: 1500 };
+  const parsedDimensions = useMemo(
+    () => (imageDimensions ? JSON.parse(imageDimensions) : { width: 1000, height: 1500 }),
+    [imageDimensions]
+  );
 
   logger.log('Using imageDimensions:', parsedDimensions);
   logger.log('Raw imageDimensions param:', imageDimensions);
@@ -168,7 +169,18 @@ export default function ZoneSelectionScreen() {
       logger.error('Error saving template:', error);
       showErrorToast(t('common.error'), t('errors.saveFailed'));
     }
-  }, [storeId, zones, uri, router, t, lang, isPreviewMode, imageDimensions]);
+  }, [
+    storeId,
+    zones,
+    uri,
+    source,
+    router,
+    t,
+    lang,
+    isPreviewMode,
+    imageDimensions,
+    parsedDimensions,
+  ]);
 
   const handleCancel = useCallback(() => {
     router.back();

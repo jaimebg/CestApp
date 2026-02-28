@@ -6,7 +6,6 @@
 import type { ChainTemplate, ItemPattern } from '../../config/spanishChains';
 import type { ParsedItem, ParsedReceipt } from './parser';
 import { ChainDetectionResult, applyChainOcrCorrectionsToLines } from './chainDetector';
-import { detectTaxRegion } from '../../config/taxRegions';
 
 /**
  * Chain parsing result with additional metadata
@@ -637,9 +636,6 @@ export function parseWithChainTemplate(
 
   // Extract payment method
   const paymentMethod = extractPaymentMethod(rawText);
-
-  // Detect tax region
-  const taxRegion = detectTaxRegion(rawText, null, storeName);
 
   // Calculate confidence
   let confidence = 50;

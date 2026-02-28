@@ -62,13 +62,6 @@ module.exports = {
           household: '#8D8680',
         },
       },
-      fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        'sans-light': ['Inter-Light', 'system-ui', 'sans-serif'],
-        'sans-medium': ['Inter-Medium', 'system-ui', 'sans-serif'],
-        'sans-semibold': ['Inter-SemiBold', 'system-ui', 'sans-serif'],
-        'sans-bold': ['Inter-Bold', 'system-ui', 'sans-serif'],
-      },
     },
   },
   plugins: [],
