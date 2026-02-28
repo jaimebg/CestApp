@@ -43,13 +43,13 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/cestapp-logo.png",
+          "image": "./assets/images/splash-light.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#FFFDE1",
           "dark": {
             "backgroundColor": "#1A1918",
-            "image": "./assets/images/cestapp-logo.png"
+            "image": "./assets/images/splash-dark.png"
           }
         }
       ],
