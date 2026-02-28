@@ -42,14 +42,14 @@
 ## Why CestApp?
 
 - **100% on-device** — ML Kit OCR runs locally. No cloud uploads.
-- **Any format** — Camera, gallery, or PDF.
+- **Any format** — Document scanner, gallery, or PDF.
 - **Smart categories** — Auto-sorts items. Learns from your corrections.
 - **Spanish supermarkets** — Pre-trained templates for Mercadona, Carrefour, Lidl, and more.
 - **Multi-language** — English & Spanish UI.
 
 ## Features
 
-**Capture**: Camera scanning, gallery import, PDF parsing via ML Kit OCR.
+**Capture**: Document scanner (auto-crop & enhance), gallery import, PDF parsing via ML Kit OCR.
 
 **Smart Parsing**: Chain-specific templates detect Mercadona, Carrefour, Lidl, Eroski, Dia, Consum, Alcampo, Aldi, HiperDino by NIF/name patterns.
 
