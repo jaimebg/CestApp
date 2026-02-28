@@ -1,14 +1,20 @@
 import { Tabs } from 'expo-router';
-import { useColorScheme } from 'react-native';
+import { View, useColorScheme } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
+import { usePreferencesStore } from '@/src/store/preferences';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
+  const hasCompletedOnboarding = usePreferencesStore((state) => state.hasCompletedOnboarding);
+
+  if (!hasCompletedOnboarding) {
+    return <View style={{ flex: 1, backgroundColor: isDark ? '#1A1918' : '#FFFDE1' }} />;
+  }
 
   const colors = {
     background: isDark ? '#1A1918' : '#FFFDE1',

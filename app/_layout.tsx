@@ -39,6 +39,7 @@ export default function RootLayout() {
   const router = useRouter();
   const storeHydrated = useStoreHydrated();
   const hasCompletedOnboarding = usePreferencesStore((state) => state.hasCompletedOnboarding);
+  const bgColor = colorScheme === 'dark' ? '#1A1918' : '#FFFDE1';
 
   const [fontsLoaded, fontError] = useFonts({
     Inter_300Light,
@@ -55,13 +56,11 @@ export default function RootLayout() {
   useEffect(() => {
     if (!appReady || !isNavigationReady) return;
 
-    // New users: navigate to onboarding, keep splash visible
     if (!hasCompletedOnboarding && !isOnOnboardingScreen) {
       router.replace('/onboarding');
       return;
     }
 
-    // Correct screen is active — wait for it to fully paint before hiding splash
     const handle = InteractionManager.runAfterInteractions(() => {
       SplashScreen.hideAsync();
     });
@@ -73,19 +72,20 @@ export default function RootLayout() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: bgColor }}>
       <SafeAreaProvider>
         <DatabaseProvider>
           <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
           <Stack
             screenOptions={{
               headerShown: false,
-              contentStyle: {
-                backgroundColor: colorScheme === 'dark' ? '#1A1918' : '#FFFDE1',
-              },
+              contentStyle: { backgroundColor: bgColor },
             }}
           >
-            <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
+            <Stack.Screen
+              name="onboarding"
+              options={{ gestureEnabled: false, animation: 'none' }}
+            />
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="scan" />
             <Stack.Screen
