@@ -1,11 +1,12 @@
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
+import DocumentScanner from 'react-native-document-scanner-plugin';
 import { saveReceiptFile } from '../storage';
 import { createScopedLogger } from '../../utils/debug';
 
 const logger = createScopedLogger('Capture');
 
-export type CaptureSource = 'camera' | 'gallery' | 'pdf';
+export type CaptureSource = 'camera' | 'gallery' | 'pdf' | 'scanner';
 
 export interface CaptureResult {
   success: boolean;
@@ -158,6 +159,46 @@ export async function selectFromGallery(): Promise<CaptureResult> {
     return {
       success: false,
       source: 'gallery',
+      error: 'unknown',
+    };
+  }
+}
+
+/**
+ * Scan a document using the native document scanner.
+ * iOS: VNDocumentCameraViewController (perspective correction, auto-crop, contrast enhancement)
+ * Android: Google ML Kit Document Scanner (same features)
+ */
+export async function scanDocument(): Promise<CaptureResult> {
+  try {
+    const { scannedImages, status } = await DocumentScanner.scanDocument({
+      croppedImageQuality: 90,
+      maxNumDocuments: 1,
+    });
+
+    if (status !== 'success' || !scannedImages || scannedImages.length === 0) {
+      return {
+        success: false,
+        source: 'scanner',
+        error: 'cancelled',
+      };
+    }
+
+    const imageUri = scannedImages[0];
+    const localUri = await saveReceiptFile(imageUri, 'image/jpeg');
+
+    return {
+      success: true,
+      uri: imageUri,
+      localUri,
+      source: 'scanner',
+      mimeType: 'image/jpeg',
+    };
+  } catch (error) {
+    logger.error('Document scan error:', error);
+    return {
+      success: false,
+      source: 'scanner',
       error: 'unknown',
     };
   }

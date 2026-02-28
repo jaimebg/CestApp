@@ -123,11 +123,13 @@ export default function ScanPreviewScreen() {
       logger.log('Starting auto zone detection...');
 
       try {
-        // Run OCR to get blocks
-        const result = await recognizeText(uri);
+        // Get actual image dimensions first, then pass to OCR for accurate zone alignment
+        const imageDims = dimensions || (await getImageDimensions(uri));
+        if (!dimensions) setDimensions(imageDims);
+
+        const result = await recognizeText(uri, imageDims);
 
         if (result.success && result.blocks.length > 0) {
-          // Store OCR result for later use
           setOcrResult({
             text: result.text,
             lines: result.lines,
@@ -135,8 +137,6 @@ export default function ScanPreviewScreen() {
             inferredDimensions: result.inferredDimensions || null,
           });
 
-          // Get effective dimensions for zone detection
-          const imageDims = dimensions || (await getImageDimensions(uri));
           const effectiveDims = result.inferredDimensions || imageDims;
 
           logger.log('OCR completed:', result.blocks.length, 'blocks');
@@ -226,10 +226,11 @@ export default function ScanPreviewScreen() {
         }
       } else {
         // Use cached OCR result if available, otherwise run OCR
+        const imageDims = dimensions || (await getImageDimensions(uri));
         let result = ocrResult;
         if (!result) {
           logger.log('Running OCR (no cached result)...');
-          const ocrResponse = await recognizeText(uri);
+          const ocrResponse = await recognizeText(uri, imageDims);
           if (ocrResponse.success) {
             result = {
               text: ocrResponse.text,
@@ -245,13 +246,10 @@ export default function ScanPreviewScreen() {
           logger.log('Using cached OCR result');
         }
 
-        const imageDims = dimensions || (await getImageDimensions(uri));
-        // Prefer OCR-inferred dimensions for accurate zone matching
         const effectiveDims = result.inferredDimensions || imageDims;
 
         logger.log('Processing image with:');
         logger.log('- getImageDimensions:', imageDims);
-        logger.log('- OCR inferredDimensions:', result.inferredDimensions);
         logger.log('- Using effectiveDims:', effectiveDims);
         logger.log('- Zones:', zones.length);
         logger.log('- Blocks from OCR:', result.blocks.length);
@@ -453,6 +451,7 @@ export default function ScanPreviewScreen() {
           style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
         >
           {source === 'camera' && t('scan.fromCamera')}
+          {source === 'scanner' && t('scan.fromScanner')}
           {source === 'gallery' && t('scan.fromGalleryLabel')}
           {source === 'pdf' && t('scan.fromPdfLabel')}
         </Text>

@@ -10,6 +10,7 @@ import {
   captureFromCamera,
   selectFromGallery,
   selectPdf,
+  scanDocument,
   CaptureResult,
 } from '@/src/services/capture';
 
@@ -17,13 +18,20 @@ export default function ScanScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState<'camera' | 'gallery' | 'pdf' | null>(null);
+  const [isLoading, setIsLoading] = useState<'camera' | 'scanner' | 'gallery' | 'pdf' | null>(null);
 
   const handleCaptureResult = (result: CaptureResult) => {
     if (result.success && result.localUri) {
       router.push({
         pathname: '/scan/preview',
-        params: { uri: result.localUri, source: result.source },
+        params: {
+          uri: result.localUri,
+          source: result.source,
+          ...(result.width &&
+            result.height && {
+              imageDimensions: JSON.stringify({ width: result.width, height: result.height }),
+            }),
+        },
       });
     } else if (result.error && result.error !== 'cancelled') {
       const errorKey =
@@ -41,6 +49,16 @@ export default function ScanScreen() {
     setIsLoading('camera');
     try {
       const result = await captureFromCamera();
+      handleCaptureResult(result);
+    } finally {
+      setIsLoading(null);
+    }
+  };
+
+  const handleScanDocument = async () => {
+    setIsLoading('scanner');
+    try {
+      const result = await scanDocument();
       handleCaptureResult(result);
     } finally {
       setIsLoading(null);
@@ -89,29 +107,61 @@ export default function ScanScreen() {
         <View className="flex-1 justify-center gap-4">
           <Pressable
             className="bg-primary-deep rounded-2xl p-6 flex-row items-center active:bg-primary-dark"
-            onPress={handleCamera}
+            onPress={handleScanDocument}
             disabled={isLoading !== null}
-            style={{ opacity: isLoading !== null && isLoading !== 'camera' ? 0.5 : 1 }}
+            style={{ opacity: isLoading !== null && isLoading !== 'scanner' ? 0.5 : 1 }}
           >
             <View className="bg-white/20 rounded-full p-3 mr-4">
               <Ionicons
-                name={isLoading === 'camera' ? 'hourglass-outline' : 'camera-outline'}
+                name={isLoading === 'scanner' ? 'hourglass-outline' : 'scan-outline'}
                 size={28}
                 color="#FFFFFF"
               />
             </View>
             <View className="flex-1">
               <Text className="text-white text-lg" style={{ fontFamily: 'Inter_600SemiBold' }}>
-                {t('scan.takePhoto')}
+                {t('scan.scanDocument')}
               </Text>
               <Text
                 className="text-white/80 text-sm mt-1"
                 style={{ fontFamily: 'Inter_400Regular' }}
               >
-                {t('scan.takePhotoDesc')}
+                {t('scan.scanDocumentDesc')}
               </Text>
             </View>
           </Pressable>
+
+          <Card
+            variant="outlined"
+            padding="lg"
+            onPress={handleCamera}
+            disabled={isLoading !== null}
+            style={{ opacity: isLoading !== null && isLoading !== 'camera' ? 0.5 : 1 }}
+          >
+            <View className="flex-row items-center">
+              <View className="bg-primary/20 rounded-full p-3 mr-4">
+                <Ionicons
+                  name={isLoading === 'camera' ? 'hourglass-outline' : 'camera-outline'}
+                  size={28}
+                  color="#3D6B23"
+                />
+              </View>
+              <View className="flex-1">
+                <Text
+                  className="text-text dark:text-text-dark text-lg"
+                  style={{ fontFamily: 'Inter_600SemiBold' }}
+                >
+                  {t('scan.takePhoto')}
+                </Text>
+                <Text
+                  className="text-text-secondary dark:text-text-dark-secondary text-sm mt-1"
+                  style={{ fontFamily: 'Inter_400Regular' }}
+                >
+                  {t('scan.takePhotoDesc')}
+                </Text>
+              </View>
+            </View>
+          </Card>
 
           <Card
             variant="outlined"

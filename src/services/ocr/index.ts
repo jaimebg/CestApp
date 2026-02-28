@@ -1,4 +1,5 @@
-import MlkitOcr, {
+import {
+  recognizeText as mlkitRecognizeText,
   OcrResult as MlkitOcrResult,
   OcrBlock as MlkitOcrBlock,
   OcrLine as MlkitOcrLine,
@@ -39,33 +40,20 @@ export interface OcrResult {
 }
 
 /**
- * Performs OCR on an image file
+ * Performs OCR on an image file.
  * @param imageUri - The URI of the image to process
+ * @param knownDimensions - Actual image dimensions from the capture service. When provided,
+ *   these are used instead of inferring dimensions from OCR block extents (which is imprecise
+ *   because text rarely reaches image edges). ML Kit bounding boxes use the same coordinate
+ *   space as the input image, so known dimensions give accurate zone alignment.
  * @returns OCR result with extracted text and structure
  */
-export async function recognizeText(imageUri: string): Promise<OcrResult> {
+export async function recognizeText(
+  imageUri: string,
+  knownDimensions?: { width: number; height: number }
+): Promise<OcrResult> {
   try {
-    const result: MlkitOcrResult = await MlkitOcr.recognizeText(imageUri);
-
-    // Debug: Log first block's raw bounding box to see actual image coordinates
-    if (result.blocks.length > 0) {
-      const firstBlock = result.blocks[0];
-      logger.log('Raw first block frame from MLKit:', {
-        x: firstBlock.frame.x,
-        y: firstBlock.frame.y,
-        width: firstBlock.frame.width,
-        height: firstBlock.frame.height,
-        text: firstBlock.text.substring(0, 50),
-      });
-      // Find max x+width and y+height to infer image size
-      let maxX = 0,
-        maxY = 0;
-      result.blocks.forEach((b: MlkitOcrBlock) => {
-        maxX = Math.max(maxX, b.frame.x + b.frame.width);
-        maxY = Math.max(maxY, b.frame.y + b.frame.height);
-      });
-      logger.log('Inferred image bounds from OCR blocks:', { maxX, maxY });
-    }
+    const result: MlkitOcrResult = await mlkitRecognizeText(imageUri);
 
     const blocks: OcrBlock[] = result.blocks.map((block: MlkitOcrBlock) => ({
       text: block.text,
@@ -93,28 +81,28 @@ export async function recognizeText(imageUri: string): Promise<OcrResult> {
       });
     });
 
-    const fullText = result.text;
-
-    // Infer image dimensions from OCR block coordinates
     let inferredDimensions: { width: number; height: number } | undefined;
-    if (result.blocks.length > 0) {
+
+    if (knownDimensions) {
+      inferredDimensions = knownDimensions;
+      logger.log('Using known image dimensions:', knownDimensions);
+    } else if (result.blocks.length > 0) {
       let maxX = 0;
       let maxY = 0;
       result.blocks.forEach((b: MlkitOcrBlock) => {
         maxX = Math.max(maxX, b.frame.x + b.frame.width);
         maxY = Math.max(maxY, b.frame.y + b.frame.height);
       });
-      // Add small padding since text might not reach image edges
       inferredDimensions = {
         width: Math.ceil(maxX * 1.02),
         height: Math.ceil(maxY * 1.02),
       };
-      logger.log('Returning inferredDimensions:', inferredDimensions);
+      logger.log('Inferred dimensions from OCR blocks (fallback):', inferredDimensions);
     }
 
     return {
       success: true,
-      text: fullText,
+      text: result.text,
       blocks,
       lines,
       inferredDimensions,
