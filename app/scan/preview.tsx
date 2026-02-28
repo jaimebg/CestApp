@@ -450,7 +450,6 @@ export default function ScanPreviewScreen() {
           className="text-sm text-center"
           style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
         >
-          {source === 'camera' && t('scan.fromCamera')}
           {source === 'scanner' && t('scan.fromScanner')}
           {source === 'gallery' && t('scan.fromGalleryLabel')}
           {source === 'pdf' && t('scan.fromPdfLabel')}

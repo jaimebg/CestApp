@@ -6,19 +6,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Card } from '@/src/components/ui/Card';
-import {
-  captureFromCamera,
-  selectFromGallery,
-  selectPdf,
-  scanDocument,
-  CaptureResult,
-} from '@/src/services/capture';
+import { selectFromGallery, selectPdf, scanDocument, CaptureResult } from '@/src/services/capture';
 
 export default function ScanScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState<'camera' | 'scanner' | 'gallery' | 'pdf' | null>(null);
+  const [isLoading, setIsLoading] = useState<'scanner' | 'gallery' | 'pdf' | null>(null);
 
   const handleCaptureResult = (result: CaptureResult) => {
     if (result.success && result.localUri) {
@@ -35,23 +29,9 @@ export default function ScanScreen() {
       });
     } else if (result.error && result.error !== 'cancelled') {
       const errorKey =
-        result.error === 'cameraPermission'
-          ? 'errors.cameraPermission'
-          : result.error === 'galleryPermission'
-            ? 'errors.galleryPermission'
-            : 'errors.unknownError';
+        result.error === 'galleryPermission' ? 'errors.galleryPermission' : 'errors.unknownError';
 
       showErrorToast(t('common.error'), t(errorKey));
-    }
-  };
-
-  const handleCamera = async () => {
-    setIsLoading('camera');
-    try {
-      const result = await captureFromCamera();
-      handleCaptureResult(result);
-    } finally {
-      setIsLoading(null);
     }
   };
 
@@ -130,38 +110,6 @@ export default function ScanScreen() {
               </Text>
             </View>
           </Pressable>
-
-          <Card
-            variant="outlined"
-            padding="lg"
-            onPress={handleCamera}
-            disabled={isLoading !== null}
-            style={{ opacity: isLoading !== null && isLoading !== 'camera' ? 0.5 : 1 }}
-          >
-            <View className="flex-row items-center">
-              <View className="bg-primary/20 rounded-full p-3 mr-4">
-                <Ionicons
-                  name={isLoading === 'camera' ? 'hourglass-outline' : 'camera-outline'}
-                  size={28}
-                  color="#3D6B23"
-                />
-              </View>
-              <View className="flex-1">
-                <Text
-                  className="text-text dark:text-text-dark text-lg"
-                  style={{ fontFamily: 'Inter_600SemiBold' }}
-                >
-                  {t('scan.takePhoto')}
-                </Text>
-                <Text
-                  className="text-text-secondary dark:text-text-dark-secondary text-sm mt-1"
-                  style={{ fontFamily: 'Inter_400Regular' }}
-                >
-                  {t('scan.takePhotoDesc')}
-                </Text>
-              </View>
-            </View>
-          </Card>
 
           <Card
             variant="outlined"

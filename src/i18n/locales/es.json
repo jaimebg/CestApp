@@ -39,8 +39,6 @@
   "scan": {
     "title": "Escanear Recibo",
     "subtitle": "Elige cómo agregar tu recibo",
-    "takePhoto": "Tomar Foto",
-    "takePhotoDesc": "Captura un recibo con tu cámara",
     "fromGallery": "Desde Galería",
     "fromGalleryDesc": "Selecciona una foto existente",
     "scanDocument": "Escanear Documento",
@@ -60,7 +58,6 @@
     "detectingZones": "Detectando zonas...",
     "reviewZones": "Revisar zonas detectadas",
     "tapToEdit": "toca para editar",
-    "fromCamera": "Capturado con cámara",
     "fromScanner": "Escaneado con escáner de documentos",
     "fromGalleryLabel": "Seleccionado de la galería",
     "fromPdfLabel": "Documento PDF importado",
@@ -248,7 +245,6 @@
     "demoDataAdded": "Se agregaron {{receipts}} recibos con {{items}} artículos"
   },
   "errors": {
-    "cameraPermission": "Se requiere permiso de cámara para tomar fotos",
     "galleryPermission": "Se requiere permiso de galería para seleccionar fotos",
     "ocrFailed": "Error al procesar el recibo",
     "saveFailed": "Error al guardar el recibo",

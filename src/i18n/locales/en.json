@@ -39,8 +39,6 @@
   "scan": {
     "title": "Scan Receipt",
     "subtitle": "Choose how to add your receipt",
-    "takePhoto": "Take Photo",
-    "takePhotoDesc": "Capture a receipt with your camera",
     "fromGallery": "From Gallery",
     "fromGalleryDesc": "Select an existing photo",
     "scanDocument": "Scan Document",
@@ -60,7 +58,6 @@
     "detectingZones": "Detecting zones...",
     "reviewZones": "Review detected zones",
     "tapToEdit": "tap to edit",
-    "fromCamera": "Captured with camera",
     "fromScanner": "Scanned with document scanner",
     "fromGalleryLabel": "Selected from gallery",
     "fromPdfLabel": "Imported PDF document",
@@ -248,7 +245,6 @@
     "demoDataAdded": "Added {{receipts}} receipts with {{items}} items"
   },
   "errors": {
-    "cameraPermission": "Camera permission is required to take photos",
     "galleryPermission": "Gallery permission is required to select photos",
     "ocrFailed": "Failed to process receipt",
     "saveFailed": "Failed to save receipt",

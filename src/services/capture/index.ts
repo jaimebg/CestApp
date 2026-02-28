@@ -6,7 +6,7 @@ import { createScopedLogger } from '../../utils/debug';
 
 const logger = createScopedLogger('Capture');
 
-export type CaptureSource = 'camera' | 'gallery' | 'pdf' | 'scanner';
+export type CaptureSource = 'gallery' | 'pdf' | 'scanner';
 
 export interface CaptureResult {
   success: boolean;
@@ -21,26 +21,10 @@ export interface CaptureResult {
 }
 
 /**
- * Request camera permissions
- */
-export async function requestCameraPermission(): Promise<boolean> {
-  const { status } = await ImagePicker.requestCameraPermissionsAsync();
-  return status === 'granted';
-}
-
-/**
  * Request media library permissions
  */
 export async function requestGalleryPermission(): Promise<boolean> {
   const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  return status === 'granted';
-}
-
-/**
- * Check if camera permission is granted
- */
-export async function hasCameraPermission(): Promise<boolean> {
-  const { status } = await ImagePicker.getCameraPermissionsAsync();
   return status === 'granted';
 }
 
@@ -50,62 +34,6 @@ export async function hasCameraPermission(): Promise<boolean> {
 export async function hasGalleryPermission(): Promise<boolean> {
   const { status } = await ImagePicker.getMediaLibraryPermissionsAsync();
   return status === 'granted';
-}
-
-/**
- * Capture a receipt using the camera
- */
-export async function captureFromCamera(): Promise<CaptureResult> {
-  try {
-    const hasPermission = await hasCameraPermission();
-    if (!hasPermission) {
-      const granted = await requestCameraPermission();
-      if (!granted) {
-        return {
-          success: false,
-          source: 'camera',
-          error: 'cameraPermission',
-        };
-      }
-    }
-
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ['images'],
-      allowsEditing: false,
-      quality: 0.9,
-      exif: true,
-    });
-
-    if (result.canceled || !result.assets || result.assets.length === 0) {
-      return {
-        success: false,
-        source: 'camera',
-        error: 'cancelled',
-      };
-    }
-
-    const asset = result.assets[0];
-
-    const localUri = await saveReceiptFile(asset.uri, asset.mimeType);
-
-    return {
-      success: true,
-      uri: asset.uri,
-      localUri,
-      source: 'camera',
-      mimeType: asset.mimeType,
-      width: asset.width,
-      height: asset.height,
-      fileName: asset.fileName || undefined,
-    };
-  } catch (error) {
-    logger.error('Camera capture error:', error);
-    return {
-      success: false,
-      source: 'camera',
-      error: 'unknown',
-    };
-  }
 }
 
 /**
