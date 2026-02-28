@@ -1,8 +1,8 @@
 import '../styles/global.css';
 import '@/src/i18n';
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Stack, Redirect, useSegments, useRootNavigationState } from 'expo-router';
-import { useColorScheme, View, ActivityIndicator } from 'react-native';
+import { useColorScheme } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -21,13 +21,25 @@ import { usePreferencesStore } from '@/src/store/preferences';
 
 SplashScreen.preventAutoHideAsync();
 
+function useStoreHydrated() {
+  const [hydrated, setHydrated] = useState(usePreferencesStore.persist.hasHydrated());
+
+  useEffect(() => {
+    const unsub = usePreferencesStore.persist.onFinishHydration(() => setHydrated(true));
+    return unsub;
+  }, []);
+
+  return hydrated;
+}
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const segments = useSegments();
   const navigationState = useRootNavigationState();
+  const storeHydrated = useStoreHydrated();
   const hasCompletedOnboarding = usePreferencesStore((state) => state.hasCompletedOnboarding);
 
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     Inter_300Light,
     Inter_400Regular,
     Inter_500Medium,
@@ -35,27 +47,16 @@ export default function RootLayout() {
     Inter_700Bold,
   });
 
+  const appReady = (fontsLoaded || fontError) && storeHydrated;
+
   useEffect(() => {
-    if (fontsLoaded) {
+    if (appReady) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded]);
+  }, [appReady]);
 
-  if (!fontsLoaded) {
-    return (
-      <SafeAreaProvider>
-        <View
-          style={{
-            flex: 1,
-            justifyContent: 'center',
-            alignItems: 'center',
-            backgroundColor: colorScheme === 'dark' ? '#1A1918' : '#FFFDE1',
-          }}
-        >
-          <ActivityIndicator size="large" color="#93BD57" />
-        </View>
-      </SafeAreaProvider>
-    );
+  if (!appReady) {
+    return null;
   }
 
   const isNavigationReady = navigationState?.key;
