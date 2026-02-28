@@ -1,8 +1,8 @@
 import '../styles/global.css';
 import '@/src/i18n';
 import { useState, useEffect } from 'react';
-import { Stack, Redirect, useSegments, useRootNavigationState } from 'expo-router';
-import { useColorScheme } from 'react-native';
+import { Stack, useSegments, useRootNavigationState, useRouter } from 'expo-router';
+import { useColorScheme, InteractionManager } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -36,6 +36,7 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
   const segments = useSegments();
   const navigationState = useRootNavigationState();
+  const router = useRouter();
   const storeHydrated = useStoreHydrated();
   const hasCompletedOnboarding = usePreferencesStore((state) => state.hasCompletedOnboarding);
 
@@ -48,19 +49,28 @@ export default function RootLayout() {
   });
 
   const appReady = (fontsLoaded || fontError) && storeHydrated;
+  const isNavigationReady = !!navigationState?.key;
+  const isOnOnboardingScreen = segments[0] === 'onboarding';
 
   useEffect(() => {
-    if (appReady) {
-      SplashScreen.hideAsync();
+    if (!appReady || !isNavigationReady) return;
+
+    // New users: navigate to onboarding, keep splash visible
+    if (!hasCompletedOnboarding && !isOnOnboardingScreen) {
+      router.replace('/onboarding');
+      return;
     }
-  }, [appReady]);
+
+    // Correct screen is active — wait for it to fully paint before hiding splash
+    const handle = InteractionManager.runAfterInteractions(() => {
+      SplashScreen.hideAsync();
+    });
+    return () => handle.cancel();
+  }, [appReady, isNavigationReady, hasCompletedOnboarding, isOnOnboardingScreen, router]);
 
   if (!appReady) {
     return null;
   }
-
-  const isNavigationReady = navigationState?.key;
-  const isOnOnboardingScreen = segments[0] === 'onboarding';
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -86,9 +96,6 @@ export default function RootLayout() {
               }}
             />
           </Stack>
-          {isNavigationReady && !hasCompletedOnboarding && !isOnOnboardingScreen && (
-            <Redirect href="/onboarding" />
-          )}
           <Toaster />
         </DatabaseProvider>
       </SafeAreaProvider>
