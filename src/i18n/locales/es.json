@@ -214,7 +214,8 @@
     "title": "Configuración",
     "preferences": "Preferencias",
     "appearance": "Apariencia",
-    "darkMode": "Modo Oscuro",
+    "light": "Claro",
+    "dark": "Oscuro",
     "language": "Idioma",
     "currency": "Moneda",
     "currencyDesc": "Configura tu moneda preferida para los precios",
@@ -265,35 +266,29 @@
       "subtitle": "Tu rastreador personal de recibos que mantiene tus datos privados",
       "scan": {
         "title": "Escanea Recibos",
+        "short": "Escanear",
         "desc": "Captura recibos con tu cámara, importa desde la galería o sube PDFs"
       },
       "track": {
         "title": "Rastrea Cada Compra",
+        "short": "Rastrear",
         "desc": "Extrae automáticamente artículos, precios y organiza por tienda y categoría"
       },
       "analytics": {
         "title": "Ve tus Estadísticas",
+        "short": "Estadísticas",
         "desc": "Observa a dónde va tu dinero con gráficas por categoría o tienda"
       },
       "privacy": {
         "title": "100% Privado y Local",
+        "short": "Privado",
         "desc": "Todos los datos se quedan en tu dispositivo. Sin nube, sin cuentas, sin rastreo"
       }
     },
     "language": "Idioma",
-    "languageDesc": "Elige tu idioma preferido",
-    "currency": "Moneda",
-    "currencyDesc": "Selecciona tu moneda predeterminada",
-    "dateFormat": "Formato de Fecha",
-    "dateFormatDesc": "Cómo aparecen las fechas en tus recibos",
-    "numberFormat": "Formato de Números",
-    "numberFormatDesc": "Cómo aparecen los números en tus recibos",
-    "getStarted": "Comenzar",
-    "dmy": "Día / Mes / Año",
-    "mdy": "Mes / Día / Año",
-    "decimalDot": "Punto decimal (1,234.56)",
-    "decimalComma": "Coma decimal (1.234,56)",
-    "spanishDefaults": "Optimizado para España",
-    "spanishDefaultsDesc": "La app usa formato de fecha europeo (DD/MM/AAAA), coma decimal y Euro (€) por defecto."
+    "appearance": "Apariencia",
+    "light": "Claro",
+    "dark": "Oscuro",
+    "getStarted": "Comenzar"
   }
 }

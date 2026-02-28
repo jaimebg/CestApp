@@ -3,9 +3,10 @@
  */
 
 import { Component, type ReactNode } from 'react';
-import { View, Text, Pressable, useColorScheme } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { createScopedLogger } from '../utils/debug';
+import { useIsDarkMode } from '../hooks/useAppColors';
 
 const logger = createScopedLogger('ErrorBoundary');
 
@@ -59,8 +60,7 @@ interface ErrorFallbackProps {
 }
 
 function ErrorFallback({ error, onRetry }: ErrorFallbackProps) {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const isDark = useIsDarkMode();
 
   const colors = {
     background: isDark ? '#1A1918' : '#FFFDE1',

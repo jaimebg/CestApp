@@ -2,7 +2,7 @@ import '../styles/global.css';
 import '@/src/i18n';
 import { useState, useEffect } from 'react';
 import { Stack, useSegments, useRootNavigationState, useRouter } from 'expo-router';
-import { useColorScheme, InteractionManager } from 'react-native';
+import { InteractionManager } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -33,7 +33,7 @@ function useStoreHydrated() {
 }
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
+  const colorScheme = usePreferencesStore((state) => state.colorScheme);
   const segments = useSegments();
   const navigationState = useRootNavigationState();
   const router = useRouter();

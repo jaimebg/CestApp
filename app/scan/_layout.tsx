@@ -1,9 +1,8 @@
 import { Stack } from 'expo-router';
-import { useColorScheme } from 'react-native';
+import { useIsDarkMode } from '@/src/hooks/useAppColors';
 
 export default function ScanLayout() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const isDark = useIsDarkMode();
 
   return (
     <Stack

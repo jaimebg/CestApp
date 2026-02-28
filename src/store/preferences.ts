@@ -7,6 +7,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Appearance } from 'react-native';
 import * as Localization from 'expo-localization';
 import {
   Currency,
@@ -20,11 +21,13 @@ import {
   SupportedLanguage,
 } from '../i18n';
 
+export type ColorScheme = 'light' | 'dark';
 export type DateFormat = 'DMY' | 'MDY' | 'YMD';
 export type DecimalSeparator = '.' | ',';
 
 interface PreferencesState {
   language: SupportedLanguage;
+  colorScheme: ColorScheme;
   currencyCode: string;
   currency: Currency;
   dateFormat: DateFormat;
@@ -33,6 +36,7 @@ interface PreferencesState {
   hasCompletedOnboarding: boolean;
 
   setLanguage: (lang: SupportedLanguage) => void;
+  setColorScheme: (scheme: ColorScheme) => void;
   setCurrency: (code: string) => void;
   setDateFormat: (format: DateFormat) => void;
   setDecimalSeparator: (sep: DecimalSeparator) => void;
@@ -57,6 +61,7 @@ const SPAIN_DEFAULTS = {
  */
 function getInitialPreferences(): {
   language: SupportedLanguage;
+  colorScheme: ColorScheme;
   currencyCode: string;
   dateFormat: DateFormat;
   decimalSeparator: DecimalSeparator;
@@ -64,15 +69,16 @@ function getInitialPreferences(): {
   const locale = Localization.getLocales()[0];
   const languageCode = locale?.languageCode?.toLowerCase() || 'es';
 
-  // Detect language, default to Spanish
   const supportedLangs = SUPPORTED_LANGUAGES.map((l) => l.code);
   const language: SupportedLanguage = supportedLangs.includes(languageCode as SupportedLanguage)
     ? (languageCode as SupportedLanguage)
     : 'es';
 
-  // Always use Spanish defaults for number/date formatting
+  const colorScheme: ColorScheme = Appearance.getColorScheme() ?? 'light';
+
   return {
     language,
+    colorScheme,
     currencyCode: SPAIN_DEFAULTS.currencyCode,
     dateFormat: SPAIN_DEFAULTS.dateFormat,
     decimalSeparator: SPAIN_DEFAULTS.decimalSeparator,
@@ -85,6 +91,7 @@ export const usePreferencesStore = create<PreferencesState>()(
   persist(
     (set, get) => ({
       language: initialPrefs.language,
+      colorScheme: initialPrefs.colorScheme,
       currencyCode: initialPrefs.currencyCode,
       currency: getCurrency(initialPrefs.currencyCode),
       dateFormat: initialPrefs.dateFormat,
@@ -94,6 +101,10 @@ export const usePreferencesStore = create<PreferencesState>()(
       setLanguage: (lang: SupportedLanguage) => {
         i18nChangeLanguage(lang);
         set({ language: lang });
+      },
+
+      setColorScheme: (scheme: ColorScheme) => {
+        set({ colorScheme: scheme });
       },
 
       setCurrency: (code: string) => {
@@ -127,6 +138,7 @@ export const usePreferencesStore = create<PreferencesState>()(
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         language: state.language,
+        colorScheme: state.colorScheme,
         currencyCode: state.currencyCode,
         dateFormat: state.dateFormat,
         decimalSeparator: state.decimalSeparator,

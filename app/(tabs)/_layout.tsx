@@ -1,13 +1,13 @@
 import { Tabs } from 'expo-router';
-import { View, useColorScheme } from 'react-native';
+import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { usePreferencesStore } from '@/src/store/preferences';
+import { useIsDarkMode } from '@/src/hooks/useAppColors';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const isDark = useIsDarkMode();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const hasCompletedOnboarding = usePreferencesStore((state) => state.hasCompletedOnboarding);

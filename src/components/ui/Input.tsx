@@ -1,5 +1,6 @@
-import { View, Text, TextInput, useColorScheme } from 'react-native';
+import { View, Text, TextInput } from 'react-native';
 import type { TextInputProps } from 'react-native';
+import { useIsDarkMode } from '@/src/hooks/useAppColors';
 
 interface InputProps extends TextInputProps {
   label?: string;
@@ -16,8 +17,7 @@ export function Input({
   className,
   ...props
 }: InputProps & { className?: string }) {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const isDark = useIsDarkMode();
 
   return (
     <View className={className}>

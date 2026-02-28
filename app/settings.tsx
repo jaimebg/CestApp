@@ -4,7 +4,7 @@
  * Spanish defaults for currency, date format, and number format
  */
 
-import { View, Text, Pressable, ScrollView, Modal, useColorScheme, Alert } from 'react-native';
+import { View, Text, Pressable, ScrollView, Modal, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,173 +15,16 @@ import { SUPPORTED_LANGUAGES, SupportedLanguage } from '@/src/i18n';
 import { seedDemoData, clearAllData } from '@/src/db/demoData';
 import { useReceiptsStore } from '@/src/store/receipts';
 import { showSuccessToast, showErrorToast } from '@/src/utils/toast';
-
-type SettingItemProps = {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  value: string;
-  onPress: () => void;
-  colors: {
-    surface: string;
-    text: string;
-    textSecondary: string;
-    border: string;
-  };
-};
-
-function SettingItem({ icon, label, value, onPress, colors }: SettingItemProps) {
-  return (
-    <Pressable
-      onPress={onPress}
-      className="flex-row items-center justify-between p-4 rounded-xl mb-3"
-      style={{
-        backgroundColor: colors.surface,
-        borderWidth: 1,
-        borderColor: colors.border,
-      }}
-    >
-      <View className="flex-row items-center flex-1">
-        <Ionicons name={icon} size={22} color={colors.textSecondary} />
-        <Text
-          className="text-base ml-3"
-          style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
-        >
-          {label}
-        </Text>
-      </View>
-      <View className="flex-row items-center">
-        <Text
-          className="text-base mr-2"
-          style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-        >
-          {value}
-        </Text>
-        <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-      </View>
-    </Pressable>
-  );
-}
-
-type OptionModalProps = {
-  visible: boolean;
-  title: string;
-  options: { key: string; label: string; description?: string }[];
-  selectedKey: string;
-  onSelect: (key: string) => void;
-  onClose: () => void;
-  colors: {
-    background: string;
-    surface: string;
-    text: string;
-    textSecondary: string;
-    border: string;
-    primary: string;
-  };
-};
-
-function OptionModal({
-  visible,
-  title,
-  options,
-  selectedKey,
-  onSelect,
-  onClose,
-  colors,
-}: OptionModalProps) {
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
-    >
-      <SafeAreaView
-        className="flex-1"
-        style={{ backgroundColor: colors.background }}
-        edges={['bottom']}
-      >
-        <View
-          className="flex-row items-center justify-between px-4 py-4 border-b"
-          style={{ borderColor: colors.border }}
-        >
-          <Pressable onPress={onClose} hitSlop={8}>
-            <Ionicons name="close" size={24} color={colors.text} />
-          </Pressable>
-          <Text className="text-lg" style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}>
-            {title}
-          </Text>
-          <View style={{ width: 24 }} />
-        </View>
-        <ScrollView className="flex-1 p-4">
-          {options.map((option) => {
-            const isSelected = option.key === selectedKey;
-            return (
-              <Pressable
-                key={option.key}
-                onPress={() => {
-                  onSelect(option.key);
-                  onClose();
-                }}
-                className="flex-row items-center p-4 rounded-xl mb-2"
-                style={{
-                  backgroundColor: isSelected ? `${colors.primary}15` : colors.surface,
-                  borderWidth: 1,
-                  borderColor: isSelected ? colors.primary : colors.border,
-                }}
-              >
-                <View
-                  className="w-6 h-6 rounded-full border-2 items-center justify-center mr-3"
-                  style={{ borderColor: isSelected ? colors.primary : colors.border }}
-                >
-                  {isSelected && (
-                    <View
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: colors.primary }}
-                    />
-                  )}
-                </View>
-                <View className="flex-1">
-                  <Text
-                    style={{
-                      color: colors.text,
-                      fontFamily: isSelected ? 'Inter_600SemiBold' : 'Inter_500Medium',
-                      fontSize: 16,
-                    }}
-                  >
-                    {option.label}
-                  </Text>
-                  {option.description && (
-                    <Text
-                      style={{
-                        color: colors.textSecondary,
-                        fontFamily: 'Inter_400Regular',
-                        fontSize: 13,
-                        marginTop: 2,
-                      }}
-                    >
-                      {option.description}
-                    </Text>
-                  )}
-                </View>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-      </SafeAreaView>
-    </Modal>
-  );
-}
+import { useIsDarkMode } from '@/src/hooks/useAppColors';
 
 export default function SettingsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const isDark = useIsDarkMode();
 
-  const { language, setLanguage } = usePreferencesStore();
+  const { language, setLanguage, colorScheme, setColorScheme } = usePreferencesStore();
   const invalidateCache = useReceiptsStore((s) => s.invalidateCache);
 
-  const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [showDevMenu, setShowDevMenu] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const tapCountRef = useRef(0);
@@ -253,14 +96,6 @@ export default function SettingsScreen() {
     primaryDeep: '#3D6B23',
   };
 
-  const languageOptions = SUPPORTED_LANGUAGES.map((lang) => ({
-    key: lang.code,
-    label: lang.nativeName,
-    description: lang.name,
-  }));
-
-  const currentLanguage = SUPPORTED_LANGUAGES.find((l) => l.code === language);
-
   return (
     <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }} edges={['top']}>
       {/* Header */}
@@ -293,13 +128,97 @@ export default function SettingsScreen() {
           {t('settings.preferences')}
         </Text>
 
-        <SettingItem
-          icon="language-outline"
-          label={t('settings.language')}
-          value={currentLanguage?.nativeName || language}
-          onPress={() => setShowLanguageModal(true)}
-          colors={colors}
-        />
+        <View
+          className="p-4 rounded-xl mb-3"
+          style={{
+            backgroundColor: colors.surface,
+            borderWidth: 1,
+            borderColor: colors.border,
+          }}
+        >
+          <Text
+            className="text-base mb-3"
+            style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
+          >
+            {t('settings.language')}
+          </Text>
+          <View
+            className="flex-row rounded-lg p-1"
+            style={{
+              backgroundColor: colors.background,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+          >
+            {SUPPORTED_LANGUAGES.map((lang) => {
+              const isSelected = language === lang.code;
+              return (
+                <Pressable
+                  key={lang.code}
+                  className="flex-1 items-center justify-center rounded-md py-2"
+                  style={isSelected ? { backgroundColor: colors.primary } : undefined}
+                  onPress={() => setLanguage(lang.code as SupportedLanguage)}
+                >
+                  <Text
+                    style={{
+                      color: isSelected ? '#FFFFFF' : colors.textSecondary,
+                      fontFamily: isSelected ? 'Inter_600SemiBold' : 'Inter_500Medium',
+                      fontSize: 14,
+                    }}
+                  >
+                    {lang.nativeName}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+
+        <View
+          className="p-4 rounded-xl mb-3"
+          style={{
+            backgroundColor: colors.surface,
+            borderWidth: 1,
+            borderColor: colors.border,
+          }}
+        >
+          <Text
+            className="text-base mb-3"
+            style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
+          >
+            {t('settings.appearance')}
+          </Text>
+          <View
+            className="flex-row rounded-lg p-1"
+            style={{
+              backgroundColor: colors.background,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+          >
+            {(['light', 'dark'] as const).map((scheme) => {
+              const isSelected = colorScheme === scheme;
+              return (
+                <Pressable
+                  key={scheme}
+                  className="flex-1 items-center justify-center rounded-md py-2"
+                  style={isSelected ? { backgroundColor: colors.primary } : undefined}
+                  onPress={() => setColorScheme(scheme)}
+                >
+                  <Text
+                    style={{
+                      color: isSelected ? '#FFFFFF' : colors.textSecondary,
+                      fontFamily: isSelected ? 'Inter_600SemiBold' : 'Inter_500Medium',
+                      fontSize: 14,
+                    }}
+                  >
+                    {scheme === 'light' ? t('settings.light') : t('settings.dark')}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
 
         {/* Spanish Defaults Info */}
         <View
@@ -362,17 +281,6 @@ export default function SettingsScreen() {
           </View>
         </Pressable>
       </ScrollView>
-
-      {/* Language Modal */}
-      <OptionModal
-        visible={showLanguageModal}
-        title={t('settings.language')}
-        options={languageOptions}
-        selectedKey={language}
-        onSelect={(key) => setLanguage(key as SupportedLanguage)}
-        onClose={() => setShowLanguageModal(false)}
-        colors={colors}
-      />
 
       {/* Dev Menu Modal */}
       <Modal

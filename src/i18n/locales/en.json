@@ -214,7 +214,8 @@
     "title": "Settings",
     "preferences": "Preferences",
     "appearance": "Appearance",
-    "darkMode": "Dark Mode",
+    "light": "Light",
+    "dark": "Dark",
     "language": "Language",
     "currency": "Currency",
     "currencyDesc": "Set your preferred currency for prices",
@@ -265,35 +266,29 @@
       "subtitle": "Your personal receipt tracker that keeps your data private",
       "scan": {
         "title": "Scan Receipts",
+        "short": "Scan",
         "desc": "Capture receipts with your camera, import from gallery, or upload PDFs"
       },
       "track": {
         "title": "Track Every Purchase",
+        "short": "Track",
         "desc": "Automatically extract items, prices, and organize by store and category"
       },
       "analytics": {
         "title": "View Spending Insights",
+        "short": "Insights",
         "desc": "See where your money goes with charts and analytics by category or store"
       },
       "privacy": {
         "title": "100% Private & Local",
+        "short": "Private",
         "desc": "All data stays on your device. No cloud, no accounts, no tracking"
       }
     },
     "language": "Language",
-    "languageDesc": "Choose your preferred language",
-    "currency": "Currency",
-    "currencyDesc": "Select your default currency",
-    "dateFormat": "Date Format",
-    "dateFormatDesc": "How dates appear on your receipts",
-    "numberFormat": "Number Format",
-    "numberFormatDesc": "How numbers appear on your receipts",
-    "getStarted": "Get Started",
-    "dmy": "Day / Month / Year",
-    "mdy": "Month / Day / Year",
-    "decimalDot": "Dot as decimal (1,234.56)",
-    "decimalComma": "Comma as decimal (1.234,56)",
-    "spanishDefaults": "Optimized for Spain",
-    "spanishDefaultsDesc": "The app uses European date format (DD/MM/YYYY), decimal comma, and Euro (€) by default."
+    "appearance": "Appearance",
+    "light": "Light",
+    "dark": "Dark",
+    "getStarted": "Get Started"
   }
 }

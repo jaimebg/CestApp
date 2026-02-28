@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { View, Text, useColorScheme } from 'react-native';
+import { View, Text } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -11,6 +11,7 @@ import { ZoneTypePicker } from '@/src/components/zones/ZoneTypePicker';
 import { ZoneSelectionToolbar } from '@/src/components/zones/ZoneSelectionToolbar';
 import { type ZoneDefinition, type ZoneType, type ParsingHints } from '@/src/types/zones';
 import { upsertStoreTemplate, getTemplateByStoreId } from '@/src/db/queries/storeParsingTemplates';
+import { useIsDarkMode } from '@/src/hooks/useAppColors';
 
 const logger = createScopedLogger('Zones');
 
@@ -36,8 +37,7 @@ export default function ZoneSelectionScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t, i18n } = useTranslation();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const isDark = useIsDarkMode();
   const lang = i18n.language === 'es' ? 'es' : 'en';
 
   const colors = {

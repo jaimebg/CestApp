@@ -1,4 +1,5 @@
-import { View, Text, Pressable, Modal, useColorScheme } from 'react-native';
+import { View, Text, Pressable, Modal } from 'react-native';
+import { useIsDarkMode } from '@/src/hooks/useAppColors';
 
 interface ConfirmationModalProps {
   visible: boolean;
@@ -23,8 +24,7 @@ export function ConfirmationModal({
   isDestructive = false,
   isLoading = false,
 }: ConfirmationModalProps) {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const isDark = useIsDarkMode();
 
   const colors = {
     background: isDark ? '#2D2A26' : '#FFFFFF',

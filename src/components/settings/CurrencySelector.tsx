@@ -3,12 +3,13 @@
  * Allows users to select their preferred currency
  */
 
-import { View, Text, Pressable, Modal, FlatList, useColorScheme } from 'react-native';
+import { View, Text, Pressable, Modal, FlatList } from 'react-native';
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { usePreferencesStore } from '@/src/store/preferences';
 import { getSupportedCurrencies, Currency } from '@/src/config/currency';
+import { useIsDarkMode } from '@/src/hooks/useAppColors';
 
 interface CurrencySelectorProps {
   showLabel?: boolean;
@@ -16,8 +17,7 @@ interface CurrencySelectorProps {
 
 export function CurrencySelector({ showLabel = true }: CurrencySelectorProps) {
   const { t } = useTranslation();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const isDark = useIsDarkMode();
   const [modalVisible, setModalVisible] = useState(false);
 
   const { currency, setCurrency } = usePreferencesStore();

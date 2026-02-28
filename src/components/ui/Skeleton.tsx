@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { View, useColorScheme } from 'react-native';
+import { View } from 'react-native';
 import type { DimensionValue } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -8,6 +8,7 @@ import Animated, {
   withTiming,
   interpolate,
 } from 'react-native-reanimated';
+import { useIsDarkMode } from '@/src/hooks/useAppColors';
 
 interface SkeletonProps {
   width: DimensionValue;
@@ -17,8 +18,7 @@ interface SkeletonProps {
 }
 
 export function Skeleton({ width, height, borderRadius = 8, className }: SkeletonProps) {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const isDark = useIsDarkMode();
   const shimmer = useSharedValue(0);
 
   useEffect(() => {
