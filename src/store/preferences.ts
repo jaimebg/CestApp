@@ -74,7 +74,8 @@ function getInitialPreferences(): {
     ? (languageCode as SupportedLanguage)
     : 'es';
 
-  const colorScheme: ColorScheme = Appearance.getColorScheme() ?? 'light';
+  const raw = Appearance.getColorScheme();
+  const colorScheme: ColorScheme = raw === 'dark' ? 'dark' : 'light';
 
   return {
     language,
