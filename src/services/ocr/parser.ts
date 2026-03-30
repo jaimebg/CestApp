@@ -5,8 +5,11 @@
  */
 
 import { type RegionalPreset, SPAIN_PRESET } from '../../config/regionalPresets';
+import { createScopedLogger } from '../../utils/debug';
 import { detectChainFromLines } from './chainDetector';
 import { parseWithChainTemplate, shouldUseChainParsing } from './chainParser';
+
+const logger = createScopedLogger('Parser');
 
 export interface ParsedItem {
   name: string;
@@ -1245,33 +1248,27 @@ export function parseReceipt(lines: string[], options?: ParserOptions): ParsedRe
   const chainDetection = detectChainFromLines(processedLines);
 
   if (shouldUseChainParsing(chainDetection)) {
-    if (__DEV__) {
-      console.log(
-        '[Parser] Using chain-specific parsing for:',
-        chainDetection.chainId,
-        'confidence:',
-        chainDetection.confidence
-      );
-    }
+    logger.log(
+      'Using chain-specific parsing for:',
+      chainDetection.chainId,
+      'confidence:',
+      chainDetection.confidence
+    );
 
     const chainResult = parseWithChainTemplate(processedLines, chainDetection);
 
     // If chain parsing produced good results, return it
     if (chainResult.items.length > 0 || chainResult.total !== null) {
-      if (__DEV__) {
-        console.log('[Parser] Chain parsing successful:', {
-          chain: chainResult.chainName,
-          items: chainResult.items.length,
-          total: chainResult.total,
-          confidence: chainResult.confidence,
-        });
-      }
+      logger.log('Chain parsing successful:', {
+        chain: chainResult.chainName,
+        items: chainResult.items.length,
+        total: chainResult.total,
+        confidence: chainResult.confidence,
+      });
       return chainResult;
     }
 
-    if (__DEV__) {
-      console.log('[Parser] Chain parsing produced no results, falling back to generic');
-    }
+    logger.log('Chain parsing produced no results, falling back to generic');
   }
 
   // Step 2: Fall back to generic parsing
@@ -1284,25 +1281,21 @@ export function parseReceipt(lines: string[], options?: ParserOptions): ParsedRe
   if (preset) {
     format.decimalSeparator = preset.decimalSeparator;
     format.dateFormat = preset.dateFormat;
-    if (__DEV__) {
-      console.log(
-        '[Parser] Using preset:',
-        preset.id,
-        '- decimal:',
-        format.decimalSeparator,
-        '- date:',
-        format.dateFormat
-      );
-    }
+    logger.log(
+      'Using preset:',
+      preset.id,
+      '- decimal:',
+      format.decimalSeparator,
+      '- date:',
+      format.dateFormat
+    );
   } else {
-    if (__DEV__) {
-      console.log(
-        '[Parser] Auto-detected format - decimal:',
-        format.decimalSeparator,
-        '- columnar:',
-        format.isColumnar
-      );
-    }
+    logger.log(
+      'Auto-detected format - decimal:',
+      format.decimalSeparator,
+      '- columnar:',
+      format.isColumnar
+    );
   }
 
   if (options?.preferredDateFormat) {
@@ -1513,17 +1506,15 @@ export function parseReceipt(lines: string[], options?: ParserOptions): ParsedRe
     parsingMethod: 'generic',
   };
 
-  if (__DEV__) {
-    console.log('[Parser] Parse result:', {
-      storeName,
-      itemsCount: items.length,
-      total,
-      confidence: result.confidence,
-      sampleItems: items
-        .slice(0, 3)
-        .map((i) => ({ name: i.name.substring(0, 25), price: i.totalPrice })),
-    });
-  }
+  logger.log('Parse result:', {
+    storeName,
+    itemsCount: items.length,
+    total,
+    confidence: result.confidence,
+    sampleItems: items
+      .slice(0, 3)
+      .map((i) => ({ name: i.name.substring(0, 25), price: i.totalPrice })),
+  });
 
   return result;
 }
