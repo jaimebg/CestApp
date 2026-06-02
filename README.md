@@ -16,8 +16,8 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT" />
   <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome" />
   <img src="https://img.shields.io/badge/platform-iOS%20%7C%20Android-lightgrey.svg" alt="Platform: iOS | Android" />
-  <img src="https://img.shields.io/badge/Expo-54-000020.svg?logo=expo" alt="Expo SDK 54" />
-  <img src="https://img.shields.io/badge/React%20Native-0.81-61DAFB.svg?logo=react" alt="React Native 0.81" />
+  <img src="https://img.shields.io/badge/Expo-55-000020.svg?logo=expo" alt="Expo SDK 55" />
+  <img src="https://img.shields.io/badge/React%20Native-0.83-61DAFB.svg?logo=react" alt="React Native 0.83" />
   <img src="https://img.shields.io/badge/TypeScript-strict-3178C6.svg?logo=typescript&logoColor=white" alt="TypeScript" />
   <img src="https://img.shields.io/badge/Privacy-100%25%20Local-success.svg" alt="Privacy: 100% Local" />
 </p>
@@ -79,12 +79,12 @@ npx expo run:android
 
 | Category   | Technology                      |
 | ---------- | ------------------------------- |
-| Framework  | React Native 0.81 + Expo SDK 54 |
+| Framework  | React Native 0.83 + Expo SDK 55 |
 | Navigation | Expo Router                     |
 | Styling    | NativeWind v4                   |
 | Database   | Drizzle ORM + expo-sqlite       |
 | State      | Zustand v5                      |
-| OCR        | rn-mlkit-ocr                    |
+| OCR        | ML Kit (@infinitered)           |
 | PDF        | Custom parser + pako            |
 | i18n       | i18next                         |
 | Animations | Reanimated v4                   |

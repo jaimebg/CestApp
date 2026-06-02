@@ -17,22 +17,22 @@ CestApp is a **Spain-focused** supermarket receipt scanner app built with React 
 
 ## Key Technologies
 
-| Technology                 | Version | Purpose                                     |
-| -------------------------- | ------- | ------------------------------------------- |
-| React Native               | 0.81.5  | Mobile framework (New Architecture enabled) |
-| Expo SDK                   | 54      | Development platform                        |
-| Expo Router                | 6.0.21  | File-based navigation                       |
-| NativeWind                 | 4.2.1   | Tailwind CSS styling                        |
-| Drizzle ORM                | 0.45.1  | Type-safe database queries                  |
-| expo-sqlite                | 16.0.10 | Local SQLite database                       |
-| Zustand                    | 5.0.10  | State management with persistence           |
-| i18next                    | 25.7.4  | Internationalization (EN/ES)                |
-| rn-mlkit-ocr               | 0.3.0   | On-device text recognition                  |
-| pako                       | 2.1.0   | PDF stream decompression                    |
-| React Native Reanimated    | 4.1.1   | Animations                                  |
-| react-native-gifted-charts | 1.4.70  | Analytics charts                            |
-| sonner-native              | 0.23.0  | Toast notifications                         |
-| @shopify/flash-list        | 2.0.2   | High-performance virtualized lists          |
+| Technology                                       | Version | Purpose                                     |
+| ------------------------------------------------ | ------- | ------------------------------------------- |
+| React Native                                     | 0.83.4  | Mobile framework (New Architecture enabled) |
+| Expo SDK                                         | 55      | Development platform                        |
+| Expo Router                                      | 55.0.8  | File-based navigation                       |
+| NativeWind                                       | 4.2.1   | Tailwind CSS styling                        |
+| Drizzle ORM                                      | 0.45.1  | Type-safe database queries                  |
+| expo-sqlite                                      | 55.0.11 | Local SQLite database                       |
+| Zustand                                          | 5.0.10  | State management with persistence           |
+| i18next                                          | 25.7.4  | Internationalization (EN/ES)                |
+| @infinitered/react-native-mlkit-text-recognition | 5.0.1   | On-device ML Kit text recognition (OCR)     |
+| pako                                             | 2.1.0   | PDF stream decompression                    |
+| React Native Reanimated                          | 4.2.1   | Animations                                  |
+| react-native-gifted-charts                       | 1.4.70  | Analytics charts                            |
+| sonner-native                                    | 0.23.0  | Toast notifications                         |
+| @shopify/flash-list                              | 2.0.2   | High-performance virtualized lists          |
 
 ## Code Style Guidelines
 
@@ -256,6 +256,10 @@ findPriceLines(lines: string[]): string[]
 findTotalLine(lines: string[]): string | null
 findDateLine(lines: string[]): string | null
 ```
+
+**OCR engine:** Google ML Kit via `@infinitered/react-native-mlkit-text-recognition` (an autolinked Expo module — no config plugin needed). The native library returns frames as `{left, top, right, bottom}`; the `recognizeText()` wrapper in `index.ts` normalizes them to the app's `OcrResult` shape (`boundingBox` `{left, top, width, height}`). The engine is isolated to this one file, so swapping OCR libraries never touches the rest of the app.
+
+**Apple Vision was evaluated and rejected:** iOS-only (no Android), accuracy parity with ML Kit (and ~6× slower), no mature RN/Expo library exposing per-block bounding boxes, and its normalized bottom-left coordinates would break zone alignment. Revisit only if concrete Spanish-receipt failures appear that Vision demonstrably fixes — and then via a custom Expo Swift module wrapping `VNRecognizeTextRequest`, not the hobby-grade community wrappers.
 
 ### Chain Detection (`src/services/ocr/chainDetector.ts`)
 

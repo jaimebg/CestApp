@@ -1,12 +1,39 @@
-import {
-  recognizeText as mlkitRecognizeText,
-  OcrResult as MlkitOcrResult,
-  OcrBlock as MlkitOcrBlock,
-  OcrLine as MlkitOcrLine,
-} from 'rn-mlkit-ocr';
+import { recognizeText as mlkitRecognizeText } from '@infinitered/react-native-mlkit-text-recognition';
 import { createScopedLogger } from '../../utils/debug';
 
 const logger = createScopedLogger('OCR');
+
+interface MlkitRect {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
+interface MlkitTextLine {
+  text: string;
+  frame: MlkitRect;
+}
+
+interface MlkitTextBlock {
+  text: string;
+  frame: MlkitRect;
+  lines: MlkitTextLine[];
+}
+
+interface MlkitTextResult {
+  text: string;
+  blocks: MlkitTextBlock[];
+}
+
+function rectToBoundingBox(frame: MlkitRect) {
+  return {
+    left: frame.left,
+    top: frame.top,
+    width: frame.right - frame.left,
+    height: frame.bottom - frame.top,
+  };
+}
 
 export interface OcrBlock {
   text: string;
@@ -53,30 +80,20 @@ export async function recognizeText(
   knownDimensions?: { width: number; height: number }
 ): Promise<OcrResult> {
   try {
-    const result: MlkitOcrResult = await mlkitRecognizeText(imageUri);
+    const result: MlkitTextResult = await mlkitRecognizeText(imageUri);
 
-    const blocks: OcrBlock[] = result.blocks.map((block: MlkitOcrBlock) => ({
+    const blocks: OcrBlock[] = result.blocks.map((block) => ({
       text: block.text,
-      lines: block.lines.map((line: MlkitOcrLine) => ({
+      lines: block.lines.map((line) => ({
         text: line.text,
-        boundingBox: {
-          left: line.frame.x,
-          top: line.frame.y,
-          width: line.frame.width,
-          height: line.frame.height,
-        },
+        boundingBox: rectToBoundingBox(line.frame),
       })),
-      boundingBox: {
-        left: block.frame.x,
-        top: block.frame.y,
-        width: block.frame.width,
-        height: block.frame.height,
-      },
+      boundingBox: rectToBoundingBox(block.frame),
     }));
 
     const lines: string[] = [];
-    result.blocks.forEach((block: MlkitOcrBlock) => {
-      block.lines.forEach((line: MlkitOcrLine) => {
+    result.blocks.forEach((block) => {
+      block.lines.forEach((line) => {
         lines.push(line.text);
       });
     });
@@ -89,9 +106,9 @@ export async function recognizeText(
     } else if (result.blocks.length > 0) {
       let maxX = 0;
       let maxY = 0;
-      result.blocks.forEach((b: MlkitOcrBlock) => {
-        maxX = Math.max(maxX, b.frame.x + b.frame.width);
-        maxY = Math.max(maxY, b.frame.y + b.frame.height);
+      result.blocks.forEach((b) => {
+        maxX = Math.max(maxX, b.frame.right);
+        maxY = Math.max(maxY, b.frame.bottom);
       });
       inferredDimensions = {
         width: Math.ceil(maxX * 1.02),
