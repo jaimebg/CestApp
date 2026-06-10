@@ -8,6 +8,7 @@ import { type RegionalPreset, SPAIN_PRESET } from '../../config/regionalPresets'
 import { createScopedLogger } from '../../utils/debug';
 import { detectChainFromLines } from './chainDetector';
 import { parseWithChainTemplate, shouldUseChainParsing } from './chainParser';
+import { parsePrice as parsePriceBase, parseTime } from './parseUtils';
 
 const logger = createScopedLogger('Parser');
 
@@ -344,38 +345,8 @@ export function extractSections(lines: string[]): ReceiptSections {
   return sections;
 }
 
-/**
- * Parse price from a string
- * Handles formats: $12.34, 12.34, $12,34, 12,34, 12, 34 (with space)
- */
 function parsePrice(text: string): number | null {
-  let cleaned = text.replace(/[$€£¥]/g, '').trim();
-
-  cleaned = cleaned.replace(/(\d+),\s+(\d{2})/, '$1,$2');
-  cleaned = cleaned.replace(/(\d+)\.\s+(\d{2})/, '$1.$2');
-
-  const patterns = [
-    /^(\d+),(\d{2})$/,
-    /^(\d+)\.(\d{2})$/,
-    /(\d+),(\d{2})\s*[A-Za-z]*$/,
-    /(\d+)\.(\d{2})\s*[A-Za-z]*$/,
-    /^(\d+),(\d{2})/,
-    /^(\d+)\.(\d{2})/,
-  ];
-
-  for (const pattern of patterns) {
-    const match = cleaned.match(pattern);
-    if (match) {
-      return parseFloat(`${match[1]}.${match[2]}`);
-    }
-  }
-
-  const simpleMatch = cleaned.match(/^(\d+)$/);
-  if (simpleMatch) {
-    return parseInt(simpleMatch[1], 10);
-  }
-
-  return null;
+  return parsePriceBase(text, { allowBareInteger: true });
 }
 
 /**
@@ -484,37 +455,6 @@ function parseColumnarItems(lines: string[]): ParsedItem[] {
   }
 
   return items;
-}
-
-/**
- * Parse time from text
- * Returns time in HH:MM format
- */
-function parseTime(text: string): string | null {
-  const patterns = [
-    /(\d{1,2}):(\d{2})\s*(am|pm|a\.m\.|p\.m\.)/i,
-    /(\d{1,2}):(\d{2})(?::\d{2})?(?!\s*(?:am|pm))/i,
-  ];
-
-  for (const pattern of patterns) {
-    const match = text.match(pattern);
-    if (match) {
-      let hours = parseInt(match[1], 10);
-      const minutes = match[2];
-
-      if (match[3]) {
-        const isPM = /pm|p\.m\./i.test(match[3]);
-        if (isPM && hours !== 12) hours += 12;
-        if (!isPM && hours === 12) hours = 0;
-      }
-
-      if (hours >= 0 && hours < 24 && parseInt(minutes, 10) < 60) {
-        return `${hours.toString().padStart(2, '0')}:${minutes}`;
-      }
-    }
-  }
-
-  return null;
 }
 
 /**
@@ -912,17 +852,22 @@ function extractStoreNameWithPreset(
       }
     }
 
-    // Second pass: look for partial matches only for longer store names
-    // Sort by length descending to match longer names first
+    // Second pass: handle OCR-truncated names. A word in the line must itself be
+    // a prefix of the known store name (e.g. "MERCADON" -> "MERCADONA"); sharing a
+    // prefix is not enough, or "SUPERMERCADO LOPEZ" would match "SUPERCOR"
     const sortedStores = [...preset.commonStores].sort((a, b) => b.length - a.length);
     for (const line of headerLines) {
-      const cleaned = line.trim().toUpperCase();
+      const words = line
+        .trim()
+        .toUpperCase()
+        .split(/[^A-ZÁÉÍÓÚÜÑ0-9]+/);
 
       for (const storeName of sortedStores) {
-        // Only use partial matching for stores with 6+ characters
-        // This prevents "LIDL" from partially matching other things
-        if (storeName.length >= 6 && cleaned.includes(storeName.slice(0, 5))) {
-          return storeName.charAt(0) + storeName.slice(1).toLowerCase();
+        if (storeName.length < 6) continue;
+        for (const word of words) {
+          if (word.length >= 5 && word.length < storeName.length && storeName.startsWith(word)) {
+            return storeName.charAt(0) + storeName.slice(1).toLowerCase();
+          }
         }
       }
     }

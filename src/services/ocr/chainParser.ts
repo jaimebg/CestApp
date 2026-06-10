@@ -6,6 +6,7 @@
 import type { ChainTemplate, ItemPattern } from '../../config/spanishChains';
 import type { ParsedItem, ParsedReceipt } from './parser';
 import { ChainDetectionResult, applyChainOcrCorrectionsToLines } from './chainDetector';
+import { parsePrice, parseTime } from './parseUtils';
 
 /**
  * Chain parsing result with additional metadata
@@ -15,36 +16,6 @@ export interface ChainParseResult extends ParsedReceipt {
   chainName: string | null;
   chainConfidence: number;
   parsingMethod: 'chain' | 'generic';
-}
-
-/**
- * Parse price from text (Spanish format: comma as decimal)
- */
-function parsePrice(text: string): number | null {
-  let cleaned = text.replace(/[$€£¥]/g, '').trim();
-
-  // Handle space between decimal parts: "12, 50" -> "12,50"
-  cleaned = cleaned.replace(/(\d+),\s+(\d{2})/, '$1,$2');
-  cleaned = cleaned.replace(/(\d+)\.\s+(\d{2})/, '$1.$2');
-
-  // Match price patterns
-  const patterns = [
-    /^(\d+),(\d{2})$/,
-    /^(\d+)\.(\d{2})$/,
-    /(\d+),(\d{2})\s*[A-Za-z]*$/,
-    /(\d+)\.(\d{2})\s*[A-Za-z]*$/,
-    /^(\d+),(\d{2})/,
-    /^(\d+)\.(\d{2})/,
-  ];
-
-  for (const pattern of patterns) {
-    const match = cleaned.match(pattern);
-    if (match) {
-      return parseFloat(`${match[1]}.${match[2]}`);
-    }
-  }
-
-  return null;
 }
 
 /**
@@ -82,27 +53,6 @@ function parseDateWithPatterns(
   }
 
   return { date: null, dateString: null };
-}
-
-/**
- * Parse time from text
- */
-function parseTime(text: string): string | null {
-  const patterns = [/(\d{1,2}):(\d{2})(?::\d{2})?/, /(\d{1,2})[hH](\d{2})/];
-
-  for (const pattern of patterns) {
-    const match = text.match(pattern);
-    if (match) {
-      const hours = parseInt(match[1], 10);
-      const minutes = match[2];
-
-      if (hours >= 0 && hours < 24 && parseInt(minutes, 10) < 60) {
-        return `${hours.toString().padStart(2, '0')}:${minutes}`;
-      }
-    }
-  }
-
-  return null;
 }
 
 /**
