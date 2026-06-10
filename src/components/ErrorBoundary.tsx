@@ -5,8 +5,9 @@
 import { Component, type ReactNode } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { createScopedLogger } from '../utils/debug';
-import { useIsDarkMode } from '../hooks/useAppColors';
+import { useAppColors } from '../hooks/useAppColors';
 
 const logger = createScopedLogger('ErrorBoundary');
 
@@ -60,16 +61,8 @@ interface ErrorFallbackProps {
 }
 
 function ErrorFallback({ error, onRetry }: ErrorFallbackProps) {
-  const isDark = useIsDarkMode();
-
-  const colors = {
-    background: isDark ? '#1A1918' : '#FFFDE1',
-    surface: isDark ? '#2D2A26' : '#FFFFFF',
-    text: isDark ? '#FFFDE1' : '#2D2A26',
-    textSecondary: isDark ? '#B8B4A9' : '#6B6560',
-    error: isDark ? '#C94444' : '#980404',
-    primary: '#93BD57',
-  };
+  const { t } = useTranslation();
+  const colors = useAppColors();
 
   return (
     <View
@@ -84,23 +77,24 @@ function ErrorFallback({ error, onRetry }: ErrorFallbackProps) {
         className="text-lg text-center mb-2"
         style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
       >
-        Something went wrong
+        {t('errors.somethingWentWrong')}
       </Text>
 
       <Text
         className="text-sm text-center mb-6"
         style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
       >
-        {error?.message || 'An unexpected error occurred'}
+        {error?.message || t('errors.unknownError')}
       </Text>
 
       <Pressable
         onPress={onRetry}
         className="px-6 py-3 rounded-xl"
-        style={{ backgroundColor: colors.primary }}
+        style={{ backgroundColor: colors.primaryDeep }}
+        accessibilityRole="button"
       >
         <Text className="text-base" style={{ color: '#FFFFFF', fontFamily: 'Inter_600SemiBold' }}>
-          Try Again
+          {t('common.retry')}
         </Text>
       </Pressable>
     </View>

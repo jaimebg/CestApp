@@ -76,8 +76,6 @@
     "unknownStore": "Unknown Store",
     "noDateFound": "Date not found",
     "unknownPayment": "Unknown",
-    "itemsFound": "{{count}} item found",
-    "itemsFound_plural": "{{count}} items found",
     "noItemsFound": "No items found",
     "confidence": "Confidence",
     "lowConfidence": "Low confidence - please review",
@@ -114,7 +112,22 @@
     "hasTemplateDesc": "This store has a saved parsing template",
     "templateDeleted": "Template deleted successfully",
     "loadingPdf": "Loading PDF preview...",
-    "pdfLoadError": "Could not load PDF preview"
+    "pdfLoadError": "Could not load PDF preview",
+    "itemsFound_one": "{{count}} item found",
+    "itemsFound_other": "{{count}} items found",
+    "itemCount_one": "{{count}} item",
+    "itemCount_other": "{{count}} items",
+    "zoneCount_one": "{{count}} zone",
+    "zoneCount_other": "{{count}} zones",
+    "zonesMinimumError": "Must define at least one zone",
+    "storeNotSpecified": "Store not specified",
+    "templateSaved": "Template saved successfully",
+    "zonesTitlePreview": "Define Parsing Zones",
+    "zonesTitleEdit": "Edit Zones",
+    "zonesTitleDefine": "Define Zones",
+    "zonesInstructionsPreview": "Mark receipt zones to improve product and price detection",
+    "zonesInstructionsEdit": "Select zones to move or delete, or draw new zones",
+    "zonesInstructionsDefine": "Draw rectangles over receipt areas to identify each type of information"
   },
   "history": {
     "title": "History",
@@ -214,8 +227,6 @@
     "light": "Light",
     "dark": "Dark",
     "language": "Language",
-    "currency": "Currency",
-    "currencyDesc": "Set your preferred currency for prices",
     "dateFormat": "Date Format",
     "numberFormat": "Number Format",
     "categories": "Manage Categories",
@@ -251,7 +262,8 @@
     "deleteFailed": "Failed to delete receipt",
     "loadFailed": "Failed to load data",
     "networkError": "Network error. Please try again.",
-    "unknownError": "An unknown error occurred"
+    "unknownError": "An unknown error occurred",
+    "somethingWentWrong": "Something went wrong"
   },
   "onboarding": {
     "welcome": "Welcome to CestApp",

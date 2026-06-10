@@ -11,7 +11,7 @@ import { ZoneTypePicker } from '@/src/components/zones/ZoneTypePicker';
 import { ZoneSelectionToolbar } from '@/src/components/zones/ZoneSelectionToolbar';
 import { type ZoneDefinition, type ZoneType, type ParsingHints } from '@/src/types/zones';
 import { upsertStoreTemplate, getTemplateByStoreId } from '@/src/db/queries/storeParsingTemplates';
-import { useIsDarkMode } from '@/src/hooks/useAppColors';
+import { useAppColors } from '@/src/hooks/useAppColors';
 
 const logger = createScopedLogger('Zones');
 
@@ -36,18 +36,8 @@ export default function ZoneSelectionScreen() {
   const isPreviewMode = screenMode === 'preview';
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { t, i18n } = useTranslation();
-  const isDark = useIsDarkMode();
-  const lang = i18n.language === 'es' ? 'es' : 'en';
-
-  const colors = {
-    background: isDark ? '#1A1918' : '#FFFDE1',
-    surface: isDark ? '#2D2A26' : '#FFFFFF',
-    text: isDark ? '#FFFDE1' : '#2D2A26',
-    textSecondary: isDark ? '#B8B4A9' : '#6B6560',
-    border: isDark ? '#4A4640' : '#E8E4D9',
-    primary: '#3D6B23',
-  };
+  const { t } = useTranslation();
+  const colors = useAppColors();
 
   const parsedDimensions = useMemo(
     () => (imageDimensions ? JSON.parse(imageDimensions) : { width: 1000, height: 1500 }),
@@ -114,10 +104,7 @@ export default function ZoneSelectionScreen() {
 
   const handleSave = useCallback(async () => {
     if (zones.length === 0) {
-      showErrorToast(
-        t('common.error'),
-        lang === 'es' ? 'Debe definir al menos una zona' : 'Must define at least one zone'
-      );
+      showErrorToast(t('common.error'), t('scan.zonesMinimumError'));
       return;
     }
 
@@ -141,10 +128,7 @@ export default function ZoneSelectionScreen() {
 
     // Template mode - save to database
     if (!storeId) {
-      showErrorToast(
-        t('common.error'),
-        lang === 'es' ? 'Tienda no especificada' : 'Store not specified'
-      );
+      showErrorToast(t('common.error'), t('scan.storeNotSpecified'));
       return;
     }
 
@@ -159,28 +143,14 @@ export default function ZoneSelectionScreen() {
         imageDimensions: parsedDimensions,
       });
 
-      showSuccessToast(
-        t('common.success'),
-        lang === 'es' ? 'Template guardado correctamente' : 'Template saved successfully'
-      );
+      showSuccessToast(t('common.success'), t('scan.templateSaved'));
 
       router.back();
     } catch (error) {
       logger.error('Error saving template:', error);
       showErrorToast(t('common.error'), t('errors.saveFailed'));
     }
-  }, [
-    storeId,
-    zones,
-    uri,
-    source,
-    router,
-    t,
-    lang,
-    isPreviewMode,
-    imageDimensions,
-    parsedDimensions,
-  ]);
+  }, [storeId, zones, uri, source, router, t, isPreviewMode, imageDimensions, parsedDimensions]);
 
   const handleCancel = useCallback(() => {
     router.back();
@@ -228,22 +198,16 @@ export default function ZoneSelectionScreen() {
       >
         <Text className="text-lg" style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}>
           {isPreviewMode
-            ? lang === 'es'
-              ? 'Definir Zonas de Parseo'
-              : 'Define Parsing Zones'
+            ? t('scan.zonesTitlePreview')
             : isEditing
-              ? lang === 'es'
-                ? 'Editar Zonas'
-                : 'Edit Zones'
-              : lang === 'es'
-                ? 'Definir Zonas'
-                : 'Define Zones'}
+              ? t('scan.zonesTitleEdit')
+              : t('scan.zonesTitleDefine')}
         </Text>
         <Text
           className="text-sm"
           style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
         >
-          {zones.length} {zones.length === 1 ? 'zona' : 'zonas'}
+          {t('scan.zoneCount', { count: zones.length })}
         </Text>
       </View>
 
@@ -254,16 +218,10 @@ export default function ZoneSelectionScreen() {
           style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
         >
           {isPreviewMode
-            ? lang === 'es'
-              ? 'Marca las zonas del recibo para mejorar la detección de productos y precios'
-              : 'Mark receipt zones to improve product and price detection'
+            ? t('scan.zonesInstructionsPreview')
             : isEditing
-              ? lang === 'es'
-                ? 'Selecciona zonas para mover o eliminar, o dibuja nuevas zonas'
-                : 'Select zones to move or delete, or draw new zones'
-              : lang === 'es'
-                ? 'Dibuja rectángulos sobre las áreas del recibo para identificar cada tipo de información'
-                : 'Draw rectangles over receipt areas to identify each type of information'}
+              ? t('scan.zonesInstructionsEdit')
+              : t('scan.zonesInstructionsDefine')}
         </Text>
       </View>
 

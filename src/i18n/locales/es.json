@@ -76,8 +76,6 @@
     "unknownStore": "Tienda Desconocida",
     "noDateFound": "Fecha no encontrada",
     "unknownPayment": "Desconocido",
-    "itemsFound": "{{count}} artículo encontrado",
-    "itemsFound_plural": "{{count}} artículos encontrados",
     "noItemsFound": "No se encontraron artículos",
     "confidence": "Confianza",
     "lowConfidence": "Baja confianza - por favor revisa",
@@ -114,7 +112,22 @@
     "hasTemplateDesc": "Esta tienda tiene una plantilla de parseo guardada",
     "templateDeleted": "Plantilla eliminada exitosamente",
     "loadingPdf": "Cargando vista previa del PDF...",
-    "pdfLoadError": "No se pudo cargar la vista previa del PDF"
+    "pdfLoadError": "No se pudo cargar la vista previa del PDF",
+    "itemsFound_one": "{{count}} artículo encontrado",
+    "itemsFound_other": "{{count}} artículos encontrados",
+    "itemCount_one": "{{count}} artículo",
+    "itemCount_other": "{{count}} artículos",
+    "zoneCount_one": "{{count}} zona",
+    "zoneCount_other": "{{count}} zonas",
+    "zonesMinimumError": "Debe definir al menos una zona",
+    "storeNotSpecified": "Tienda no especificada",
+    "templateSaved": "Template guardado correctamente",
+    "zonesTitlePreview": "Definir Zonas de Parseo",
+    "zonesTitleEdit": "Editar Zonas",
+    "zonesTitleDefine": "Definir Zonas",
+    "zonesInstructionsPreview": "Marca las zonas del recibo para mejorar la detección de productos y precios",
+    "zonesInstructionsEdit": "Selecciona zonas para mover o eliminar, o dibuja nuevas zonas",
+    "zonesInstructionsDefine": "Dibuja rectángulos sobre las áreas del recibo para identificar cada tipo de información"
   },
   "history": {
     "title": "Historial",
@@ -214,8 +227,6 @@
     "light": "Claro",
     "dark": "Oscuro",
     "language": "Idioma",
-    "currency": "Moneda",
-    "currencyDesc": "Configura tu moneda preferida para los precios",
     "dateFormat": "Formato de Fecha",
     "numberFormat": "Formato de Números",
     "categories": "Administrar Categorías",
@@ -251,7 +262,8 @@
     "deleteFailed": "Error al eliminar el recibo",
     "loadFailed": "Error al cargar datos",
     "networkError": "Error de red. Por favor intenta de nuevo.",
-    "unknownError": "Ocurrió un error desconocido"
+    "unknownError": "Ocurrió un error desconocido",
+    "somethingWentWrong": "Algo salió mal"
   },
   "onboarding": {
     "welcome": "Bienvenido a CestApp",
