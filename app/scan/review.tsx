@@ -1,28 +1,22 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  TextInput,
-  Modal,
-  KeyboardAvoidingView,
-  Platform,
-  useWindowDimensions,
-} from 'react-native';
-import { FlashList } from '@shopify/flash-list';
-import { Image } from 'expo-image';
-import Svg, { Rect } from 'react-native-svg';
-import { ZONE_COLORS, type ZoneDefinition } from '@/src/types/zones';
+import { View, Text, ScrollView, Pressable, useWindowDimensions } from 'react-native';
+import { type ZoneDefinition } from '@/src/types/zones';
 import { showSuccessToast, showErrorToast } from '@/src/utils/toast';
 import { createScopedLogger } from '@/src/utils/debug';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
-import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/src/components/ui/Button';
 import { Card } from '@/src/components/ui/Card';
 import { Badge } from '@/src/components/ui/Badge';
+import { StoreEditModal } from '@/src/components/scan/modals/StoreEditModal';
+import { DateEditModal } from '@/src/components/scan/modals/DateEditModal';
+import { ItemEditModal } from '@/src/components/scan/modals/ItemEditModal';
+import { CategoryPickerModal } from '@/src/components/scan/modals/CategoryPickerModal';
+import { TotalEditModal } from '@/src/components/scan/modals/TotalEditModal';
+import { ZonesPreviewModal } from '@/src/components/scan/modals/ZonesPreviewModal';
+import type { Category } from '@/src/components/scan/types';
 import { parseReceipt, ParsedReceipt, ParsedItem, ParserOptions } from '@/src/services/ocr/parser';
 import {
   parseWithTemplate,
@@ -32,22 +26,18 @@ import {
 import type { OcrBlock } from '@/src/services/ocr';
 import { useFormatPrice, usePreferencesStore } from '@/src/store/preferences';
 import { useAppColors } from '@/src/hooks/useAppColors';
-import { getSupportedCurrencies } from '@/src/config/currency';
 import { findOrCreateStore, getStoreByNormalizedName } from '@/src/db/queries/stores';
 import { createReceipt } from '@/src/db/queries/receipts';
 import { createItems } from '@/src/db/queries/items';
 import { getCategories } from '@/src/db/queries/categories';
 import { getTemplateByStoreId, deleteTemplate } from '@/src/db/queries/storeParsingTemplates';
-import { getCategoryForItem, normalizeItemName, recordUserCorrection } from '@/src/db/seed';
+import {
+  getCategoryForItem,
+  normalizeItemName,
+  recordUserCorrection,
+} from '@/src/db/queries/categorization';
 
 const logger = createScopedLogger('Review');
-
-type Category = {
-  id: number;
-  name: string;
-  icon: string | null;
-  color: string | null;
-};
 
 export default function ScanReviewScreen() {
   const {
@@ -75,7 +65,7 @@ export default function ScanReviewScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const colors = useAppColors();
-  const { formatPrice, currency } = useFormatPrice();
+  const { formatPrice } = useFormatPrice();
   const dateFormat = usePreferencesStore((state) => state.dateFormat);
   const decimalSeparator = usePreferencesStore((state) => state.decimalSeparator);
 
@@ -276,9 +266,6 @@ export default function ScanReviewScreen() {
     return result;
   }, [lines, parserOptions, previewZones, blocks, ocrText, dimensions, detectedTotal]);
 
-  const setCurrency = usePreferencesStore((state) => state.setCurrency);
-  const currencies = useMemo(() => getSupportedCurrencies(), []);
-
   const [categoriesList, setCategoriesList] = useState<Category[]>([]);
 
   useEffect(() => {
@@ -287,7 +274,6 @@ export default function ScanReviewScreen() {
 
   const [parsedData, setParsedData] = useState<ParsedReceipt | null>(initialParsedData);
   const [showRawText, setShowRawText] = useState(false);
-  const [showCurrencyModal, setShowCurrencyModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const [showStoreModal, setShowStoreModal] = useState(false);
@@ -434,7 +420,6 @@ export default function ScanReviewScreen() {
     setShowItemModal(false);
     setShowCategoryModal(false);
     setShowTotalModal(false);
-    setShowCurrencyModal(false);
     setShowZonesPreview(false);
 
     // Wait for modals to close before dismissing navigation
@@ -450,7 +435,6 @@ export default function ScanReviewScreen() {
     setShowItemModal(false);
     setShowCategoryModal(false);
     setShowTotalModal(false);
-    setShowCurrencyModal(false);
     setShowZonesPreview(false);
 
     setTimeout(() => {
@@ -838,7 +822,7 @@ export default function ScanReviewScreen() {
                         className="text-xs mt-0.5"
                         style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
                       >
-                        {appliedZones.length} {appliedZones.length === 1 ? 'zone' : 'zones'}
+                        {t('scan.zoneCount', { count: appliedZones.length })}
                       </Text>
                     </View>
                   </View>
@@ -876,7 +860,7 @@ export default function ScanReviewScreen() {
                         className="text-xs mt-0.5"
                         style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
                       >
-                        {appliedZones.length} {appliedZones.length === 1 ? 'zone' : 'zones'}
+                        {t('scan.zoneCount', { count: appliedZones.length })}
                       </Text>
                     </View>
                   </View>
@@ -1109,7 +1093,7 @@ export default function ScanReviewScreen() {
                 <Badge
                   variant="info"
                   size="sm"
-                  label={`${parsedData.items.length} ${parsedData.items.length === 1 ? 'item' : 'items'}`}
+                  label={t('scan.itemCount', { count: parsedData.items.length })}
                 />
               </View>
 
@@ -1149,20 +1133,6 @@ export default function ScanReviewScreen() {
 
             {/* Totals */}
             <Card variant="filled" padding="md" className="mb-4">
-              {/* Currency Selector */}
-              <Pressable
-                onPress={() => setShowCurrencyModal(true)}
-                className="flex-row items-center justify-end mb-2"
-              >
-                <Text
-                  className="text-xs mr-1"
-                  style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-                >
-                  {currency.code}
-                </Text>
-                <Ionicons name="chevron-down" size={14} color={colors.textSecondary} />
-              </Pressable>
-
               {/* Items Sum */}
               <View className="flex-row justify-between mb-2">
                 <Text
@@ -1386,640 +1356,76 @@ export default function ScanReviewScreen() {
         )}
       </View>
 
-      {/* Store Edit Modal */}
-      <Modal
+      <StoreEditModal
         visible={showStoreModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowStoreModal(false)}
-      >
-        <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            className="flex-1"
-          >
-            {/* Header */}
-            <View
-              className="flex-row items-center justify-between px-4 py-4 border-b"
-              style={{ borderColor: colors.border }}
-            >
-              <Pressable onPress={() => setShowStoreModal(false)} hitSlop={8}>
-                <Text style={{ color: colors.textSecondary, fontFamily: 'Inter_500Medium' }}>
-                  {t('common.cancel')}
-                </Text>
-              </Pressable>
-              <Text
-                className="text-lg"
-                style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
-              >
-                {t('scan.editStore')}
-              </Text>
-              <Pressable onPress={saveStoreEdit} hitSlop={8}>
-                <Text style={{ color: colors.primary, fontFamily: 'Inter_600SemiBold' }}>
-                  {t('common.save')}
-                </Text>
-              </Pressable>
-            </View>
+        onClose={() => setShowStoreModal(false)}
+        onSave={saveStoreEdit}
+        value={editStoreName}
+        onChangeText={setEditStoreName}
+        colors={colors}
+      />
 
-            <View className="p-4">
-              <Text
-                className="text-sm mb-2"
-                style={{ color: colors.textSecondary, fontFamily: 'Inter_500Medium' }}
-              >
-                {t('scan.storeName')}
-              </Text>
-              <TextInput
-                value={editStoreName}
-                onChangeText={setEditStoreName}
-                placeholder={t('scan.unknownStore')}
-                placeholderTextColor={colors.textSecondary}
-                className="px-4 py-3 rounded-xl text-base"
-                style={{
-                  backgroundColor: colors.surface,
-                  color: colors.text,
-                  fontFamily: 'Inter_400Regular',
-                }}
-                autoFocus
-              />
-            </View>
-          </KeyboardAvoidingView>
-        </SafeAreaView>
-      </Modal>
-
-      {/* Date Edit Modal */}
-      <Modal
+      <DateEditModal
         visible={showDateModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowDateModal(false)}
-      >
-        <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            className="flex-1"
-          >
-            {/* Header */}
-            <View
-              className="flex-row items-center justify-between px-4 py-4 border-b"
-              style={{ borderColor: colors.border }}
-            >
-              <Pressable onPress={() => setShowDateModal(false)} hitSlop={8}>
-                <Text style={{ color: colors.textSecondary, fontFamily: 'Inter_500Medium' }}>
-                  {t('common.cancel')}
-                </Text>
-              </Pressable>
-              <Text
-                className="text-lg"
-                style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
-              >
-                {t('scan.editDate')}
-              </Text>
-              <Pressable onPress={saveDateEdit} hitSlop={8}>
-                <Text style={{ color: colors.primary, fontFamily: 'Inter_600SemiBold' }}>
-                  {t('common.save')}
-                </Text>
-              </Pressable>
-            </View>
+        onClose={() => setShowDateModal(false)}
+        onSave={saveDateEdit}
+        day={editDay}
+        month={editMonth}
+        year={editYear}
+        time={editTime}
+        onChangeDay={setEditDay}
+        onChangeMonth={setEditMonth}
+        onChangeYear={setEditYear}
+        onChangeTime={setEditTime}
+        dateFormat={dateFormat}
+        colors={colors}
+      />
 
-            <View className="p-4">
-              <Text
-                className="text-sm mb-2"
-                style={{ color: colors.textSecondary, fontFamily: 'Inter_500Medium' }}
-              >
-                {t('receipt.date')}
-              </Text>
-
-              {/* Day / Month / Year inputs */}
-              <View className="flex-row gap-2 mb-4">
-                <View className="flex-1">
-                  <Text
-                    className="text-xs mb-1"
-                    style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-                  >
-                    {dateFormat === 'MDY' ? t('scan.month') : t('scan.day')}
-                  </Text>
-                  <TextInput
-                    value={dateFormat === 'MDY' ? editMonth : editDay}
-                    onChangeText={dateFormat === 'MDY' ? setEditMonth : setEditDay}
-                    placeholder={dateFormat === 'MDY' ? 'MM' : 'DD'}
-                    placeholderTextColor={colors.textSecondary}
-                    className="px-4 py-3 rounded-xl text-base text-center"
-                    style={{
-                      backgroundColor: colors.surface,
-                      color: colors.text,
-                      fontFamily: 'Inter_400Regular',
-                    }}
-                    keyboardType="number-pad"
-                    maxLength={2}
-                  />
-                </View>
-                <View className="flex-1">
-                  <Text
-                    className="text-xs mb-1"
-                    style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-                  >
-                    {dateFormat === 'MDY' ? t('scan.day') : t('scan.month')}
-                  </Text>
-                  <TextInput
-                    value={dateFormat === 'MDY' ? editDay : editMonth}
-                    onChangeText={dateFormat === 'MDY' ? setEditDay : setEditMonth}
-                    placeholder={dateFormat === 'MDY' ? 'DD' : 'MM'}
-                    placeholderTextColor={colors.textSecondary}
-                    className="px-4 py-3 rounded-xl text-base text-center"
-                    style={{
-                      backgroundColor: colors.surface,
-                      color: colors.text,
-                      fontFamily: 'Inter_400Regular',
-                    }}
-                    keyboardType="number-pad"
-                    maxLength={2}
-                  />
-                </View>
-                <View className="flex-1">
-                  <Text
-                    className="text-xs mb-1"
-                    style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-                  >
-                    {t('scan.year')}
-                  </Text>
-                  <TextInput
-                    value={editYear}
-                    onChangeText={setEditYear}
-                    placeholder="YYYY"
-                    placeholderTextColor={colors.textSecondary}
-                    className="px-4 py-3 rounded-xl text-base text-center"
-                    style={{
-                      backgroundColor: colors.surface,
-                      color: colors.text,
-                      fontFamily: 'Inter_400Regular',
-                    }}
-                    keyboardType="number-pad"
-                    maxLength={4}
-                  />
-                </View>
-              </View>
-
-              <Text
-                className="text-sm mb-2"
-                style={{ color: colors.textSecondary, fontFamily: 'Inter_500Medium' }}
-              >
-                {t('scan.time')}
-              </Text>
-              <TextInput
-                value={editTime}
-                onChangeText={setEditTime}
-                placeholder="HH:MM"
-                placeholderTextColor={colors.textSecondary}
-                className="px-4 py-3 rounded-xl text-base"
-                style={{
-                  backgroundColor: colors.surface,
-                  color: colors.text,
-                  fontFamily: 'Inter_400Regular',
-                }}
-                keyboardType="numbers-and-punctuation"
-              />
-            </View>
-          </KeyboardAvoidingView>
-        </SafeAreaView>
-      </Modal>
-
-      {/* Item Edit Modal */}
-      <Modal
+      <ItemEditModal
         visible={showItemModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowItemModal(false)}
-      >
-        <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            className="flex-1"
-          >
-            {/* Header */}
-            <View
-              className="flex-row items-center justify-between px-4 py-4 border-b"
-              style={{ borderColor: colors.border }}
-            >
-              <Pressable onPress={() => setShowItemModal(false)} hitSlop={8}>
-                <Text style={{ color: colors.textSecondary, fontFamily: 'Inter_500Medium' }}>
-                  {t('common.cancel')}
-                </Text>
-              </Pressable>
-              <Text
-                className="text-lg"
-                style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
-              >
-                {editingItemIndex !== null ? t('scan.editItem') : t('scan.addItem')}
-              </Text>
-              <Pressable
-                onPress={saveItemEdit}
-                hitSlop={8}
-                disabled={!editItemName.trim() || !editItemPrice}
-              >
-                <Text
-                  style={{
-                    color:
-                      editItemName.trim() && editItemPrice ? colors.primary : colors.textSecondary,
-                    fontFamily: 'Inter_600SemiBold',
-                  }}
-                >
-                  {t('common.save')}
-                </Text>
-              </Pressable>
-            </View>
+        onClose={() => setShowItemModal(false)}
+        onSave={saveItemEdit}
+        isEditing={editingItemIndex !== null}
+        name={editItemName}
+        price={editItemPrice}
+        quantity={editItemQuantity}
+        categoryLabel={editItemCategoryId ? getCategoryName(editItemCategoryId) : null}
+        onChangeName={setEditItemName}
+        onChangePrice={setEditItemPrice}
+        onChangeQuantity={setEditItemQuantity}
+        onSelectCategory={openCategorySelect}
+        colors={colors}
+      />
 
-            <ScrollView className="p-4">
-              {/* Item Name */}
-              <Text
-                className="text-sm mb-2"
-                style={{ color: colors.textSecondary, fontFamily: 'Inter_500Medium' }}
-              >
-                {t('item.name')}
-              </Text>
-              <TextInput
-                value={editItemName}
-                onChangeText={setEditItemName}
-                placeholder={t('item.name')}
-                placeholderTextColor={colors.textSecondary}
-                className="px-4 py-3 rounded-xl text-base mb-4"
-                style={{
-                  backgroundColor: colors.surface,
-                  color: colors.text,
-                  fontFamily: 'Inter_400Regular',
-                }}
-                autoFocus
-              />
-
-              {/* Price */}
-              <Text
-                className="text-sm mb-2"
-                style={{ color: colors.textSecondary, fontFamily: 'Inter_500Medium' }}
-              >
-                {t('item.price')}
-              </Text>
-              <TextInput
-                value={editItemPrice}
-                onChangeText={setEditItemPrice}
-                placeholder="0.00"
-                placeholderTextColor={colors.textSecondary}
-                className="px-4 py-3 rounded-xl text-base mb-4"
-                style={{
-                  backgroundColor: colors.surface,
-                  color: colors.text,
-                  fontFamily: 'Inter_400Regular',
-                }}
-                keyboardType="decimal-pad"
-              />
-
-              {/* Quantity */}
-              <Text
-                className="text-sm mb-2"
-                style={{ color: colors.textSecondary, fontFamily: 'Inter_500Medium' }}
-              >
-                {t('item.quantity')}
-              </Text>
-              <TextInput
-                value={editItemQuantity}
-                onChangeText={setEditItemQuantity}
-                placeholder="1"
-                placeholderTextColor={colors.textSecondary}
-                className="px-4 py-3 rounded-xl text-base mb-4"
-                style={{
-                  backgroundColor: colors.surface,
-                  color: colors.text,
-                  fontFamily: 'Inter_400Regular',
-                }}
-                keyboardType="decimal-pad"
-              />
-
-              {/* Category */}
-              <Text
-                className="text-sm mb-2"
-                style={{ color: colors.textSecondary, fontFamily: 'Inter_500Medium' }}
-              >
-                {t('item.category')}
-              </Text>
-              <Pressable
-                onPress={openCategorySelect}
-                className="flex-row items-center justify-between px-4 py-3 rounded-xl"
-                style={{ backgroundColor: colors.surface }}
-              >
-                <Text
-                  style={{
-                    color: editItemCategoryId ? colors.text : colors.textSecondary,
-                    fontFamily: 'Inter_400Regular',
-                  }}
-                >
-                  {editItemCategoryId
-                    ? getCategoryName(editItemCategoryId)
-                    : t('scan.selectCategory')}
-                </Text>
-                <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-              </Pressable>
-            </ScrollView>
-          </KeyboardAvoidingView>
-        </SafeAreaView>
-      </Modal>
-
-      {/* Category Selection Modal */}
-      <Modal
+      <CategoryPickerModal
         visible={showCategoryModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowCategoryModal(false)}
-      >
-        <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
-          {/* Header */}
-          <View
-            className="flex-row items-center justify-between px-4 py-4 border-b"
-            style={{ borderColor: colors.border }}
-          >
-            <Pressable onPress={() => setShowCategoryModal(false)} hitSlop={8}>
-              <Ionicons name="close" size={24} color={colors.text} />
-            </Pressable>
-            <Text
-              className="text-lg"
-              style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
-            >
-              {t('item.category')}
-            </Text>
-            <View style={{ width: 24 }} />
-          </View>
+        onClose={() => setShowCategoryModal(false)}
+        onSelect={selectCategory}
+        categories={categoriesList}
+        selectedCategoryId={editItemCategoryId}
+        colors={colors}
+      />
 
-          {/* Category List */}
-          <FlashList
-            data={categoriesList}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={({ item }) => {
-              const isSelected = item.id === editItemCategoryId;
-              return (
-                <Pressable
-                  onPress={() => selectCategory(item.id)}
-                  className="flex-row items-center px-4 py-3 border-b"
-                  style={{ borderColor: colors.border }}
-                >
-                  <View
-                    className="w-8 h-8 rounded-full items-center justify-center mr-3"
-                    style={{ backgroundColor: (item.color || colors.textSecondary) + '20' }}
-                  >
-                    <Text className="text-base">{item.icon || '📦'}</Text>
-                  </View>
-                  <Text
-                    className="flex-1 text-base"
-                    style={{
-                      color: colors.text,
-                      fontFamily: isSelected ? 'Inter_600SemiBold' : 'Inter_500Medium',
-                    }}
-                  >
-                    {item.name}
-                  </Text>
-                  {isSelected && (
-                    <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
-                  )}
-                </Pressable>
-              );
-            }}
-            contentContainerStyle={{ paddingBottom: 40 }}
-          />
-        </SafeAreaView>
-      </Modal>
-
-      {/* Total Edit Modal */}
-      <Modal
+      <TotalEditModal
         visible={showTotalModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowTotalModal(false)}
-      >
-        <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            className="flex-1"
-          >
-            {/* Header */}
-            <View
-              className="flex-row items-center justify-between px-4 py-4 border-b"
-              style={{ borderColor: colors.border }}
-            >
-              <Pressable onPress={() => setShowTotalModal(false)} hitSlop={8}>
-                <Text style={{ color: colors.textSecondary, fontFamily: 'Inter_500Medium' }}>
-                  {t('common.cancel')}
-                </Text>
-              </Pressable>
-              <Text
-                className="text-lg"
-                style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
-              >
-                {t('receipt.total')}
-              </Text>
-              <Pressable onPress={saveTotalEdit} hitSlop={8}>
-                <Text style={{ color: colors.primary, fontFamily: 'Inter_600SemiBold' }}>
-                  {t('common.save')}
-                </Text>
-              </Pressable>
-            </View>
+        onClose={() => setShowTotalModal(false)}
+        onSave={saveTotalEdit}
+        value={editTotal}
+        onChangeText={setEditTotal}
+        itemsSumLabel={formatPrice(itemsSum)}
+        colors={colors}
+      />
 
-            <View className="p-4">
-              <Text
-                className="text-sm mb-2"
-                style={{ color: colors.textSecondary, fontFamily: 'Inter_500Medium' }}
-              >
-                {t('receipt.total')}
-              </Text>
-              <TextInput
-                value={editTotal}
-                onChangeText={setEditTotal}
-                placeholder="0.00"
-                placeholderTextColor={colors.textSecondary}
-                className="px-4 py-3 rounded-xl text-base"
-                style={{
-                  backgroundColor: colors.surface,
-                  color: colors.text,
-                  fontFamily: 'Inter_400Regular',
-                }}
-                keyboardType="decimal-pad"
-                autoFocus
-              />
-
-              {/* Helper text showing items sum */}
-              <View className="mt-4 p-3 rounded-lg" style={{ backgroundColor: colors.surface }}>
-                <Text
-                  className="text-sm"
-                  style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-                >
-                  {t('scan.itemsSum')}: {formatPrice(itemsSum)}
-                </Text>
-              </View>
-            </View>
-          </KeyboardAvoidingView>
-        </SafeAreaView>
-      </Modal>
-
-      {/* Currency Selection Modal */}
-      <Modal
-        visible={showCurrencyModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowCurrencyModal(false)}
-      >
-        <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
-          {/* Header */}
-          <View
-            className="flex-row items-center justify-between px-4 py-4 border-b"
-            style={{ borderColor: colors.border }}
-          >
-            <Pressable onPress={() => setShowCurrencyModal(false)} hitSlop={8}>
-              <Ionicons name="close" size={24} color={colors.text} />
-            </Pressable>
-            <Text
-              className="text-lg"
-              style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
-            >
-              {t('settings.currency')}
-            </Text>
-            <View style={{ width: 24 }} />
-          </View>
-
-          {/* Currency List */}
-          <FlashList
-            data={currencies}
-            keyExtractor={(item) => item.code}
-            renderItem={({ item }) => {
-              const isSelected = item.code === currency.code;
-              return (
-                <Pressable
-                  onPress={() => {
-                    setCurrency(item.code);
-                    setShowCurrencyModal(false);
-                  }}
-                  className="flex-row items-center px-4 py-3 border-b"
-                  style={{ borderColor: colors.border }}
-                >
-                  <View className="flex-1">
-                    <Text
-                      className="text-base"
-                      style={{
-                        color: colors.text,
-                        fontFamily: isSelected ? 'Inter_600SemiBold' : 'Inter_500Medium',
-                      }}
-                    >
-                      {item.symbol} - {item.name}
-                    </Text>
-                    <Text
-                      className="text-sm"
-                      style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-                    >
-                      {item.code}
-                    </Text>
-                  </View>
-                  {isSelected && (
-                    <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
-                  )}
-                </Pressable>
-              );
-            }}
-            contentContainerStyle={{ paddingBottom: 40 }}
-          />
-        </SafeAreaView>
-      </Modal>
-
-      {/* Zones Preview Modal */}
-      <Modal
+      <ZonesPreviewModal
         visible={showZonesPreview}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowZonesPreview(false)}
-      >
-        <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
-          {/* Header */}
-          <View
-            className="flex-row items-center justify-between px-4 py-4 border-b"
-            style={{ borderColor: colors.border }}
-          >
-            <Pressable onPress={() => setShowZonesPreview(false)} hitSlop={8}>
-              <Ionicons name="close" size={24} color={colors.text} />
-            </Pressable>
-            <Text
-              className="text-lg"
-              style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
-            >
-              {t('scan.appliedZones')}
-            </Text>
-            <View style={{ width: 24 }} />
-          </View>
-
-          {/* Zones Preview */}
-          <ScrollView className="flex-1 p-4">
-            {uri && isPdf !== 'true' && (
-              <View className="items-center">
-                {(() => {
-                  const imageAspectRatio = dimensions.width / dimensions.height;
-                  const previewWidth = screenWidth - 32;
-                  const previewHeight = previewWidth / imageAspectRatio;
-                  return (
-                    <View style={{ width: previewWidth, height: previewHeight }}>
-                      <Image
-                        source={{ uri }}
-                        style={{ width: previewWidth, height: previewHeight }}
-                        contentFit="contain"
-                      />
-                      <Svg
-                        style={{
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          width: previewWidth,
-                          height: previewHeight,
-                        }}
-                      >
-                        {appliedZones.map((zone) => {
-                          const bb = zone.boundingBox;
-                          return (
-                            <Rect
-                              key={zone.id}
-                              x={bb.x * previewWidth}
-                              y={bb.y * previewHeight}
-                              width={bb.width * previewWidth}
-                              height={bb.height * previewHeight}
-                              fill={`${ZONE_COLORS[zone.type]}40`}
-                              stroke={ZONE_COLORS[zone.type]}
-                              strokeWidth={2}
-                            />
-                          );
-                        })}
-                      </Svg>
-                    </View>
-                  );
-                })()}
-              </View>
-            )}
-
-            {/* Zone Legend */}
-            <View className="mt-4">
-              <Text
-                className="text-sm mb-3"
-                style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
-              >
-                {t('scan.zoneTypes')}
-              </Text>
-              {appliedZones.map((zone) => (
-                <View key={zone.id} className="flex-row items-center mb-2">
-                  <View
-                    className="w-4 h-4 rounded mr-3"
-                    style={{ backgroundColor: ZONE_COLORS[zone.type] }}
-                  />
-                  <Text
-                    className="text-sm capitalize"
-                    style={{ color: colors.text, fontFamily: 'Inter_400Regular' }}
-                  >
-                    {zone.type.replace('_', ' ')}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
+        onClose={() => setShowZonesPreview(false)}
+        zones={appliedZones}
+        imageUri={uri || null}
+        isPdf={isPdf === 'true'}
+        dimensions={dimensions}
+        screenWidth={screenWidth}
+        colors={colors}
+      />
     </View>
   );
 }

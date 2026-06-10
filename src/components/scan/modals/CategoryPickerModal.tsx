@@ -2,8 +2,8 @@
  * Modal for selecting a category for an item
  */
 
-import { View, Text, Pressable, Modal } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, Pressable, Modal, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FlashList } from '@shopify/flash-list';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -27,6 +27,7 @@ export function CategoryPickerModal({
   colors,
 }: CategoryPickerModalProps) {
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
 
   return (
     <Modal
@@ -35,7 +36,14 @@ export function CategoryPickerModal({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+      <View
+        className="flex-1"
+        style={{
+          backgroundColor: colors.background,
+          paddingTop: Platform.OS === 'ios' ? 0 : insets.top,
+          paddingBottom: insets.bottom,
+        }}
+      >
         <View
           className="flex-row items-center justify-between px-4 py-4 border-b"
           style={{ borderColor: colors.border }}
@@ -83,7 +91,7 @@ export function CategoryPickerModal({
           }}
           contentContainerStyle={{ paddingBottom: 40 }}
         />
-      </SafeAreaView>
+      </View>
     </Modal>
   );
 }

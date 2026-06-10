@@ -2,8 +2,8 @@
  * Modal for previewing applied zones on a receipt image
  */
 
-import { View, Text, ScrollView, Pressable, Modal } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, ScrollView, Pressable, Modal, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import Svg, { Rect } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
@@ -33,6 +33,7 @@ export function ZonesPreviewModal({
   colors,
 }: ZonesPreviewModalProps) {
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
 
   const imageAspectRatio = dimensions.width / dimensions.height;
   const previewWidth = screenWidth - 32;
@@ -45,7 +46,14 @@ export function ZonesPreviewModal({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+      <View
+        className="flex-1"
+        style={{
+          backgroundColor: colors.background,
+          paddingTop: Platform.OS === 'ios' ? 0 : insets.top,
+          paddingBottom: insets.bottom,
+        }}
+      >
         {/* Header */}
         <View
           className="flex-row items-center justify-between px-4 py-4 border-b"
@@ -123,7 +131,7 @@ export function ZonesPreviewModal({
             ))}
           </View>
         </ScrollView>
-      </SafeAreaView>
+      </View>
     </Modal>
   );
 }
