@@ -37,9 +37,6 @@ interface PreferencesState {
 
   setLanguage: (lang: SupportedLanguage) => void;
   setColorScheme: (scheme: ColorScheme) => void;
-  setCurrency: (code: string) => void;
-  setDateFormat: (format: DateFormat) => void;
-  setDecimalSeparator: (sep: DecimalSeparator) => void;
   completeOnboarding: () => void;
   resetOnboarding: () => void;
 
@@ -108,19 +105,6 @@ export const usePreferencesStore = create<PreferencesState>()(
         set({ colorScheme: scheme });
       },
 
-      setCurrency: (code: string) => {
-        const currency = getCurrency(code);
-        set({ currencyCode: code, currency });
-      },
-
-      setDateFormat: (format: DateFormat) => {
-        set({ dateFormat: format });
-      },
-
-      setDecimalSeparator: (sep: DecimalSeparator) => {
-        set({ decimalSeparator: sep });
-      },
-
       completeOnboarding: () => {
         set({ hasCompletedOnboarding: true });
       },
@@ -148,6 +132,7 @@ export const usePreferencesStore = create<PreferencesState>()(
       onRehydrateStorage: () => (state) => {
         if (state) {
           state.currency = getCurrency(state.currencyCode);
+          state.currencyCode = state.currency.code;
           i18nChangeLanguage(state.language);
         }
       },
@@ -160,7 +145,3 @@ export function useFormatPrice() {
   const currency = usePreferencesStore((state) => state.currency);
   return { formatPrice, currency };
 }
-
-export const useCurrencyStore = usePreferencesStore;
-
-export { getInitialPreferences };
