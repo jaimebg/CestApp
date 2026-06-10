@@ -4,23 +4,25 @@
  * Spanish defaults for currency, date format, and number format
  */
 
-import { View, Text, Pressable, ScrollView, Modal, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, Pressable, ScrollView, Modal, Alert, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState, useRef } from 'react';
+import Constants from 'expo-constants';
 import { usePreferencesStore } from '@/src/store/preferences';
 import { SUPPORTED_LANGUAGES, SupportedLanguage } from '@/src/i18n';
 import { seedDemoData, clearAllData } from '@/src/db/demoData';
 import { useReceiptsStore } from '@/src/store/receipts';
 import { showSuccessToast, showErrorToast } from '@/src/utils/toast';
-import { useIsDarkMode } from '@/src/hooks/useAppColors';
+import { useAppColors } from '@/src/hooks/useAppColors';
 
 export default function SettingsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const isDark = useIsDarkMode();
+  const insets = useSafeAreaInsets();
+  const colors = useAppColors();
 
   const { language, setLanguage, colorScheme, setColorScheme } = usePreferencesStore();
   const invalidateCache = useReceiptsStore((s) => s.invalidateCache);
@@ -86,24 +88,16 @@ export default function SettingsScreen() {
     ]);
   };
 
-  const colors = {
-    background: isDark ? '#1A1918' : '#FFFDE1',
-    surface: isDark ? '#2D2A26' : '#FFFFFF',
-    text: isDark ? '#FFFDE1' : '#2D2A26',
-    textSecondary: isDark ? '#B8B4A9' : '#6B6560',
-    border: isDark ? '#4A4640' : '#E8E4D9',
-    primary: '#93BD57',
-    primaryDeep: '#3D6B23',
-  };
-
   return (
-    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }} edges={['top']}>
+    <View className="flex-1" style={{ backgroundColor: colors.background, paddingTop: insets.top }}>
       {/* Header */}
       <View className="flex-row items-center px-4 py-3">
         <Pressable
           onPress={() => router.back()}
           className="w-10 h-10 rounded-full items-center justify-center"
           style={{ backgroundColor: colors.surface }}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.done')}
         >
           <Ionicons name="close" size={22} color={colors.text} />
         </Pressable>
@@ -156,8 +150,11 @@ export default function SettingsScreen() {
                 <Pressable
                   key={lang.code}
                   className="flex-1 items-center justify-center rounded-md py-2"
-                  style={isSelected ? { backgroundColor: colors.primary } : undefined}
+                  style={isSelected ? { backgroundColor: colors.primaryDeep } : undefined}
                   onPress={() => setLanguage(lang.code as SupportedLanguage)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isSelected }}
+                  accessibilityLabel={lang.nativeName}
                 >
                   <Text
                     style={{
@@ -202,8 +199,11 @@ export default function SettingsScreen() {
                 <Pressable
                   key={scheme}
                   className="flex-1 items-center justify-center rounded-md py-2"
-                  style={isSelected ? { backgroundColor: colors.primary } : undefined}
+                  style={isSelected ? { backgroundColor: colors.primaryDeep } : undefined}
                   onPress={() => setColorScheme(scheme)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isSelected }}
+                  accessibilityLabel={scheme === 'light' ? t('settings.light') : t('settings.dark')}
                 >
                   <Text
                     style={{
@@ -276,7 +276,7 @@ export default function SettingsScreen() {
               className="text-base"
               style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
             >
-              1.0.0
+              {Constants.expoConfig?.version ?? '0.1.0'}
             </Text>
           </View>
         </Pressable>
@@ -289,10 +289,13 @@ export default function SettingsScreen() {
         presentationStyle="pageSheet"
         onRequestClose={() => setShowDevMenu(false)}
       >
-        <SafeAreaView
+        <View
           className="flex-1"
-          style={{ backgroundColor: colors.background }}
-          edges={['bottom']}
+          style={{
+            backgroundColor: colors.background,
+            paddingTop: Platform.OS === 'ios' ? 0 : insets.top,
+            paddingBottom: insets.bottom,
+          }}
         >
           <View
             className="flex-row items-center justify-between px-4 py-4 border-b"
@@ -351,13 +354,13 @@ export default function SettingsScreen() {
               disabled={isLoading}
               className="flex-row items-center p-4 rounded-xl"
               style={{
-                backgroundColor: '#98040415',
+                backgroundColor: `${colors.error}15`,
                 borderWidth: 1,
-                borderColor: '#980404',
+                borderColor: colors.error,
                 opacity: isLoading ? 0.5 : 1,
               }}
             >
-              <Ionicons name="trash-outline" size={24} color="#980404" />
+              <Ionicons name="trash-outline" size={24} color={colors.error} />
               <View className="flex-1 ml-3">
                 <Text style={{ color: colors.text, fontFamily: 'Inter_600SemiBold', fontSize: 16 }}>
                   {t('settings.clearAllData')}
@@ -375,8 +378,8 @@ export default function SettingsScreen() {
               </View>
             </Pressable>
           </ScrollView>
-        </SafeAreaView>
+        </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }

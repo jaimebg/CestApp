@@ -15,6 +15,7 @@ import { useDatabaseReady } from '@/src/db/provider';
 import { getReceiptsWithItemCount } from '@/src/db/queries/receipts';
 import { getTotalSpending, getReceiptCount } from '@/src/db/queries/analytics';
 import { useFormatPrice } from '@/src/store/preferences';
+import { useAppColors } from '@/src/hooks/useAppColors';
 import type { Receipt } from '@/src/db/schema/receipts';
 import type { Store } from '@/src/db/schema/stores';
 
@@ -32,6 +33,7 @@ export default function DashboardScreen() {
   const router = useRouter();
   const { isReady } = useDatabaseReady();
   const { formatPrice } = useFormatPrice();
+  const colors = useAppColors();
 
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -140,8 +142,8 @@ export default function DashboardScreen() {
         <RefreshControl
           refreshing={isRefreshing}
           onRefresh={handleRefresh}
-          tintColor="#93BD57"
-          colors={['#93BD57']}
+          tintColor={colors.primary}
+          colors={[colors.primary]}
         />
       }
     >
@@ -168,8 +170,10 @@ export default function DashboardScreen() {
               onPress={() => router.push('/settings')}
               className="w-10 h-10 rounded-full bg-surface dark:bg-surface-dark items-center justify-center"
               style={{ marginTop: 4 }}
+              accessibilityRole="button"
+              accessibilityLabel={t('settings.title')}
             >
-              <Ionicons name="settings-outline" size={24} color="#93BD57" />
+              <Ionicons name="settings-outline" size={24} color={colors.primary} />
             </Pressable>
           </Animated.View>
         </View>
@@ -204,7 +208,9 @@ export default function DashboardScreen() {
           <Animated.View entering={FadeInUp.delay(300).duration(500).springify()}>
             <Pressable
               onPress={handleScanPress}
-              className="mt-4 bg-primary rounded-2xl p-6 flex-row items-center active:opacity-90"
+              className="mt-4 bg-primary-deep rounded-2xl p-6 flex-row items-center active:opacity-90"
+              accessibilityRole="button"
+              accessibilityLabel={t('dashboard.scanFirst')}
             >
               <View className="bg-white/20 rounded-full p-3 mr-4">
                 <Ionicons name="scan-outline" size={24} color="#FFFFFF" />
@@ -235,9 +241,14 @@ export default function DashboardScreen() {
               {t('dashboard.recentReceipts')}
             </Text>
             {hasReceipts && (
-              <Pressable onPress={handleViewAllPress} className="flex-row items-center">
+              <Pressable
+                onPress={handleViewAllPress}
+                className="flex-row items-center"
+                accessibilityRole="button"
+                accessibilityLabel={t('common.all')}
+              >
                 <Text className="text-primary text-sm mr-1">{t('common.all')}</Text>
-                <Ionicons name="chevron-forward" size={16} color="#93BD57" />
+                <Ionicons name="chevron-forward" size={16} color={colors.primary} />
               </Pressable>
             )}
           </View>
@@ -263,7 +274,7 @@ export default function DashboardScreen() {
               <Card variant="outlined" padding="md">
                 <View className="flex-row items-center">
                   <View className="bg-primary/20 rounded-full p-3 mr-4">
-                    <Ionicons name="receipt-outline" size={24} color="#93BD57" />
+                    <Ionicons name="receipt-outline" size={24} color={colors.primary} />
                   </View>
                   <View className="flex-1">
                     <Text

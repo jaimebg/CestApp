@@ -1,5 +1,5 @@
 import { View, Text, Pressable, Modal } from 'react-native';
-import { useIsDarkMode } from '@/src/hooks/useAppColors';
+import { useAppColors, useIsDarkMode } from '@/src/hooks/useAppColors';
 
 interface ConfirmationModalProps {
   visible: boolean;
@@ -25,29 +25,21 @@ export function ConfirmationModal({
   isLoading = false,
 }: ConfirmationModalProps) {
   const isDark = useIsDarkMode();
-
-  const colors = {
-    background: isDark ? '#2D2A26' : '#FFFFFF',
-    text: isDark ? '#FFFDE1' : '#2D2A26',
-    textSecondary: isDark ? '#B8B4A9' : '#6B6560',
-    border: isDark ? '#4A4640' : '#E8E4D9',
-    primary: '#93BD57',
-    error: isDark ? '#C94444' : '#980404',
-    overlay: isDark ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.5)',
-  };
+  const colors = useAppColors();
+  const overlay = isDark ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.5)';
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <View className="flex-1 justify-center items-center px-6">
         <Pressable
           className="absolute inset-0"
-          style={{ backgroundColor: colors.overlay }}
+          style={{ backgroundColor: overlay }}
           onPress={onCancel}
         />
         <View
           className="w-full max-w-sm rounded-2xl overflow-hidden"
           style={{
-            backgroundColor: colors.background,
+            backgroundColor: colors.surface,
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.25,

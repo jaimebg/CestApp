@@ -4,34 +4,26 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { usePreferencesStore } from '@/src/store/preferences';
-import { useIsDarkMode } from '@/src/hooks/useAppColors';
+import { useAppColors } from '@/src/hooks/useAppColors';
 
 export default function TabLayout() {
-  const isDark = useIsDarkMode();
+  const colors = useAppColors();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const hasCompletedOnboarding = usePreferencesStore((state) => state.hasCompletedOnboarding);
 
   if (!hasCompletedOnboarding) {
-    return <View style={{ flex: 1, backgroundColor: isDark ? '#1A1918' : '#FFFDE1' }} />;
+    return <View style={{ flex: 1, backgroundColor: colors.background }} />;
   }
-
-  const colors = {
-    background: isDark ? '#1A1918' : '#FFFDE1',
-    tabBar: isDark ? '#2D2A26' : '#FFFFFF',
-    active: '#93BD57',
-    inactive: isDark ? '#6B6560' : '#8D8680',
-    border: isDark ? '#4A4640' : '#E8E4D9',
-  };
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.active,
-        tabBarInactiveTintColor: colors.inactive,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textSecondary,
         tabBarStyle: {
-          backgroundColor: colors.tabBar,
+          backgroundColor: colors.surface,
           borderTopColor: colors.border,
           borderTopWidth: 1,
           paddingTop: 8,

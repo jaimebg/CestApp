@@ -4,6 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 import type { Receipt } from '../../db/schema/receipts';
 import type { Store } from '../../db/schema/stores';
 import { useFormatPrice } from '../../store/preferences';
+import { useAppColors } from '../../hooks/useAppColors';
 
 interface ReceiptCardProps {
   receipt: Receipt;
@@ -15,6 +16,7 @@ interface ReceiptCardProps {
 export function ReceiptCard({ receipt, store, itemCount = 0, onPress }: ReceiptCardProps) {
   const { t } = useTranslation();
   const { formatPrice } = useFormatPrice();
+  const colors = useAppColors();
 
   const formattedDate = receipt.dateTime
     ? new Date(receipt.dateTime).toLocaleDateString(undefined, {
@@ -37,6 +39,8 @@ export function ReceiptCard({ receipt, store, itemCount = 0, onPress }: ReceiptC
     <Pressable
       onPress={onPress}
       className="bg-surface dark:bg-surface-dark rounded-2xl p-4 mb-3 border border-border dark:border-border-dark active:opacity-80"
+      accessibilityRole="button"
+      accessibilityLabel={`${storeName}, ${formattedDate}, ${formatPrice(receipt.totalAmount ? receipt.totalAmount / 100 : null)}`}
     >
       <View className="flex-row items-start justify-between">
         {/* Left side: Store and date info */}
@@ -48,7 +52,7 @@ export function ReceiptCard({ receipt, store, itemCount = 0, onPress }: ReceiptC
             {storeName}
           </Text>
           <View className="flex-row items-center">
-            <Ionicons name="calendar-outline" size={14} color="#8D8680" />
+            <Ionicons name="calendar-outline" size={14} color={colors.textSecondary} />
             <Text className="text-text-secondary dark:text-text-dark-secondary text-sm ml-1">
               {formattedDate}
             </Text>
@@ -86,7 +90,7 @@ export function ReceiptCard({ receipt, store, itemCount = 0, onPress }: ReceiptC
                       : 'cash-outline'
                 }
                 size={12}
-                color="#8D8680"
+                color={colors.textSecondary}
               />
               <Text className="text-text-secondary dark:text-text-dark-secondary text-xs ml-1 capitalize">
                 {t(`receipt.${receipt.paymentMethod}`)}
