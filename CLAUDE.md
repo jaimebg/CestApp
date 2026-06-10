@@ -105,10 +105,6 @@ app/                           # Screens (Expo Router)
     preview.tsx                # Image/PDF preview
     zones.tsx                  # Manual zone definition
     review.tsx                 # OCR review & save
-    _components/modals/        # Extracted modal components
-      CategoryPickerModal.tsx  # Category selection
-      CurrencyPickerModal.tsx  # Currency selection
-      ZonesPreviewModal.tsx    # Zones preview
 
 src/
   components/
@@ -126,14 +122,22 @@ src/
       ReceiptCardSkeleton.tsx  # Loading skeleton
       ReceiptSummary.tsx       # Summary stats
       ItemRow.tsx              # Line item display
-    settings/
-      CurrencySelector.tsx     # Currency picker
+    scan/
+      types.ts                 # Shared types for review screen components
+      modals/                  # Review screen modals
+        StoreEditModal.tsx     # Store name editing
+        DateEditModal.tsx      # Date & time editing
+        ItemEditModal.tsx      # Line item add/edit
+        CategoryPickerModal.tsx # Category selection
+        TotalEditModal.tsx     # Total editing
+        ZonesPreviewModal.tsx  # Zones preview
     ErrorBoundary.tsx          # React error boundary
 
   db/
-    client.ts                  # Drizzle + expo-sqlite setup
+    client.ts                  # Drizzle + expo-sqlite setup (runs migrations)
     provider.tsx               # Database context provider
     seed.ts                    # Category seed data
+    migrations/                # Drizzle migrations (npx drizzle-kit generate)
     schema/
       receipts.ts              # Receipt table
       items.ts                 # Line items table
@@ -141,11 +145,13 @@ src/
       categories.ts            # Item categories table
       userLearnedItems.ts      # User learning table
       storeParsingTemplates.ts # Store parsing templates
+      parsingFeedback.ts       # Parsing feedback for learning
     queries/
       receipts.ts              # Receipt CRUD operations
       items.ts                 # Item queries
       stores.ts                # Store queries
       categories.ts            # Category queries
+      categorization.ts        # Item categorization & user learning
       analytics.ts             # Analytics aggregations
       storeParsingTemplates.ts # Template queries
 
@@ -153,6 +159,7 @@ src/
     ocr/
       index.ts                 # ML Kit OCR wrapper
       parser.ts                # Receipt parsing with chain detection
+      parseUtils.ts            # Shared price/time parsing helpers
       chainDetector.ts         # Detects chain by NIF/name/fingerprints
       chainParser.ts           # Chain-specific parsing using templates
       templateParser.ts        # Zone-based parsing
@@ -248,13 +255,14 @@ logger.error('Error message');
 
 ```typescript
 // Main function
-recognizeText(imageUri: string): Promise<OcrResult>
+recognizeText(imageUri: string, knownDimensions?: { width: number; height: number }): Promise<OcrResult>
+```
 
-// Helper functions
-preprocessOcrText(text: string): string[]
-findPriceLines(lines: string[]): string[]
-findTotalLine(lines: string[]): string | null
-findDateLine(lines: string[]): string | null
+Shared low-level helpers (`src/services/ocr/parseUtils.ts`), used by both the generic and chain parsers:
+
+```typescript
+parsePrice(text: string, options?: { allowBareInteger?: boolean }): number | null
+parseTime(text: string): string | null
 ```
 
 **OCR engine:** Google ML Kit via `@infinitered/react-native-mlkit-text-recognition` (an autolinked Expo module — no config plugin needed). The native library returns frames as `{left, top, right, bottom}`; the `recognizeText()` wrapper in `index.ts` normalizes them to the app's `OcrResult` shape (`boundingBox` `{left, top, width, height}`). The engine is isolated to this one file, so swapping OCR libraries never touches the rest of the app.
@@ -353,6 +361,19 @@ listReceiptFiles(): Promise<string[]>
 **receipts**: Receipt header with store, date, totals, status, file paths
 **items**: Line items with quantity, price, unit, category, confidence
 **userLearnedItems**: User corrections for auto-categorization learning
+**storeParsingTemplates**: Zone templates and fingerprints per store
+**parsingFeedback**: User corrections to parsed fields (learning input)
+
+### Migrations
+
+Schema is defined in `src/db/schema/` and applied via Drizzle migrations:
+
+1. Edit the schema files
+2. Run `npx drizzle-kit generate` to create a migration in `src/db/migrations/`
+3. The app applies pending migrations on startup (`initializeDatabase()` in `src/db/client.ts`)
+
+Migration SQL uses `IF NOT EXISTS` so it is safe on databases created before the
+migration system existed; `client.ts` also repairs known legacy columns.
 
 ### Key Indexes
 
@@ -369,7 +390,7 @@ Priority order:
 2. Keyword matching from `categories.keywords` (multilingual EN/ES)
 3. Default to "Other" category
 
-Key functions in `src/db/seed.ts`:
+Key functions in `src/db/queries/categorization.ts`:
 
 - `normalizeItemName(name)`: Normalizes for matching
 - `getCategoryForItem(itemName, storeId?)`: Returns category with confidence
@@ -381,7 +402,8 @@ Key functions in `src/db/seed.ts`:
 
 ```typescript
 interface PreferencesState {
-  language: 'en' | 'es'; // Only setting user can change
+  language: 'en' | 'es';
+  colorScheme: 'light' | 'dark';
   hasCompletedOnboarding: boolean;
 
   // Hardcoded Spanish defaults (not configurable)
@@ -391,11 +413,12 @@ interface PreferencesState {
 
   // Actions
   setLanguage(lang: string): void;
-  formatPrice(cents: number): string;
+  setColorScheme(scheme: 'light' | 'dark'): void;
+  formatPrice(amount: number | null): string;
 }
 ```
 
-Persisted to AsyncStorage. Language is the only user-configurable preference.
+Persisted to AsyncStorage. Language and appearance are the only user-configurable preferences.
 
 ### Receipts Store (`src/store/receipts.ts`)
 
@@ -411,13 +434,20 @@ const isLoading = useReceiptsLoading();
 
 ## Testing
 
+Unit tests use Jest (`jest-expo` preset). Parsing services have fixture-based tests in
+`src/services/ocr/__tests__/` — extend these when changing parser, chain detector, or
+parse helper behavior.
+
 Before committing:
 
 1. Run `npx tsc --noEmit` to check TypeScript
-2. Run `expo run:ios` or `expo run:android` (dev build required for ML Kit)
-3. Verify dark mode works correctly
-4. Test language switching (change device language)
-5. Test receipt scanning with both images and PDFs
+2. Run `npm test` to run the Jest suite
+3. Run `expo run:ios` or `expo run:android` (dev build required for ML Kit)
+4. Verify dark mode works correctly
+5. Test language switching (change device language)
+6. Test receipt scanning with both images and PDFs
+
+CI (`.github/workflows/ci.yml`) runs type check, lint, format check, and tests on every push/PR.
 
 ## Commit Guidelines
 
@@ -465,6 +495,7 @@ npx tsc --noEmit
 | `npm run format`       | Format all files with Prettier   |
 | `npm run format:check` | Check formatting without changes |
 | `npm run check`        | Run both lint and format:check   |
+| `npm test`             | Run Jest unit tests              |
 
 ### Pre-commit Hook
 
