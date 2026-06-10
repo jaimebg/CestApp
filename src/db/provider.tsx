@@ -30,7 +30,7 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
   useEffect(() => {
     async function init() {
       try {
-        initializeDatabase();
+        await initializeDatabase();
         await seedCategories();
 
         setIsReady(true);
