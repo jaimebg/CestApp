@@ -403,7 +403,7 @@ function calculateFingerprintConfidence(data: {
 /**
  * Compare two fingerprints and return match score
  */
-export function compareFingerpints(fp1: StoreFingerprint, fp2: StoreFingerprint): number {
+export function compareFingerprints(fp1: StoreFingerprint, fp2: StoreFingerprint): number {
   let score = 0;
   const maxScore = 100;
 
@@ -474,7 +474,7 @@ export function matchFingerprintToTemplates(
   const matches: FingerprintMatch[] = [];
 
   for (const template of templates) {
-    const matchScore = compareFingerpints(fingerprint, template.fingerprint);
+    const matchScore = compareFingerprints(fingerprint, template.fingerprint);
 
     if (matchScore >= 40) {
       // Only include reasonable matches
