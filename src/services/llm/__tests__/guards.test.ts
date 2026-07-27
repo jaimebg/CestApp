@@ -2,6 +2,7 @@ import {
   normalizeForAnchor,
   findSourceLine,
   isAnchoredToSource,
+  anchorStrength,
   filterHallucinatedItems,
 } from '../guards';
 import type { ParsedItem } from '../../ocr/parser';
@@ -64,6 +65,20 @@ describe('isAnchoredToSource', () => {
   });
 });
 
+describe('anchorStrength', () => {
+  it('returns exact for a shared whole token', () => {
+    expect(anchorStrength('Pan integral', '2 PAN INTEGRAL 1,20 2,40')).toBe('exact');
+  });
+
+  it('returns prefix when only an expansion relation holds', () => {
+    expect(anchorStrength('Detergente líquido', '1 DETERG LIQ 3,45')).toBe('prefix');
+  });
+
+  it('returns none when neither an exact nor a prefix relation holds', () => {
+    expect(anchorStrength('Detergente', '1 HAC LECHE SEMI 1L 0,98')).toBe('none');
+  });
+});
+
 describe('filterHallucinatedItems', () => {
   it('keeps items anchored to the source text', () => {
     const kept = filterHallucinatedItems(
@@ -91,5 +106,14 @@ describe('filterHallucinatedItems', () => {
     );
     expect(kept).toHaveLength(2);
     expect(kept.map((current) => current.name)).toEqual(['Yogur natural', 'Queso fresco']);
+  });
+
+  it('does not let a prefix match starve a genuine item processed first', () => {
+    const collidingLines = ['1 SAL 1,20', '2 SALSA BRAVA 1,20'];
+    const kept = filterHallucinatedItems(
+      [item('Salsa brava', 1.2), item('Sal', 1.2)],
+      collidingLines
+    );
+    expect(kept.map((current) => current.name)).toEqual(['Salsa brava', 'Sal']);
   });
 });
