@@ -22,6 +22,10 @@
 - **Tolerancia de reconciliación:** `max(0,02 €, 0,5%)`. Valor exacto, no aproximar.
 - **Timeout del LLM:** 15000 ms.
 - **Prettier:** comillas simples, punto y coma, 2 espacios, ancho 100, comas finales ES5.
+- **React Compiler:** `eslint.config.js` activa `react-compiler/react-compiler: 'error'`. No mutes
+  refs durante el render; hazlo dentro de un `useEffect`.
+- **Firmas ya verificadas** (no hace falta comprobarlas): `Button` de `src/components/ui/Button.tsx`
+  acepta `children`, y el store se exporta como `usePreferencesStore`.
 - **Commits:** conventional commits (`feat:`, `fix:`, `test:`, `chore:`).
 
 **Requisito del spec que queda obsoleto:** el spec pide "una sesión por refinado, liberada en el
@@ -1523,7 +1527,10 @@ export function useLlmRefinement({
 
   const hasRun = useRef(false);
   const editedRef = useRef(hasUserEdited);
-  editedRef.current = hasUserEdited;
+
+  useEffect(() => {
+    editedRef.current = hasUserEdited;
+  }, [hasUserEdited]);
 
   useEffect(() => {
     if (hasRun.current) return;
@@ -1964,8 +1971,7 @@ export function ProposalDiffModal({ visible, current, proposed, onAccept, onDism
 }
 ```
 
-Verifica la firma real de `Button` en `src/components/ui/Button.tsx` antes de usarla: si espera
-`title` en vez de `children`, adapta las dos llamadas.
+La firma de `Button` ya está verificada: acepta `children`, tal y como se usa arriba.
 
 - [ ] **Step 3: Cambiar el banner para abrir el modal**
 
