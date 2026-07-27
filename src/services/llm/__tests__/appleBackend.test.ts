@@ -22,10 +22,13 @@ describe('isBackendAvailable', () => {
   });
 
   it('returns false when the native module throws', () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
     mockModule.isAvailable.mockImplementation(() => {
       throw new Error('module missing');
     });
     expect(isBackendAvailable()).toBe(false);
+    expect(warnSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
   });
 });
 
@@ -42,15 +45,30 @@ describe('generateStructured', () => {
     expect(result).toBeNull();
   });
 
+  it('finds and parses text part even when it is not the first element', async () => {
+    mockModule.generateText.mockResolvedValue([
+      { type: 'tool-call', toolName: 'x', input: '{}' },
+      { type: 'text', text: '{"items":[]}' },
+    ]);
+    const result = await generateStructured([{ role: 'user', content: 'hi' }], { type: 'object' });
+    expect(result).toEqual({ items: [] });
+  });
+
   it('returns null when the text is not valid JSON', async () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
     mockModule.generateText.mockResolvedValue([{ type: 'text', text: 'lo siento, no puedo' }]);
     const result = await generateStructured([{ role: 'user', content: 'hi' }], { type: 'object' });
     expect(result).toBeNull();
+    expect(warnSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
   });
 
   it('returns null when the native call rejects', async () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
     mockModule.generateText.mockRejectedValue(new Error('modelUnavailable'));
     const result = await generateStructured([{ role: 'user', content: 'hi' }], { type: 'object' });
     expect(result).toBeNull();
+    expect(warnSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
   });
 });
