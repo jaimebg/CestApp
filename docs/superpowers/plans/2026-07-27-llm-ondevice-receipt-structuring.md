@@ -692,6 +692,11 @@ Crea `src/services/llm/schema.ts`:
 import type { ParsedItem } from '../ocr/parser';
 import type { LlmReceipt } from './types';
 
+/**
+ * Deliberately a subset of ParsedItem['unit']: 'lb' and 'oz' are omitted because
+ * CestApp is Spain-only and imperial units never appear on a Spanish receipt.
+ * Offering them to the model would only invite wrong answers.
+ */
 const UNITS: ParsedItem['unit'][] = ['each', 'kg', 'g', 'l', 'ml'];
 const LLM_ITEM_CONFIDENCE = 70;
 
@@ -739,10 +744,11 @@ function sanitizeItem(raw: unknown): ParsedItem | null {
 
   const name = asString(record.name);
   const totalPrice = asNumber(record.totalPrice);
-  if (name === null || totalPrice === null) return null;
+  if (name === null || totalPrice === null || totalPrice < 0) return null;
 
-  const quantity = asNumber(record.quantity) ?? 1;
-  const unitPrice = asNumber(record.unitPrice) ?? totalPrice;
+  const declaredQuantity = asNumber(record.quantity);
+  const quantity = declaredQuantity !== null && declaredQuantity > 0 ? declaredQuantity : 1;
+  const unitPrice = asNumber(record.unitPrice) ?? totalPrice / quantity;
 
   return {
     name,
