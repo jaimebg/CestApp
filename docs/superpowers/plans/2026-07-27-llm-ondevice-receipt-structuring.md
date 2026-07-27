@@ -441,74 +441,6 @@ const PRICE_TOKEN = /\d+[.,]\d{2}/g;
 const PRICE_EPSILON = 0.005;
 const MIN_TOKEN_LENGTH = 3;
 
-const SUMMARY_TOKENS = [
-  'TOTAL',
-  'SUBTOTAL',
-  'IMPORTE',
-  'PAGAR',
-  'PAGADO',
-  'PAGO',
-  'CONTADO',
-  'ENTREGA',
-  'ENTREGADO',
-  'IVA',
-  'IGIC',
-  'IPSI',
-  'CUOTA',
-  'IMPONIBLE',
-  'BASE',
-  'RECARGO',
-  'EFECTIVO',
-  'TARJETA',
-  'VISA',
-  'CAMBIO',
-  'DEVOLUCION',
-  'ABONO',
-  'DESCUENTO',
-  'DTO',
-];
-
-const SUMMARY_LEAD_TOKENS = 2;
-
-/**
- * A receipt's summary lines are never line items, whatever tokens they share with
- * a product name. Without this, an invented item named "Total compra" priced at the
- * printed total anchors to the TOTAL line and then reconciles tautologically — the
- * item sum and the total are the same number by construction.
- *
- * Only the opening tokens are inspected. Summary lines lead with their keyword
- * ("IMPORTE 3,38", "SU CAMBIO 0,00") while product lines lead with a quantity or a
- * brand, so "2 FAGE TOTAL 2% 2,15" — a real yogurt sold in Spain — stays a product.
- */
-function isSummaryLine(line: string): boolean {
-  const lead = normalizeForAnchor(line).split(' ').slice(0, SUMMARY_LEAD_TOKENS);
-  return lead.some((token) => SUMMARY_TOKENS.includes(token));
-}
-
-const COMBINING_MARK_START = 0x0300;
-const COMBINING_MARK_END = 0x036f;
-
-/**
- * Strips diacritics without embedding literal combining characters in source,
- * which are invisible and easy to corrupt when the file is edited.
- */
-function stripDiacritics(text: string): string {
-  return Array.from(text.normalize('NFD'))
-    .filter((character) => {
-      const code = character.charCodeAt(0);
-      return code < COMBINING_MARK_START || code > COMBINING_MARK_END;
-    })
-    .join('');
-}
-
-export function normalizeForAnchor(text: string): string {
-  return stripDiacritics(text)
-    .toUpperCase()
-    .replace(/[^A-Z0-9\s]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
 function lineContainsPrice(line: string, price: number): boolean {
   const matches = line.match(PRICE_TOKEN) || [];
   return matches.some((match) => {
@@ -584,7 +516,6 @@ export function filterHallucinatedItems(items: ParsedItem[], lines: string[]): P
       const lineIndex = lines.findIndex(
         (line, position) =>
           !taken.has(position) &&
-          !isSummaryLine(line) &&
           lineContainsPrice(line, current.totalPrice) &&
           anchorStrength(current.name, line) === strength
       );
@@ -1097,8 +1028,11 @@ export function mergeParsedReceipts(
   };
 
   const losesItems = items.length < deterministic.items.length;
+  const unconfirmedSingleItem = items.length === 1 && deterministic.items.length !== 1;
   const outcome: MergeOutcome =
-    reconciles(items, merged.discount, total) && !losesItems ? 'auto' : 'proposal';
+    reconciles(items, merged.discount, total) && !losesItems && !unconfirmedSingleItem
+      ? 'auto'
+      : 'proposal';
 
   return { merged, outcome };
 }

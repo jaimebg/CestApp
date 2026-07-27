@@ -70,12 +70,26 @@ reconcilia  ⟺  |Σ items − descuento − total| ≤ max(0,02 €, 0,5%)
 - **Reconcilia exacto y no pierde items** → se aplica automáticamente.
 - **Cualquier otro caso** → nunca se aplica solo; se ofrece como propuesta y decide el usuario.
 
-La segunda condición existe porque cuadrar la suma no siempre prueba nada. Un item inventado cuyo
-precio sea el total hace que "la suma de los items iguala el total" sea la misma cifra comparada
-consigo misma: reconcilia siempre, por construcción. Excluir del anclaje las líneas de resumen
-(`TOTAL`, `IMPORTE`, `ENTREGADO`…) ayuda, pero una lista de palabras clave nunca estará completa. Por
-eso la regla de respaldo no depende de vocabulario: **un auto-aplicado nunca puede devolver menos
-items de los que encontró el parser determinista.** Si los reduce, por bien que cuadre, es propuesta.
+Las condiciones extra existen porque **cuadrar la suma no siempre prueba nada**. Un item inventado
+cuyo precio sea el total hace que "la suma de los items iguala el total" sea la misma cifra comparada
+consigo misma: reconcilia siempre, por construcción.
+
+Se intentó resolverlo excluyendo del anclaje las líneas de resumen por palabra clave (`TOTAL`,
+`IMPORTE`, `ENTREGADO`…) y se descartó: la lista nunca está completa, y al mismo tiempo rechaza
+productos reales, porque `BASE` es tanto `BASE IMPONIBLE` como _Base pizza fina_, y `ABONO` es tanto
+una devolución como un fertilizante. Clasificar líneas por vocabulario es un juego que no se gana.
+
+Las dos reglas que sí lo cierran no dependen de ninguna palabra:
+
+1. **Un auto-aplicado nunca puede devolver menos items de los que encontró el parser determinista.**
+   Reducirlos es pérdida de información, por bien que cuadre.
+2. **Un resultado de un solo item solo se auto-aplica si el parser también encontró exactamente uno.**
+   Con un único item la reconciliación es vacua; hace falta una segunda fuente independiente que
+   confirme que el ticket tiene de verdad un solo producto.
+
+Con dos o más items la aritmética ya protege sola: para colar un item falso al precio del total, los
+demás tendrían que sumar cero. El caso que sí se conserva íntegro es el principal — el parser no
+encuentra nada y el LLM devuelve varios productos que cuadran.
 
 Peor caso de un modelo que alucine: un ticket idéntico al que se habría guardado hoy.
 
