@@ -465,25 +465,29 @@ export function normalizeForAnchor(text: string): string {
     .trim();
 }
 
+function lineContainsPrice(line: string, price: number): boolean {
+  const matches = line.match(PRICE_TOKEN) || [];
+  return matches.some((match) => {
+    const parsed = parsePrice(match);
+    return parsed !== null && Math.abs(parsed - price) < PRICE_EPSILON;
+  });
+}
+
 /**
- * Returns the OCR line that contains the given price, or null when no line does.
+ * Returns the first OCR line that contains the given price, or null when no line does.
  */
 export function findSourceLine(price: number, lines: string[]): string | null {
-  for (const line of lines) {
-    const matches = line.match(PRICE_TOKEN) || [];
-    for (const match of matches) {
-      const parsed = parsePrice(match);
-      if (parsed !== null && Math.abs(parsed - price) < PRICE_EPSILON) {
-        return line;
-      }
-    }
-  }
-  return null;
+  return lines.find((line) => lineContainsPrice(line, price)) ?? null;
 }
 
 /**
  * Anchors an item name to its source line by shared tokens rather than substring,
  * so the model may expand abbreviations without being able to invent a product.
+ *
+ * The prefix test runs in one direction only. A legitimate expansion always grows
+ * the receipt's abbreviation into a longer word (SEMI to SEMIDESNATADA), so the
+ * item name token must start with the line token. Allowing the reverse would let
+ * an invented short name anchor to an unrelated longer word, such as SAL to SALSA.
  */
 export function isAnchoredToSource(name: string, sourceLine: string): boolean {
   const lineTokens = new Set(normalizeForAnchor(sourceLine).split(' '));
@@ -494,17 +498,31 @@ export function isAnchoredToSource(name: string, sourceLine: string): boolean {
   return nameTokens.some((token) => {
     for (const lineToken of lineTokens) {
       if (lineToken.length < MIN_TOKEN_LENGTH) continue;
-      if (lineToken.startsWith(token) || token.startsWith(lineToken)) return true;
+      if (token.startsWith(lineToken)) return true;
     }
     return false;
   });
 }
 
+/**
+ * Each surviving item claims a distinct source line. Spanish receipts routinely
+ * repeat round prices, so matching every item against the first line carrying its
+ * price would misattribute the second product and drop it as if it were invented.
+ */
 export function filterHallucinatedItems(items: ParsedItem[], lines: string[]): ParsedItem[] {
+  const claimed = new Set<number>();
+
   return items.filter((current) => {
-    const sourceLine = findSourceLine(current.totalPrice, lines);
-    if (sourceLine === null) return false;
-    return isAnchoredToSource(current.name, sourceLine);
+    const index = lines.findIndex(
+      (line, position) =>
+        !claimed.has(position) &&
+        lineContainsPrice(line, current.totalPrice) &&
+        isAnchoredToSource(current.name, line)
+    );
+
+    if (index === -1) return false;
+    claimed.add(index);
+    return true;
   });
 }
 ```

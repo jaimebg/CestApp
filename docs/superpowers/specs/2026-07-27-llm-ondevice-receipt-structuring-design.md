@@ -215,7 +215,16 @@ texto OCR original:
    `lines`, aceptando coma o punto decimal. La línea que lo contiene es la _línea origen_ del item.
 2. **El nombre debe anclarse a su línea origen.** Se exige que el nombre del item y su línea origen
    compartan al menos un token de 3 o más caracteres, comparando en forma normalizada (mayúsculas,
-   sin acentos, sin signos de puntuación).
+   sin acentos, sin signos de puntuación). El prefijo se comprueba **en una sola dirección**: el
+   token del nombre debe empezar por el token de la línea. Una expansión legítima siempre alarga la
+   abreviatura del ticket (`SEMI` → `SEMIDESNATADA`); permitir la dirección contraria dejaría que un
+   nombre corto inventado se anclase a una palabra larga sin relación, como `SAL` a `SALSA`.
+
+3. **Cada item se queda con una línea origen distinta.** Los tickets españoles repiten precios
+   redondos con frecuencia (1,00 €, 0,50 €), así que anclar cada item a la primera línea que lleve
+   su precio haría que dos productos distintos al mismo precio compitieran por la misma línea: el
+   segundo no compartiría token y se descartaría como si fuera inventado. Las líneas ya reclamadas
+   se excluyen de la búsqueda del siguiente item.
 
 La segunda guarda está formulada por tokens y no por subcadena a propósito. Queremos que el modelo
 expanda abreviaturas de marca blanca (`HAC LECHE SEMI 1L` → `Leche semidesnatada`), porque eso es
