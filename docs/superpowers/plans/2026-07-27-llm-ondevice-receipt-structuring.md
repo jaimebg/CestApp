@@ -1028,7 +1028,14 @@ export function mergeParsedReceipts(
   };
 
   const losesItems = items.length < deterministic.items.length;
-  const unconfirmedSingleItem = items.length === 1 && deterministic.items.length !== 1;
+
+  const singleItemConfirmed =
+    items.length === 1 &&
+    deterministic.items.length === 1 &&
+    Math.abs(items[0].totalPrice - deterministic.items[0].totalPrice) <= VOTE_EPSILON;
+
+  const unconfirmedSingleItem = items.length === 1 && !singleItemConfirmed;
+
   const outcome: MergeOutcome =
     reconciles(items, merged.discount, total) && !losesItems && !unconfirmedSingleItem
       ? 'auto'

@@ -83,9 +83,11 @@ Las dos reglas que sí lo cierran no dependen de ninguna palabra:
 
 1. **Un auto-aplicado nunca puede devolver menos items de los que encontró el parser determinista.**
    Reducirlos es pérdida de información, por bien que cuadre.
-2. **Un resultado de un solo item solo se auto-aplica si el parser también encontró exactamente uno.**
-   Con un único item la reconciliación es vacua; hace falta una segunda fuente independiente que
-   confirme que el ticket tiene de verdad un solo producto.
+2. **Un resultado de un solo item solo se auto-aplica si el parser encontró ese mismo item.** Con un
+   único item la reconciliación es vacua, así que hace falta una segunda fuente independiente que lo
+   confirme. Y la confirmación es **de identidad, no de recuento**: los precios de ambos items deben
+   coincidir dentro de 0,01 €. Comparar solo cuántos hay deja pasar el caso en que el parser leyó
+   "Leche 0,98" y el modelo devuelve "Total compra 3,38" — uno y uno, pero no el mismo.
 
 Con dos o más items la aritmética ya protege sola: para colar un item falso al precio del total, los
 demás tendrían que sumar cero. El caso que sí se conserva íntegro es el principal — el parser no
