@@ -67,8 +67,15 @@ Por tanto el desajuste **no es evidencia de nada**. El ajuste exacto sí lo es. 
 reconcilia  ⟺  |Σ items − descuento − total| ≤ max(0,02 €, 0,5%)
 ```
 
-- **Reconcilia exacto** → se aplica automáticamente.
+- **Reconcilia exacto y no pierde items** → se aplica automáticamente.
 - **Cualquier otro caso** → nunca se aplica solo; se ofrece como propuesta y decide el usuario.
+
+La segunda condición existe porque cuadrar la suma no siempre prueba nada. Un item inventado cuyo
+precio sea el total hace que "la suma de los items iguala el total" sea la misma cifra comparada
+consigo misma: reconcilia siempre, por construcción. Excluir del anclaje las líneas de resumen
+(`TOTAL`, `IMPORTE`, `ENTREGADO`…) ayuda, pero una lista de palabras clave nunca estará completa. Por
+eso la regla de respaldo no depende de vocabulario: **un auto-aplicado nunca puede devolver menos
+items de los que encontró el parser determinista.** Si los reduce, por bien que cuadre, es propuesta.
 
 Peor caso de un modelo que alucine: un ticket idéntico al que se habría guardado hoy.
 
