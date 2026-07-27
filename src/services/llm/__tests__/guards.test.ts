@@ -116,4 +116,14 @@ describe('filterHallucinatedItems', () => {
     );
     expect(kept.map((current) => current.name)).toEqual(['Salsa brava', 'Sal']);
   });
+
+  it('drops an invented item anchored only to the TOTAL summary line', () => {
+    const kept = filterHallucinatedItems([item('Total compra', 3.38)], LINES);
+    expect(kept).toHaveLength(0);
+  });
+
+  it('keeps a genuine item when the receipt also contains summary lines', () => {
+    const kept = filterHallucinatedItems([item('Pan integral', 2.4)], LINES);
+    expect(kept.map((current) => current.name)).toEqual(['Pan integral']);
+  });
 });

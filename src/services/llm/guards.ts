@@ -5,6 +5,22 @@ const PRICE_TOKEN = /\d+[.,]\d{2}/g;
 const PRICE_EPSILON = 0.005;
 const MIN_TOKEN_LENGTH = 3;
 
+const SUMMARY_TOKENS = [
+  'TOTAL',
+  'SUBTOTAL',
+  'IVA',
+  'IGIC',
+  'IPSI',
+  'CUOTA',
+  'IMPONIBLE',
+  'EFECTIVO',
+  'TARJETA',
+  'CAMBIO',
+  'DEVOLUCION',
+  'DESCUENTO',
+  'DTO',
+];
+
 const COMBINING_MARK_START = 0x0300;
 const COMBINING_MARK_END = 0x036f;
 
@@ -85,6 +101,18 @@ export function isAnchoredToSource(name: string, sourceLine: string): boolean {
 }
 
 /**
+ * A receipt's summary lines are never line items, whatever tokens they share with
+ * a product name. Without this, an invented item named "Total compra" priced at the
+ * printed total anchors to the TOTAL line and then reconciles tautologically — the
+ * item sum and the total are the same number by construction — and gets applied
+ * automatically over the real items.
+ */
+function isSummaryLine(line: string): boolean {
+  const tokens = new Set(normalizeForAnchor(line).split(' '));
+  return SUMMARY_TOKENS.some((token) => tokens.has(token));
+}
+
+/**
  * Each surviving item claims a distinct source line. Spanish receipts routinely
  * repeat round prices, so matching every item against the first line carrying its
  * price would misattribute the second product and drop it as if it were invented.
@@ -104,6 +132,7 @@ export function filterHallucinatedItems(items: ParsedItem[], lines: string[]): P
       const lineIndex = lines.findIndex(
         (line, position) =>
           !taken.has(position) &&
+          !isSummaryLine(line) &&
           lineContainsPrice(line, current.totalPrice) &&
           anchorStrength(current.name, line) === strength
       );

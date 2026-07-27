@@ -63,6 +63,18 @@ describe('voteTotal', () => {
   it('returns null when no source has a total', () => {
     expect(voteTotal(null, null, null)).toBeNull();
   });
+
+  it('fills the gap from detectedTotal when the parser and the LLM have no total', () => {
+    expect(voteTotal(null, 3.38, null)).toBe(3.38);
+  });
+
+  it('prefers detectedTotal over the LLM total when the parser has no total', () => {
+    expect(voteTotal(null, 3.38, 9.99)).toBe(3.38);
+  });
+
+  it('keeps the parser total when the LLM has no total', () => {
+    expect(voteTotal(3.38, 9.99, null)).toBe(3.38);
+  });
 });
 
 describe('mergeParsedReceipts', () => {
@@ -89,6 +101,34 @@ describe('mergeParsedReceipts', () => {
     expect(result.merged.storeName).toBe('Mercadona S.A.');
   });
 
+  it('fills both date and dateString from the LLM when the parser has neither', () => {
+    const result = mergeParsedReceipts(
+      deterministic({ date: null, dateString: null }),
+      llm({ date: '15/04/2026' }),
+      LINES,
+      null
+    );
+    expect(result.merged.date).toEqual(new Date(2026, 3, 15));
+    expect(result.merged.dateString).toBe('15/04/2026');
+  });
+
+  it('fills neither date field when the LLM date is malformed', () => {
+    const result = mergeParsedReceipts(
+      deterministic({ date: null, dateString: null }),
+      llm({ date: '2026-03-10' }),
+      LINES,
+      null
+    );
+    expect(result.merged.date).toBeNull();
+    expect(result.merged.dateString).toBeNull();
+  });
+
+  it('never overrides the parser date with the LLM date', () => {
+    const result = mergeParsedReceipts(deterministic(), llm({ date: '01/01/2020' }), LINES, null);
+    expect(result.merged.date).toEqual(deterministic().date);
+    expect(result.merged.dateString).toBe(deterministic().dateString);
+  });
+
   it('never takes rawText or paymentMethod from the LLM', () => {
     const result = mergeParsedReceipts(deterministic(), llm(), LINES, null);
     expect(result.merged.rawText).toBe(LINES.join('\n'));
@@ -113,6 +153,7 @@ describe('mergeParsedReceipts', () => {
       null
     );
     expect(result.merged.items.every((current) => current.name !== 'Caviar')).toBe(true);
+    expect(result.outcome).toBe('auto');
   });
 
   it('returns none when the LLM produced no usable items', () => {
