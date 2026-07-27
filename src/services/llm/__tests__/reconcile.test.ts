@@ -22,9 +22,25 @@ describe('reconciles', () => {
     expect(reconciles([item(1.005), item(0.99)], null, 2.0)).toBe(true);
   });
 
+  it('accepts a difference just inside the 2-cent absolute tolerance', () => {
+    expect(reconciles([item(1.9801)], null, 2.0)).toBe(true);
+  });
+
+  it('rejects a difference just outside the 2-cent absolute tolerance', () => {
+    expect(reconciles([item(1.9799)], null, 2.0)).toBe(false);
+  });
+
   it('uses the 0.5% floor on large totals', () => {
     expect(reconciles([item(1000)], null, 1004)).toBe(true);
     expect(reconciles([item(1000)], null, 1006)).toBe(false);
+  });
+
+  it('accepts a difference just inside the 0.5% relative tolerance', () => {
+    expect(reconciles([item(1000)], null, 1005.02)).toBe(true);
+  });
+
+  it('rejects a difference just outside the 0.5% relative tolerance', () => {
+    expect(reconciles([item(1000)], null, 1005.03)).toBe(false);
   });
 
   it('rejects when the total is null', () => {
