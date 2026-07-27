@@ -226,6 +226,11 @@ texto OCR original:
    segundo no compartiría token y se descartaría como si fuera inventado. Las líneas ya reclamadas
    se excluyen de la búsqueda del siguiente item.
 
+   El reparto va en dos pasadas: primero reclaman línea los items con coincidencia **exacta** de
+   token, y solo después los que dependen de un prefijo. Sin ese orden, el reparto por orden de
+   llegada puede dejar sin línea a un producto real: con `SAL` y `SALSA BRAVA` al mismo precio,
+   "Salsa brava" reclamaría la línea de `SAL` por prefijo y "Sal" se quedaría sin ancla.
+
 La segunda guarda está formulada por tokens y no por subcadena a propósito. Queremos que el modelo
 expanda abreviaturas de marca blanca (`HAC LECHE SEMI 1L` → `Leche semidesnatada`), porque eso es
 justo lo que mejora la categorización posterior. Una guarda por subcadena exacta rechazaría

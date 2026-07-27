@@ -489,41 +489,68 @@ export function findSourceLine(price: number, lines: string[]): string | null {
  * item name token must start with the line token. Allowing the reverse would let
  * an invented short name anchor to an unrelated longer word, such as SAL to SALSA.
  */
-export function isAnchoredToSource(name: string, sourceLine: string): boolean {
-  const lineTokens = new Set(normalizeForAnchor(sourceLine).split(' '));
+export type AnchorStrength = 'exact' | 'prefix' | 'none';
+
+/**
+ * Grades how firmly an item name is anchored to its source line. An exact shared
+ * token is stronger evidence than a prefix expansion, and filterHallucinatedItems
+ * uses that ranking to hand out lines in the right order.
+ */
+export function anchorStrength(name: string, sourceLine: string): AnchorStrength {
+  const lineTokens = [...new Set(normalizeForAnchor(sourceLine).split(' '))].filter(
+    (token) => token.length >= MIN_TOKEN_LENGTH
+  );
   const nameTokens = normalizeForAnchor(name)
     .split(' ')
     .filter((token) => token.length >= MIN_TOKEN_LENGTH);
 
-  return nameTokens.some((token) => {
+  let strength: AnchorStrength = 'none';
+
+  for (const token of nameTokens) {
     for (const lineToken of lineTokens) {
-      if (lineToken.length < MIN_TOKEN_LENGTH) continue;
-      if (token.startsWith(lineToken)) return true;
+      if (token === lineToken) return 'exact';
+      if (token.startsWith(lineToken)) strength = 'prefix';
     }
-    return false;
-  });
+  }
+
+  return strength;
+}
+
+export function isAnchoredToSource(name: string, sourceLine: string): boolean {
+  return anchorStrength(name, sourceLine) !== 'none';
 }
 
 /**
  * Each surviving item claims a distinct source line. Spanish receipts routinely
  * repeat round prices, so matching every item against the first line carrying its
  * price would misattribute the second product and drop it as if it were invented.
+ *
+ * Exact token matches claim their lines before prefix matches do. Greedy first-fit
+ * in item order can otherwise starve a real product: with lines SAL and SALSA BRAVA
+ * at the same price, "Salsa brava" would claim the SAL line by prefix and leave
+ * "Sal" with nowhere to anchor, dropping a genuine item.
  */
 export function filterHallucinatedItems(items: ParsedItem[], lines: string[]): ParsedItem[] {
-  const claimed = new Set<number>();
+  const claimedLine = new Map<number, number>();
 
-  return items.filter((current) => {
-    const index = lines.findIndex(
-      (line, position) =>
-        !claimed.has(position) &&
-        lineContainsPrice(line, current.totalPrice) &&
-        isAnchoredToSource(current.name, line)
-    );
+  const claimAll = (strength: AnchorStrength) => {
+    items.forEach((current, itemIndex) => {
+      if (claimedLine.has(itemIndex)) return;
+      const taken = new Set(claimedLine.values());
+      const lineIndex = lines.findIndex(
+        (line, position) =>
+          !taken.has(position) &&
+          lineContainsPrice(line, current.totalPrice) &&
+          anchorStrength(current.name, line) === strength
+      );
+      if (lineIndex !== -1) claimedLine.set(itemIndex, lineIndex);
+    });
+  };
 
-    if (index === -1) return false;
-    claimed.add(index);
-    return true;
-  });
+  claimAll('exact');
+  claimAll('prefix');
+
+  return items.filter((_, itemIndex) => claimedLine.has(itemIndex));
 }
 ```
 
