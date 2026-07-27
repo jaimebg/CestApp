@@ -171,4 +171,45 @@ describe('mergeParsedReceipts', () => {
     );
     expect(result.outcome).not.toBe('auto');
   });
+
+  it('fills neither date field when the LLM date rolls over to a calendar-invalid date', () => {
+    const result = mergeParsedReceipts(
+      deterministic({ date: null, dateString: null }),
+      llm({ date: '31/02/2026' }),
+      LINES,
+      null
+    );
+    expect(result.merged.date).toBeNull();
+    expect(result.merged.dateString).toBeNull();
+  });
+
+  it('downgrades to a proposal when a reconciling LLM result has fewer items than the deterministic parse', () => {
+    const result = mergeParsedReceipts(
+      deterministic({ items: [item('A', 1), item('B', 1), item('C', 1.38)] }),
+      llm(),
+      LINES,
+      null
+    );
+    expect(result.outcome).toBe('proposal');
+  });
+
+  it('stays auto when a reconciling LLM result has the same number of items as the deterministic parse', () => {
+    const result = mergeParsedReceipts(
+      deterministic({ items: [item('X', 1), item('Y', 1)] }),
+      llm(),
+      LINES,
+      null
+    );
+    expect(result.outcome).toBe('auto');
+  });
+
+  it('stays auto when a reconciling LLM result has more items than the deterministic parse', () => {
+    const result = mergeParsedReceipts(
+      deterministic({ items: [item('X', 1)] }),
+      llm(),
+      LINES,
+      null
+    );
+    expect(result.outcome).toBe('auto');
+  });
 });

@@ -8,18 +8,31 @@ const MIN_TOKEN_LENGTH = 3;
 const SUMMARY_TOKENS = [
   'TOTAL',
   'SUBTOTAL',
+  'IMPORTE',
+  'PAGAR',
+  'PAGADO',
+  'PAGO',
+  'CONTADO',
+  'ENTREGA',
+  'ENTREGADO',
   'IVA',
   'IGIC',
   'IPSI',
   'CUOTA',
   'IMPONIBLE',
+  'BASE',
+  'RECARGO',
   'EFECTIVO',
   'TARJETA',
+  'VISA',
   'CAMBIO',
   'DEVOLUCION',
+  'ABONO',
   'DESCUENTO',
   'DTO',
 ];
+
+const SUMMARY_LEAD_TOKENS = 2;
 
 const COMBINING_MARK_START = 0x0300;
 const COMBINING_MARK_END = 0x036f;
@@ -104,12 +117,15 @@ export function isAnchoredToSource(name: string, sourceLine: string): boolean {
  * A receipt's summary lines are never line items, whatever tokens they share with
  * a product name. Without this, an invented item named "Total compra" priced at the
  * printed total anchors to the TOTAL line and then reconciles tautologically — the
- * item sum and the total are the same number by construction — and gets applied
- * automatically over the real items.
+ * item sum and the total are the same number by construction.
+ *
+ * Only the opening tokens are inspected. Summary lines lead with their keyword
+ * ("IMPORTE 3,38", "SU CAMBIO 0,00") while product lines lead with a quantity or a
+ * brand, so "2 FAGE TOTAL 2% 2,15" — a real yogurt sold in Spain — stays a product.
  */
 function isSummaryLine(line: string): boolean {
-  const tokens = new Set(normalizeForAnchor(line).split(' '));
-  return SUMMARY_TOKENS.some((token) => tokens.has(token));
+  const lead = normalizeForAnchor(line).split(' ').slice(0, SUMMARY_LEAD_TOKENS);
+  return lead.some((token) => SUMMARY_TOKENS.includes(token));
 }
 
 /**
