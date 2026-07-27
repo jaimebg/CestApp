@@ -69,7 +69,11 @@ export function voteTotal(
  * strong signal. With exactly one item, "the items sum to the total" collapses to
  * one number compared against itself and reconciles by construction, so a
  * single-item LLM result only auto-applies when the deterministic parser
- * independently agrees the receipt has exactly one product.
+ * independently found exactly one item priced the same — agreement on identity,
+ * not merely on count. Matching counts alone would let a fabricated single item
+ * (e.g. a summary line misread as a product, priced at the total) silently
+ * replace the real single item the deterministic parser found, since both sides
+ * would report "exactly one item" without describing the same item.
  */
 export function mergeParsedReceipts(
   deterministic: ParsedReceipt,
@@ -98,7 +102,14 @@ export function mergeParsedReceipts(
   };
 
   const losesItems = items.length < deterministic.items.length;
-  const unconfirmedSingleItem = items.length === 1 && deterministic.items.length !== 1;
+
+  const singleItemConfirmed =
+    items.length === 1 &&
+    deterministic.items.length === 1 &&
+    Math.abs(items[0].totalPrice - deterministic.items[0].totalPrice) <= VOTE_EPSILON;
+
+  const unconfirmedSingleItem = items.length === 1 && !singleItemConfirmed;
+
   const outcome: MergeOutcome =
     reconciles(items, merged.discount, total) && !losesItems && !unconfirmedSingleItem
       ? 'auto'

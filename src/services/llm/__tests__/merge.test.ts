@@ -239,4 +239,37 @@ describe('mergeParsedReceipts', () => {
     const result = mergeParsedReceipts(deterministic({ items: [] }), llm(), LINES, null);
     expect(result.outcome).toBe('auto');
   });
+
+  it('downgrades to a proposal when a single-item LLM result replaces the deterministic single item with a different, fabricated one', () => {
+    const result = mergeParsedReceipts(
+      deterministic({ items: [item('Leche semidesnatada', 0.98)], total: 3.38 }),
+      llm({ items: [item('Total compra', 3.38)] }),
+      LINES,
+      null
+    );
+    expect(result.outcome).not.toBe('auto');
+    expect(result.outcome).toBe('proposal');
+  });
+
+  it('stays auto for a genuine single-item receipt even when the LLM gives it a cleaner name', () => {
+    const singleItemLines = ['1 LECHE SEMIDESNATADA 1L 3,38'];
+    const result = mergeParsedReceipts(
+      deterministic({ items: [item('HAC LECHE SEMI 1L', 3.38)], total: 3.38 }),
+      llm({ items: [item('Leche semidesnatada', 3.38)], total: 3.38 }),
+      singleItemLines,
+      null
+    );
+    expect(result.outcome).toBe('auto');
+  });
+
+  it('downgrades to a proposal when the single-item prices differ by more than the vote epsilon', () => {
+    const singleItemLines = ['1 LECHE SEMIDESNATADA 1L 3,39'];
+    const result = mergeParsedReceipts(
+      deterministic({ items: [item('Leche semidesnatada', 3.38)] }),
+      llm({ items: [item('Leche semidesnatada', 3.393)] }),
+      singleItemLines,
+      null
+    );
+    expect(result.outcome).toBe('proposal');
+  });
 });
