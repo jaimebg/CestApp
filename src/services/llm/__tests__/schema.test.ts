@@ -7,7 +7,7 @@ describe('RECEIPT_SCHEMA', () => {
     expect(items.items.type).toBe('object');
   });
 
-  it('constrains unit to the ParsedItem union', () => {
+  it('restricts unit to the metric units the app supports', () => {
     const unit = (RECEIPT_SCHEMA as any).properties.items.items.properties.unit;
     expect(unit.enum).toEqual(['each', 'kg', 'g', 'l', 'ml']);
   });
@@ -88,5 +88,43 @@ describe('sanitizeLlmReceipt', () => {
     expect(result?.date).toBeNull();
     expect(result?.time).toBeNull();
     expect(result?.total).toBeNull();
+  });
+
+  it('derives a missing unitPrice from totalPrice divided by quantity', () => {
+    const result = sanitizeLlmReceipt({
+      items: [{ name: 'Tomates', quantity: 3, totalPrice: 9 }],
+    });
+    expect(result?.items[0].unitPrice).toBe(3);
+  });
+
+  it('falls back quantity to 1 when it is zero', () => {
+    const result = sanitizeLlmReceipt({
+      items: [{ name: 'Leche', quantity: 0, totalPrice: 0.98 }],
+    });
+    expect(result?.items).toHaveLength(1);
+    expect(result?.items[0].quantity).toBe(1);
+  });
+
+  it('falls back quantity to 1 when it is negative', () => {
+    const result = sanitizeLlmReceipt({
+      items: [{ name: 'Leche', quantity: -2, totalPrice: 0.98 }],
+    });
+    expect(result?.items).toHaveLength(1);
+    expect(result?.items[0].quantity).toBe(1);
+  });
+
+  it('drops an item with a negative totalPrice', () => {
+    const result = sanitizeLlmReceipt({
+      items: [{ name: 'Leche', totalPrice: -0.98 }],
+    });
+    expect(result?.items).toHaveLength(0);
+  });
+
+  it('keeps an item with a totalPrice of exactly 0', () => {
+    const result = sanitizeLlmReceipt({
+      items: [{ name: 'Muestra gratis', totalPrice: 0 }],
+    });
+    expect(result?.items).toHaveLength(1);
+    expect(result?.items[0].totalPrice).toBe(0);
   });
 });
