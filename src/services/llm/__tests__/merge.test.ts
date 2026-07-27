@@ -212,4 +212,31 @@ describe('mergeParsedReceipts', () => {
     );
     expect(result.outcome).toBe('auto');
   });
+
+  it('downgrades a fabricated single item priced at the total to a proposal, never auto', () => {
+    const totalLines = ['1 HAC LECHE SEMI 1L 0,98', '2 PAN INTEGRAL 1,20 2,40', 'TOTAL (€) 3,38'];
+    const result = mergeParsedReceipts(
+      deterministic({ items: [] }),
+      llm({ items: [item('Total compra', 3.38)] }),
+      totalLines,
+      null
+    );
+    expect(result.outcome).not.toBe('auto');
+    expect(result.outcome).toBe('proposal');
+  });
+
+  it('stays auto for a single-item LLM result when the deterministic parse also finds exactly one item', () => {
+    const result = mergeParsedReceipts(
+      deterministic({ items: [item('Leche semidesnatada', 0.98)], total: 0.98 }),
+      llm({ items: [item('Leche semidesnatada', 0.98)], total: 0.98 }),
+      LINES,
+      null
+    );
+    expect(result.outcome).toBe('auto');
+  });
+
+  it('stays auto for a reconciling multi-item LLM result against a zero-item deterministic parse', () => {
+    const result = mergeParsedReceipts(deterministic({ items: [] }), llm(), LINES, null);
+    expect(result.outcome).toBe('auto');
+  });
 });

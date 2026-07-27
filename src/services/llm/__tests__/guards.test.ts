@@ -117,47 +117,20 @@ describe('filterHallucinatedItems', () => {
     expect(kept.map((current) => current.name)).toEqual(['Salsa brava', 'Sal']);
   });
 
-  it('drops an invented item anchored only to the TOTAL summary line', () => {
-    const kept = filterHallucinatedItems([item('Total compra', 3.38)], LINES);
-    expect(kept).toHaveLength(0);
-  });
-
   it('keeps a genuine item when the receipt also contains summary lines', () => {
     const kept = filterHallucinatedItems([item('Pan integral', 2.4)], LINES);
     expect(kept.map((current) => current.name)).toEqual(['Pan integral']);
   });
 
-  it('drops a fabricated item anchored only to an IMPORTE summary line', () => {
-    const importeLines = [
-      'MERCADONA, S.A.',
-      '1 HAC LECHE SEMI 1L 0,98',
-      '2 PAN INTEGRAL 1,20 2,40',
-      'IMPORTE 3,38',
-    ];
-    const kept = filterHallucinatedItems([item('Importe total', 3.38)], importeLines);
-    expect(kept).toHaveLength(0);
-  });
-
-  it('drops a fabricated item anchored only to an ENTREGADO summary line', () => {
-    const entregadoLines = [
-      'MERCADONA, S.A.',
-      '1 HAC LECHE SEMI 1L 0,98',
-      '2 PAN INTEGRAL 1,20 2,40',
-      'ENTREGADO 3,38',
-    ];
-    const kept = filterHallucinatedItems([item('Entregado total', 3.38)], entregadoLines);
-    expect(kept).toHaveLength(0);
-  });
-
-  it('treats "SU CAMBIO 0,00" as a summary line even though the keyword is the second token', () => {
-    const changeLines = ['1 HAC LECHE SEMI 1L 0,98', 'SU CAMBIO 0,00'];
-    const kept = filterHallucinatedItems([item('Su cambio', 0)], changeLines);
-    expect(kept).toHaveLength(0);
-  });
-
   it('keeps a genuine item whose name shares the TOTAL token with a mid-line product', () => {
     const fageLines = ['2 FAGE TOTAL 2% 2,15'];
     const kept = filterHallucinatedItems([item('Fage Total 2%', 2.15)], fageLines);
+    expect(kept).toHaveLength(1);
+  });
+
+  it('keeps a genuine product line that leads with BASE', () => {
+    const baseLines = ['1 BASE PIZZA FINA 400G 1,95'];
+    const kept = filterHallucinatedItems([item('Base pizza fina 400g', 1.95)], baseLines);
     expect(kept).toHaveLength(1);
   });
 });

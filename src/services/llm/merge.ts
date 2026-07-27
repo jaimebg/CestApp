@@ -59,6 +59,18 @@ export function voteTotal(
   return parserTotal;
 }
 
+/**
+ * Merges the LLM reading with the deterministic parse and decides whether the
+ * result is trustworthy enough to auto-apply.
+ *
+ * `reconciles` is only meaningful evidence when it is a real constraint. With two
+ * or more items anchored to distinct lines, summing exactly to the total means
+ * every other item would have to net to zero to smuggle in a fabricated one — a
+ * strong signal. With exactly one item, "the items sum to the total" collapses to
+ * one number compared against itself and reconciles by construction, so a
+ * single-item LLM result only auto-applies when the deterministic parser
+ * independently agrees the receipt has exactly one product.
+ */
 export function mergeParsedReceipts(
   deterministic: ParsedReceipt,
   llm: LlmReceipt,
@@ -86,8 +98,11 @@ export function mergeParsedReceipts(
   };
 
   const losesItems = items.length < deterministic.items.length;
+  const unconfirmedSingleItem = items.length === 1 && deterministic.items.length !== 1;
   const outcome: MergeOutcome =
-    reconciles(items, merged.discount, total) && !losesItems ? 'auto' : 'proposal';
+    reconciles(items, merged.discount, total) && !losesItems && !unconfirmedSingleItem
+      ? 'auto'
+      : 'proposal';
 
   return { merged, outcome };
 }
