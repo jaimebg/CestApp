@@ -110,6 +110,13 @@ src/services/llm/
 `appleBackend.ts` cumple el mismo papel que `src/services/ocr/index.ts`: aísla el motor para que
 cambiarlo no toque el resto de la app.
 
+**El módulo nativo se resuelve de forma perezosa y protegida.** `@react-native-ai/apple` hace
+`TurboModuleRegistry.getEnforcing('NativeAppleLLM')` en el nivel superior del módulo, y `getEnforcing`
+lanza allí donde el módulo nativo no existe: en todo Android, y en cualquier build de iOS sin el pod.
+Un `import` estático haría que la pantalla de revisión crashease en Android en lugar de degradar al
+parser determinista, así que la resolución va dentro de una función con `try/catch` y un corte previo
+por `Platform.OS`.
+
 ### API pública
 
 ```ts
