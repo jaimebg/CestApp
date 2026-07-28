@@ -127,7 +127,14 @@
     "zonesTitleDefine": "Definir Zonas",
     "zonesInstructionsPreview": "Marca las zonas del recibo para mejorar la detección de productos y precios",
     "zonesInstructionsEdit": "Selecciona zonas para mover o eliminar, o dibuja nuevas zonas",
-    "zonesInstructionsDefine": "Dibuja rectángulos sobre las áreas del recibo para identificar cada tipo de información"
+    "zonesInstructionsDefine": "Dibuja rectángulos sobre las áreas del recibo para identificar cada tipo de información",
+    "refinementRunning": "Mejorando la lectura…",
+    "refinementApplied": "Lectura mejorada",
+    "refinementUndo": "Deshacer",
+    "refinementProposed": "Hay otra lectura posible",
+    "refinementCompare": "Comparar",
+    "refinementAccept": "Usarla",
+    "refinementDismiss": "Descartar"
   },
   "history": {
     "title": "Historial",

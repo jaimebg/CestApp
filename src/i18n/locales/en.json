@@ -127,7 +127,14 @@
     "zonesTitleDefine": "Define Zones",
     "zonesInstructionsPreview": "Mark receipt zones to improve product and price detection",
     "zonesInstructionsEdit": "Select zones to move or delete, or draw new zones",
-    "zonesInstructionsDefine": "Draw rectangles over receipt areas to identify each type of information"
+    "zonesInstructionsDefine": "Draw rectangles over receipt areas to identify each type of information",
+    "refinementRunning": "Improving reading…",
+    "refinementApplied": "Reading improved",
+    "refinementUndo": "Undo",
+    "refinementProposed": "Another reading is possible",
+    "refinementCompare": "Compare",
+    "refinementAccept": "Use it",
+    "refinementDismiss": "Dismiss"
   },
   "history": {
     "title": "History",

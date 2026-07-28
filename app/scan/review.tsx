@@ -26,6 +26,8 @@ import {
 import type { OcrBlock } from '@/src/services/ocr';
 import { useFormatPrice, usePreferencesStore } from '@/src/store/preferences';
 import { useAppColors } from '@/src/hooks/useAppColors';
+import { useLlmRefinement } from '@/src/hooks/useLlmRefinement';
+import { RefinementBanner } from '@/src/components/scan/RefinementBanner';
 import { findOrCreateStore, getStoreByNormalizedName } from '@/src/db/queries/stores';
 import { createReceipt } from '@/src/db/queries/receipts';
 import { createItems } from '@/src/db/queries/items';
@@ -273,8 +275,21 @@ export default function ScanReviewScreen() {
   }, []);
 
   const [parsedData, setParsedData] = useState<ParsedReceipt | null>(initialParsedData);
+  const [hasUserEdited, setHasUserEdited] = useState(false);
   const [showRawText, setShowRawText] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  const applyRefinement = useCallback((receipt: ParsedReceipt) => {
+    setParsedData(receipt);
+  }, []);
+
+  const refinement = useLlmRefinement({
+    initial: initialParsedData,
+    lines,
+    detectedTotal,
+    hasUserEdited,
+    onApply: applyRefinement,
+  });
 
   const [showStoreModal, setShowStoreModal] = useState(false);
   const [showDateModal, setShowDateModal] = useState(false);
@@ -523,6 +538,7 @@ export default function ScanReviewScreen() {
       ...parsedData,
       items: parsedData.items.filter((_, i) => i !== index),
     });
+    setHasUserEdited(true);
   };
 
   const openStoreEdit = () => {
@@ -533,6 +549,7 @@ export default function ScanReviewScreen() {
   const saveStoreEdit = () => {
     if (!parsedData) return;
     setParsedData({ ...parsedData, storeName: editStoreName.trim() || null });
+    setHasUserEdited(true);
     setShowStoreModal(false);
   };
 
@@ -557,6 +574,7 @@ export default function ScanReviewScreen() {
       date: newDate,
       time: editTime || null,
     });
+    setHasUserEdited(true);
     setShowDateModal(false);
   };
 
@@ -572,6 +590,7 @@ export default function ScanReviewScreen() {
       ...parsedData,
       total: newTotal,
     });
+    setHasUserEdited(true);
     setShowTotalModal(false);
   };
 
@@ -581,6 +600,7 @@ export default function ScanReviewScreen() {
       ...parsedData,
       total: itemsSum,
     });
+    setHasUserEdited(true);
   };
 
   const openItemEdit = (index: number | null) => {
@@ -623,11 +643,13 @@ export default function ScanReviewScreen() {
         ...parsedData,
         items: parsedData.items.map((item, i) => (i === editingItemIndex ? newItem : item)),
       });
+      setHasUserEdited(true);
     } else {
       setParsedData({
         ...parsedData,
         items: [...parsedData.items, newItem],
       });
+      setHasUserEdited(true);
     }
 
     setShowItemModal(false);
@@ -669,6 +691,7 @@ export default function ScanReviewScreen() {
       if (lines.length > 0) {
         const genericParsed = parseReceipt(lines, parserOptions);
         setParsedData(genericParsed);
+        setHasUserEdited(true);
       }
 
       showSuccessToast(t('common.success'), t('scan.templateDeleted'));
@@ -1080,6 +1103,13 @@ export default function ScanReviewScreen() {
                 </View>
               )}
             </Card>
+
+            <RefinementBanner
+              status={refinement.status}
+              onUndo={refinement.undoApplied}
+              onAccept={refinement.acceptProposal}
+              onDismiss={refinement.dismissProposal}
+            />
 
             {/* Items */}
             <Card variant="outlined" padding="md" className="mb-4">
