@@ -72,3 +72,61 @@ describe('generateStructured', () => {
     warnSpy.mockRestore();
   });
 });
+
+describe('on a non-iOS platform', () => {
+  it('reports the backend unavailable without requiring the native library', () => {
+    jest.resetModules();
+    const appleFactory = jest.fn(() => ({
+      AppleFoundationModels: { isAvailable: jest.fn(), generateText: jest.fn() },
+    }));
+    jest.doMock('react-native', () => ({ Platform: { OS: 'android' } }));
+    jest.doMock('@react-native-ai/apple', appleFactory);
+
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- fresh module instance needed after jest.resetModules().
+    const backend = require('../appleBackend') as typeof import('../appleBackend');
+
+    expect(backend.isBackendAvailable()).toBe(false);
+    expect(appleFactory).not.toHaveBeenCalled();
+
+    jest.resetModules();
+  });
+
+  it('resolves generateStructured to null without requiring the native library', async () => {
+    jest.resetModules();
+    const appleFactory = jest.fn(() => ({
+      AppleFoundationModels: { isAvailable: jest.fn(), generateText: jest.fn() },
+    }));
+    jest.doMock('react-native', () => ({ Platform: { OS: 'android' } }));
+    jest.doMock('@react-native-ai/apple', appleFactory);
+
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- fresh module instance needed after jest.resetModules().
+    const backend = require('../appleBackend') as typeof import('../appleBackend');
+
+    await expect(
+      backend.generateStructured([{ role: 'user', content: 'hi' }], { type: 'object' })
+    ).resolves.toBeNull();
+    expect(appleFactory).not.toHaveBeenCalled();
+
+    jest.resetModules();
+  });
+});
+
+describe('when requiring the native library throws', () => {
+  it('returns false from isBackendAvailable instead of propagating', () => {
+    jest.resetModules();
+    jest.doMock('react-native', () => ({ Platform: { OS: 'ios' } }));
+    jest.doMock('@react-native-ai/apple', () => {
+      throw new Error('native module missing');
+    });
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- fresh module instance needed after jest.resetModules().
+    const backend = require('../appleBackend') as typeof import('../appleBackend');
+
+    expect(backend.isBackendAvailable()).toBe(false);
+    expect(warnSpy).toHaveBeenCalled();
+
+    warnSpy.mockRestore();
+    jest.resetModules();
+  });
+});
