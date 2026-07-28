@@ -64,7 +64,7 @@ Por tanto el desajuste **no es evidencia de nada**. El ajuste exacto sí lo es. 
 `merge.ts` una ecuación propia, independiente de `validateReceipt`, que no se modifica:
 
 ```
-reconcilia  ⟺  |Σ items − descuento − total| ≤ max(0,02 €, 0,5%)
+reconcilia  ⟺  |Σ items − descuento − total| ≤ 0,02 €   y   el total aparece en el ticket
 ```
 
 - **Reconcilia exacto y no pierde items** → se aplica automáticamente.
@@ -92,6 +92,20 @@ Las dos reglas que sí lo cierran no dependen de ninguna palabra:
 Con dos o más items la aritmética ya protege sola: para colar un item falso al precio del total, los
 demás tendrían que sumar cero. El caso que sí se conserva íntegro es el principal — el parser no
 encuentra nada y el LLM devuelve varios productos que cuadran.
+
+3. **El total tiene que estar anclado al texto OCR.** Ese argumento anterior solo vale mientras el
+   total lo fije alguien que no sea el modelo. Si el parser no encontró total y `detectedTotal` es
+   nulo, `voteTotal` devuelve el del LLM, y entonces la ecuación tiene al modelo en los dos lados:
+   le basta con ser internamente coherente. Un ticket columnar donde confunda la columna de precio
+   unitario con la de total da items [1,20 · 0,55 · 6,95] y total 8,70 — cuadra perfecto, y 8,70 no
+   aparece en el ticket, que cobró 11,00. Así que el total fusionado debe aparecer en alguna línea,
+   con el mismo `findSourceLine` que ya valida los precios de los items.
+
+Y la tolerancia de reconciliación es **plana, 0,02 €, sin término relativo**. El 0,5% reproducía en
+pequeño el defecto que este diseño le reprocha a `validateReceipt`: en un ticket de 81,05 € daba
+41 céntimos de holgura, suficiente para perder la bolsa de plástico de 0,15 € y seguir "cuadrando".
+No hace falta: los totales de línea vienen impresos exactos al céntimo, incluso en los productos
+por peso, así que su suma también lo es.
 
 Peor caso de un modelo que alucine: un ticket idéntico al que se habría guardado hoy.
 
