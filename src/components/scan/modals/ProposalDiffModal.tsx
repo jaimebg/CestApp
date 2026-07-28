@@ -6,7 +6,7 @@
  */
 
 import { useMemo } from 'react';
-import { Modal, View, Text, ScrollView } from 'react-native';
+import { Modal, View, Text, ScrollView, Pressable, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppColors } from '@/src/hooks/useAppColors';
@@ -151,47 +151,62 @@ export function ProposalDiffModal({ visible, current, proposed, onAccept, onDism
   const totalDiffers = totalsDiffer(current.total, proposed.total);
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onDismiss}>
-      <View className="flex-1 justify-end" style={{ backgroundColor: '#00000080' }}>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onDismiss}
+    >
+      <View
+        className="flex-1"
+        style={{
+          backgroundColor: colors.background,
+          paddingTop: Platform.OS === 'ios' ? 0 : insets.top,
+          paddingBottom: insets.bottom,
+        }}
+      >
         <View
-          className="rounded-t-3xl px-4 pt-4"
-          style={{ backgroundColor: colors.background, paddingBottom: insets.bottom + 16 }}
+          className="flex-row items-center justify-between px-4 py-4 border-b"
+          style={{ borderColor: colors.border }}
         >
-          <Text
-            className="mb-4"
-            style={{ color: colors.text, fontFamily: 'Inter_600SemiBold', fontSize: 17 }}
-          >
+          <Pressable onPress={onDismiss} hitSlop={8} accessibilityRole="button">
+            <Text style={{ color: colors.textSecondary, fontFamily: 'Inter_500Medium' }}>
+              {t('common.cancel')}
+            </Text>
+          </Pressable>
+          <Text className="text-lg" style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}>
             {t('scan.refinementCompareTitle')}
           </Text>
+          <View style={{ width: 40 }} />
+        </View>
 
-          <ScrollView className="max-h-96">
-            <View className="flex-row gap-4">
-              <Column
-                receipt={current}
-                title={t('scan.refinementCurrent')}
-                differingIndices={currentDiffIndices}
-                totalDiffers={totalDiffers}
-              />
-              <Column
-                receipt={proposed}
-                title={t('scan.refinementProposedReading')}
-                differingIndices={proposedDiffIndices}
-                totalDiffers={totalDiffers}
-              />
-            </View>
-          </ScrollView>
+        <ScrollView className="flex-1">
+          <View className="flex-row gap-4 px-4 py-4">
+            <Column
+              receipt={current}
+              title={t('scan.refinementCurrent')}
+              differingIndices={currentDiffIndices}
+              totalDiffers={totalDiffers}
+            />
+            <Column
+              receipt={proposed}
+              title={t('scan.refinementProposedReading')}
+              differingIndices={proposedDiffIndices}
+              totalDiffers={totalDiffers}
+            />
+          </View>
+        </ScrollView>
 
-          <View className="mt-4 flex-row gap-3">
-            <View className="flex-1">
-              <Button variant="ghost" onPress={onDismiss}>
-                {t('scan.refinementDismiss')}
-              </Button>
-            </View>
-            <View className="flex-1">
-              <Button variant="primary" onPress={onAccept}>
-                {t('scan.refinementAccept')}
-              </Button>
-            </View>
+        <View className="flex-row gap-3 px-4 py-4 border-t" style={{ borderColor: colors.border }}>
+          <View className="flex-1">
+            <Button variant="ghost" onPress={onDismiss}>
+              {t('scan.refinementDismiss')}
+            </Button>
+          </View>
+          <View className="flex-1">
+            <Button variant="primary" onPress={onAccept}>
+              {t('scan.refinementAccept')}
+            </Button>
           </View>
         </View>
       </View>
