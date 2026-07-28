@@ -4,7 +4,7 @@
  * Spanish defaults for currency, date format, and number format
  */
 
-import { View, Text, Pressable, ScrollView, Modal, Alert, Platform } from 'react-native';
+import { View, Text, Pressable, ScrollView, Modal, Alert, Platform, Switch } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +17,7 @@ import { seedDemoData, clearAllData } from '@/src/db/demoData';
 import { useReceiptsStore } from '@/src/store/receipts';
 import { showSuccessToast, showErrorToast } from '@/src/utils/toast';
 import { useAppColors } from '@/src/hooks/useAppColors';
+import { isLlmAvailable } from '@/src/services/llm';
 
 export default function SettingsScreen() {
   const { t } = useTranslation();
@@ -25,6 +26,9 @@ export default function SettingsScreen() {
   const colors = useAppColors();
 
   const { language, setLanguage, colorScheme, setColorScheme } = usePreferencesStore();
+  const llmRefinementEnabled = usePreferencesStore((state) => state.llmRefinementEnabled);
+  const setLlmRefinementEnabled = usePreferencesStore((state) => state.setLlmRefinementEnabled);
+  const llmSupported = isLlmAvailable();
   const invalidateCache = useReceiptsStore((s) => s.invalidateCache);
 
   const [showDevMenu, setShowDevMenu] = useState(false);
@@ -219,6 +223,39 @@ export default function SettingsScreen() {
             })}
           </View>
         </View>
+
+        {llmSupported && (
+          <View
+            className="p-4 rounded-xl mb-3 flex-row items-center justify-between"
+            style={{
+              backgroundColor: colors.surface,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+          >
+            <View className="flex-1 pr-3">
+              <Text style={{ color: colors.text, fontFamily: 'Inter_500Medium', fontSize: 15 }}>
+                {t('settings.llmRefinement')}
+              </Text>
+              <Text
+                className="mt-1"
+                style={{
+                  color: colors.textSecondary,
+                  fontFamily: 'Inter_400Regular',
+                  fontSize: 13,
+                }}
+              >
+                {t('settings.llmRefinementDescription')}
+              </Text>
+            </View>
+            <Switch
+              value={llmRefinementEnabled}
+              onValueChange={setLlmRefinementEnabled}
+              trackColor={{ true: colors.primary, false: colors.border }}
+              accessibilityLabel={t('settings.llmRefinement')}
+            />
+          </View>
+        )}
 
         {/* Spanish Defaults Info */}
         <View

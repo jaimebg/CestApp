@@ -229,6 +229,8 @@
     "language": "Idioma",
     "dateFormat": "Formato de Fecha",
     "numberFormat": "Formato de Números",
+    "llmRefinement": "Lectura inteligente",
+    "llmRefinementDescription": "Usa IA en el dispositivo para mejorar los tickets que el escáner lee mal. Nada sale de tu móvil.",
     "categories": "Administrar Categorías",
     "stores": "Administrar Tiendas",
     "exportData": "Exportar Datos",

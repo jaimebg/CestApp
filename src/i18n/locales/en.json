@@ -229,6 +229,8 @@
     "language": "Language",
     "dateFormat": "Date Format",
     "numberFormat": "Number Format",
+    "llmRefinement": "Smart reading",
+    "llmRefinementDescription": "Use on-device AI to improve receipts the scanner reads poorly. Nothing leaves your phone.",
     "categories": "Manage Categories",
     "stores": "Manage Stores",
     "exportData": "Export Data",

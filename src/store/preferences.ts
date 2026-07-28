@@ -34,9 +34,11 @@ interface PreferencesState {
   decimalSeparator: DecimalSeparator;
 
   hasCompletedOnboarding: boolean;
+  llmRefinementEnabled: boolean;
 
   setLanguage: (lang: SupportedLanguage) => void;
   setColorScheme: (scheme: ColorScheme) => void;
+  setLlmRefinementEnabled: (enabled: boolean) => void;
   completeOnboarding: () => void;
   resetOnboarding: () => void;
 
@@ -95,6 +97,7 @@ export const usePreferencesStore = create<PreferencesState>()(
       dateFormat: initialPrefs.dateFormat,
       decimalSeparator: initialPrefs.decimalSeparator,
       hasCompletedOnboarding: false,
+      llmRefinementEnabled: true,
 
       setLanguage: (lang: SupportedLanguage) => {
         i18nChangeLanguage(lang);
@@ -104,6 +107,8 @@ export const usePreferencesStore = create<PreferencesState>()(
       setColorScheme: (scheme: ColorScheme) => {
         set({ colorScheme: scheme });
       },
+
+      setLlmRefinementEnabled: (enabled: boolean) => set({ llmRefinementEnabled: enabled }),
 
       completeOnboarding: () => {
         set({ hasCompletedOnboarding: true });
@@ -128,6 +133,7 @@ export const usePreferencesStore = create<PreferencesState>()(
         dateFormat: state.dateFormat,
         decimalSeparator: state.decimalSeparator,
         hasCompletedOnboarding: state.hasCompletedOnboarding,
+        llmRefinementEnabled: state.llmRefinementEnabled,
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {
