@@ -127,4 +127,49 @@ describe('sanitizeLlmReceipt', () => {
     expect(result?.items).toHaveLength(1);
     expect(result?.items[0].totalPrice).toBe(0);
   });
+
+  it('drops an item with a totalPrice past the sane-range ceiling', () => {
+    const result = sanitizeLlmReceipt({
+      items: [{ name: 'Leche', totalPrice: 1e12 }],
+    });
+    expect(result?.items).toHaveLength(0);
+  });
+
+  it('drops an item with a negative unitPrice', () => {
+    const result = sanitizeLlmReceipt({
+      items: [{ name: 'Leche', totalPrice: 0.98, unitPrice: -500 }],
+    });
+    expect(result?.items).toHaveLength(0);
+  });
+
+  it('drops an item with a unitPrice past the sane-range ceiling', () => {
+    const result = sanitizeLlmReceipt({
+      items: [{ name: 'Leche', totalPrice: 0.98, unitPrice: 1e12 }],
+    });
+    expect(result?.items).toHaveLength(0);
+  });
+
+  it('falls back quantity to 1 when it is past the sane-range ceiling', () => {
+    const result = sanitizeLlmReceipt({
+      items: [{ name: 'Leche', quantity: 1e12, totalPrice: 0.98 }],
+    });
+    expect(result?.items).toHaveLength(1);
+    expect(result?.items[0].quantity).toBe(1);
+  });
+
+  it('nulls a negative receipt-level total', () => {
+    const result = sanitizeLlmReceipt({
+      total: -50,
+      items: [{ name: 'Leche', totalPrice: 0.98 }],
+    });
+    expect(result?.total).toBeNull();
+  });
+
+  it('nulls a receipt-level total past the sane-range ceiling', () => {
+    const result = sanitizeLlmReceipt({
+      total: 1e12,
+      items: [{ name: 'Leche', totalPrice: 0.98 }],
+    });
+    expect(result?.total).toBeNull();
+  });
 });

@@ -1,5 +1,5 @@
 import { voteTotal, mergeParsedReceipts } from '../merge';
-import type { ParsedReceipt, ParsedItem } from '../../ocr/parser';
+import { validateReceipt, type ParsedReceipt, type ParsedItem } from '../../ocr/parser';
 import type { LlmReceipt } from '../types';
 
 const LINES = ['1 HAC LECHE SEMI 1L 0,98', '2 PAN INTEGRAL 1,20 2,40', 'TOTAL (€) 3,38'];
@@ -271,5 +271,41 @@ describe('mergeParsedReceipts', () => {
       null
     );
     expect(result.outcome).toBe('proposal');
+  });
+
+  it('does not auto-apply when the LLM total is anchored only by its own fabricated arithmetic (columnar unit-price misread)', () => {
+    const columnarLines = [
+      '2 PAN INTEGRAL 1,20 2,40',
+      '3 YOGUR NATURAL 0,55 1,65',
+      '1 ACEITE OLIVA 6,95 6,95',
+      'ENTREGADO 11,00',
+    ];
+    const result = mergeParsedReceipts(
+      deterministic({ items: [], total: null }),
+      llm({
+        items: [item('Pan integral', 1.2), item('Yogur natural', 0.55), item('Aceite oliva', 6.95)],
+        total: 8.7,
+      }),
+      columnarLines,
+      null
+    );
+    expect(result.outcome).toBe('proposal');
+  });
+
+  it('auto-applies when the parser found nothing but the LLM total is anchored to the receipt text', () => {
+    const result = mergeParsedReceipts(
+      deterministic({ items: [], total: null }),
+      llm(),
+      LINES,
+      null
+    );
+    expect(result.outcome).toBe('auto');
+    expect(result.merged.total).toBe(3.38);
+  });
+
+  it('recomputes confidence for the merged receipt rather than keeping the deterministic value', () => {
+    const result = mergeParsedReceipts(deterministic(), llm(), LINES, null);
+    expect(result.merged.confidence).toBe(validateReceipt(result.merged).confidence);
+    expect(result.merged.confidence).not.toBe(deterministic().confidence);
   });
 });

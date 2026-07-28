@@ -9,6 +9,14 @@ import type { LlmReceipt } from './types';
 const UNITS: ParsedItem['unit'][] = ['each', 'kg', 'g', 'l', 'ml'];
 const LLM_ITEM_CONFIDENCE = 70;
 
+/**
+ * Generous upper bounds for a Spain-focused supermarket receipt: comfortably
+ * above any real price or line quantity, but low enough to catch an obviously
+ * fabricated value such as a misplaced digit or a hallucinated 1e12.
+ */
+const MAX_PRICE = 100000;
+const MAX_QUANTITY = 100000;
+
 export const RECEIPT_SCHEMA = {
   type: 'object',
   properties: {
@@ -43,21 +51,40 @@ function asNumber(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
+function asPrice(value: unknown): number | null {
+  const parsed = asNumber(value);
+  return parsed !== null && parsed >= 0 && parsed <= MAX_PRICE ? parsed : null;
+}
+
 function asUnit(value: unknown): ParsedItem['unit'] {
   return UNITS.includes(value as ParsedItem['unit']) ? (value as ParsedItem['unit']) : null;
 }
 
+/**
+ * Sanitizes a single item at the trust boundary. Prices (totalPrice, unitPrice)
+ * are treated symmetrically: a bad one drops the item outright, since a wrong
+ * price cannot be silently repaired and this function's entire job is not letting
+ * one slip through. Quantity is different — it only feeds the unitPrice fallback
+ * and never identifies the item, so an implausible value (zero, negative, or
+ * absurdly large) falls back to 1 rather than dropping the item.
+ */
 function sanitizeItem(raw: unknown): ParsedItem | null {
   if (typeof raw !== 'object' || raw === null) return null;
   const record = raw as Record<string, unknown>;
 
   const name = asString(record.name);
-  const totalPrice = asNumber(record.totalPrice);
-  if (name === null || totalPrice === null || totalPrice < 0) return null;
+  const totalPrice = asPrice(record.totalPrice);
+  if (name === null || totalPrice === null) return null;
 
   const declaredQuantity = asNumber(record.quantity);
-  const quantity = declaredQuantity !== null && declaredQuantity > 0 ? declaredQuantity : 1;
-  const unitPrice = asNumber(record.unitPrice) ?? totalPrice / quantity;
+  const quantity =
+    declaredQuantity !== null && declaredQuantity > 0 && declaredQuantity <= MAX_QUANTITY
+      ? declaredQuantity
+      : 1;
+
+  const providedUnitPrice = record.unitPrice === undefined ? undefined : asPrice(record.unitPrice);
+  if (providedUnitPrice === null) return null;
+  const unitPrice = providedUnitPrice ?? totalPrice / quantity;
 
   return {
     name,
@@ -87,7 +114,7 @@ export function sanitizeLlmReceipt(raw: unknown): LlmReceipt | null {
     storeName: asString(record.storeName),
     date: asString(record.date),
     time: asString(record.time),
-    total: asNumber(record.total),
+    total: asPrice(record.total),
     items,
   };
 }

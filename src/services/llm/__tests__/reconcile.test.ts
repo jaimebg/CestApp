@@ -30,17 +30,17 @@ describe('reconciles', () => {
     expect(reconciles([item(1.9799)], null, 2.0)).toBe(false);
   });
 
-  it('uses the 0.5% floor on large totals', () => {
-    expect(reconciles([item(1000)], null, 1004)).toBe(true);
-    expect(reconciles([item(1000)], null, 1006)).toBe(false);
+  it('rejects a difference on a large total that the removed 0.5% relative floor used to absorb', () => {
+    expect(reconciles([item(1000)], null, 1004)).toBe(false);
   });
 
-  it('accepts a difference just inside the 0.5% relative tolerance', () => {
-    expect(reconciles([item(1000)], null, 1005.02)).toBe(true);
+  it('holds the 2-cent tolerance flat regardless of total size', () => {
+    expect(reconciles([item(1000)], null, 1000.02)).toBe(true);
+    expect(reconciles([item(1000)], null, 1000.03)).toBe(false);
   });
 
-  it('rejects a difference just outside the 0.5% relative tolerance', () => {
-    expect(reconciles([item(1000)], null, 1005.03)).toBe(false);
+  it('rejects a receipt missing a small item that the removed relative floor would have masked', () => {
+    expect(reconciles([item(80.9)], null, 81.05)).toBe(false);
   });
 
   it('rejects when the total is null', () => {

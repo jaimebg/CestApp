@@ -1,5 +1,5 @@
-import type { ParsedReceipt } from '../ocr/parser';
-import { filterHallucinatedItems } from './guards';
+import { validateReceipt, type ParsedReceipt } from '../ocr/parser';
+import { filterHallucinatedItems, findSourceLine } from './guards';
 import { reconciles } from './reconcile';
 import type { LlmReceipt } from './types';
 
@@ -74,6 +74,19 @@ export function voteTotal(
  * (e.g. a summary line misread as a product, priced at the total) silently
  * replace the real single item the deterministic parser found, since both sides
  * would report "exactly one item" without describing the same item.
+ *
+ * The same premise applies to the total itself: reconciliation is evidence only
+ * while the total is fixed by something other than the model. When both the
+ * deterministic parser and the receipt-total detector have nothing, `voteTotal`
+ * fills the gap from the LLM's own reading, and `reconciles` would then be
+ * comparing the LLM's items against the LLM's own total — which proves only
+ * internal consistency, not correctness, since the model can supply both sides of
+ * the equation. Auto-apply therefore additionally requires the total to be
+ * anchored: found verbatim in the OCR text, exactly as item prices already are.
+ * That anchoring is automatic when the parser or the detector supplied the total,
+ * since both read it off the receipt; it is the only thing standing between "the
+ * model was right" and "the model was merely consistent with itself" when the LLM
+ * supplied it.
  */
 export function mergeParsedReceipts(
   deterministic: ParsedReceipt,
@@ -91,7 +104,7 @@ export function mergeParsedReceipts(
 
   const llmDate = deterministic.date === null ? parseLlmDate(llm.date) : null;
 
-  const merged: ParsedReceipt = {
+  const mergedFields: ParsedReceipt = {
     ...deterministic,
     storeName: deterministic.storeName ?? llm.storeName,
     date: deterministic.date ?? llmDate,
@@ -99,6 +112,11 @@ export function mergeParsedReceipts(
     time: deterministic.time ?? llm.time,
     items,
     total,
+  };
+
+  const merged: ParsedReceipt = {
+    ...mergedFields,
+    confidence: validateReceipt(mergedFields).confidence,
   };
 
   const losesItems = items.length < deterministic.items.length;
@@ -110,8 +128,13 @@ export function mergeParsedReceipts(
 
   const unconfirmedSingleItem = items.length === 1 && !singleItemConfirmed;
 
+  const totalIsAnchored = total !== null && findSourceLine(total, lines) !== null;
+
   const outcome: MergeOutcome =
-    reconciles(items, merged.discount, total) && !losesItems && !unconfirmedSingleItem
+    reconciles(items, merged.discount, total) &&
+    !losesItems &&
+    !unconfirmedSingleItem &&
+    totalIsAnchored
       ? 'auto'
       : 'proposal';
 
