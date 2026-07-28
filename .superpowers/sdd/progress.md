@@ -65,3 +65,16 @@ Minor pendientes para la revisión final:
   ('llm_auto_applied'): es el único camino que acepta sin preguntar y nadie más lo observa.
   Aprobado por el controlador y reflejado en el spec.
   TODAS LAS TAREAS DE CÓDIGO COMPLETAS. Pendiente: revisión final de rama + verificación en dispositivo.
+
+=== REVISIÓN FINAL DE RAMA (opus) ===
+Encontró 1 Critical que las revisiones por tarea no vieron:
+voteTotal rellena el hueco con el total del LLM cuando parser y detectedTotal son nulos,
+con lo que reconciles compara al modelo consigo mismo. Regresión respecto a main: canSave
+bloqueaba ese ticket antes. Arreglado exigiendo que el total aparezca en el texto OCR
+(findSourceLine), y tolerancia pasada a 0,02 € plana (el 0,5% daba 41 cts en un ticket de 81 €).
+Otros arreglados: template revertido por el auto-apply, propuesta que revertía campos no mostrados,
+editedRef con un flush de retraso, regla eslint no-restricted-imports, isLlmAvailable fuera del render.
+Residuos aceptados: matching voraz en guards (requiere líneas degeneradas), unitPrice sin redondear
+(review.tsx redondea al persistir), voteTotal no compara parser contra LLM directamente.
+ESTADO: 38 commits, 145/145 tests, tsc/lint/format limpios, src/services/ocr/ intacto.
+PENDIENTE: verificación en dispositivo (no la puede hacer un agente).
