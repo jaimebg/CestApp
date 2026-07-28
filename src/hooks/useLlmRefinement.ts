@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getChainTemplate } from '@/src/config/spanishChains';
+import { recordLlmAutoApplied, recordLlmFeedback } from '@/src/db/queries/parsingFeedback';
 import { isLlmAvailable, mergeParsedReceipts, structureReceipt } from '@/src/services/llm';
 import { decideOutcome, shouldRefine } from '@/src/services/llm/trigger';
 import type { ParsedReceipt } from '@/src/services/ocr/parser';
@@ -90,6 +91,12 @@ export function useLlmRefinement({
         logger.log('Refinement decision:', decision);
 
         if (decision === 'apply') {
+          recordLlmAutoApplied({
+            ocrContext: initial.rawText,
+            originalValue: JSON.stringify(initial.items),
+            correctedValue: JSON.stringify(merged.items),
+            originalConfidence: initial.confidence,
+          }).catch((error) => logger.warn('Feedback failed:', error));
           onApply(merged);
           setStatus('applied');
         } else if (decision === 'propose') {
@@ -105,17 +112,33 @@ export function useLlmRefinement({
       });
   }, [enabled, initial, lines, detectedTotal, onApply]);
 
+  const logFeedback = useCallback(
+    (accepted: boolean, candidate: ParsedReceipt) => {
+      if (!initial) return;
+      recordLlmFeedback({
+        accepted,
+        ocrContext: initial.rawText,
+        originalValue: JSON.stringify(initial.items),
+        correctedValue: JSON.stringify(candidate.items),
+        originalConfidence: initial.confidence,
+      }).catch((error) => logger.warn('Feedback failed:', error));
+    },
+    [initial]
+  );
+
   const acceptProposal = useCallback(() => {
     if (!proposal) return;
+    logFeedback(true, proposal);
     onApply(proposal);
     setProposal(null);
     setStatus('applied');
-  }, [proposal, onApply]);
+  }, [proposal, onApply, logFeedback]);
 
   const dismissProposal = useCallback(() => {
+    if (proposal) logFeedback(false, proposal);
     setProposal(null);
     setStatus('idle');
-  }, []);
+  }, [proposal, logFeedback]);
 
   const undoApplied = useCallback(() => {
     if (initial) onApply(initial);

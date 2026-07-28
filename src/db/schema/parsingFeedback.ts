@@ -15,7 +15,10 @@ export type FeedbackFieldType =
   | 'date'
   | 'store_name'
   | 'item_added'
-  | 'item_removed';
+  | 'item_removed'
+  | 'llm_accepted'
+  | 'llm_rejected'
+  | 'llm_auto_applied';
 
 /**
  * Parsing feedback table
