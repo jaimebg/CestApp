@@ -313,6 +313,11 @@ Cada aceptación o descarte de una propuesta se registra en la tabla `parsingFee
 con el texto OCR y ambas lecturas. Sin trabajo adicional, esto acumula el set de evaluación
 etiquetado que hoy no existe.
 
+Se registran también los **auto-aplicados** (`llm_auto_applied`). Es el único camino en el que la
+regla aritmética acepta sin preguntar, así que nadie más lo observa: dejarlo fuera sesgaría el corpus
+hacia los casos en los que la regla dudó, que son precisamente los menos representativos de cómo se
+comporta la feature en producción.
+
 ## Testing
 
 `jest.config.js` usa `testMatch: ['**/__tests__/**/*.test.ts']` y el CI corre en `ubuntu-latest`, así
