@@ -7,11 +7,11 @@ import type { RefinementStatus } from '@/src/hooks/useLlmRefinement';
 interface Props {
   status: RefinementStatus;
   onUndo: () => void;
-  onAccept: () => void;
+  onCompare: () => void;
   onDismiss: () => void;
 }
 
-export function RefinementBanner({ status, onUndo, onAccept, onDismiss }: Props) {
+export function RefinementBanner({ status, onUndo, onCompare, onDismiss }: Props) {
   const { t } = useTranslation();
   const colors = useAppColors();
 
@@ -68,12 +68,12 @@ export function RefinementBanner({ status, onUndo, onAccept, onDismiss }: Props)
               {t('scan.refinementDismiss')}
             </Text>
           </Pressable>
-          <Pressable onPress={onAccept} hitSlop={8}>
+          <Pressable onPress={onCompare} hitSlop={8}>
             <Text
               className="text-sm"
               style={{ color: colors.primary, fontFamily: 'Inter_600SemiBold' }}
             >
-              {t('scan.refinementAccept')}
+              {t('scan.refinementCompare')}
             </Text>
           </Pressable>
         </View>

@@ -28,6 +28,7 @@ import { useFormatPrice, usePreferencesStore } from '@/src/store/preferences';
 import { useAppColors } from '@/src/hooks/useAppColors';
 import { useLlmRefinement } from '@/src/hooks/useLlmRefinement';
 import { RefinementBanner } from '@/src/components/scan/RefinementBanner';
+import { ProposalDiffModal } from '@/src/components/scan/modals/ProposalDiffModal';
 import { findOrCreateStore, getStoreByNormalizedName } from '@/src/db/queries/stores';
 import { createReceipt } from '@/src/db/queries/receipts';
 import { createItems } from '@/src/db/queries/items';
@@ -297,6 +298,7 @@ export default function ScanReviewScreen() {
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showTotalModal, setShowTotalModal] = useState(false);
   const [showZonePrompt, setShowZonePrompt] = useState(false);
+  const [showDiffModal, setShowDiffModal] = useState(false);
   const [currentStoreId, setCurrentStoreId] = useState<number | null>(null);
   const [hasExistingTemplate, setHasExistingTemplate] = useState(false);
   const [templateApplied, setTemplateApplied] = useState(false);
@@ -436,6 +438,7 @@ export default function ScanReviewScreen() {
     setShowCategoryModal(false);
     setShowTotalModal(false);
     setShowZonesPreview(false);
+    setShowDiffModal(false);
 
     // Wait for modals to close before dismissing navigation
     setTimeout(() => {
@@ -451,6 +454,7 @@ export default function ScanReviewScreen() {
     setShowCategoryModal(false);
     setShowTotalModal(false);
     setShowZonesPreview(false);
+    setShowDiffModal(false);
 
     setTimeout(() => {
       router.back();
@@ -1107,7 +1111,7 @@ export default function ScanReviewScreen() {
             <RefinementBanner
               status={refinement.status}
               onUndo={refinement.undoApplied}
-              onAccept={refinement.acceptProposal}
+              onCompare={() => setShowDiffModal(true)}
               onDismiss={refinement.dismissProposal}
             />
 
@@ -1455,6 +1459,20 @@ export default function ScanReviewScreen() {
         dimensions={dimensions}
         screenWidth={screenWidth}
         colors={colors}
+      />
+
+      <ProposalDiffModal
+        visible={showDiffModal}
+        current={parsedData}
+        proposed={refinement.proposal}
+        onAccept={() => {
+          refinement.acceptProposal();
+          setShowDiffModal(false);
+        }}
+        onDismiss={() => {
+          refinement.dismissProposal();
+          setShowDiffModal(false);
+        }}
       />
     </View>
   );

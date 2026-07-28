@@ -134,7 +134,12 @@
     "refinementProposed": "Another reading is possible",
     "refinementCompare": "Compare",
     "refinementAccept": "Use it",
-    "refinementDismiss": "Dismiss"
+    "refinementDismiss": "Dismiss",
+    "refinementCompareTitle": "Compare readings",
+    "refinementCurrent": "Current",
+    "refinementProposedReading": "Proposed",
+    "refinementItemsCount_one": "{{count}} item",
+    "refinementItemsCount_other": "{{count}} items"
   },
   "history": {
     "title": "History",

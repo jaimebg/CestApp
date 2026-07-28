@@ -134,7 +134,12 @@
     "refinementProposed": "Hay otra lectura posible",
     "refinementCompare": "Comparar",
     "refinementAccept": "Usarla",
-    "refinementDismiss": "Descartar"
+    "refinementDismiss": "Descartar",
+    "refinementCompareTitle": "Comparar lecturas",
+    "refinementCurrent": "Actual",
+    "refinementProposedReading": "Propuesta",
+    "refinementItemsCount_one": "{{count}} producto",
+    "refinementItemsCount_other": "{{count}} productos"
   },
   "history": {
     "title": "Historial",
