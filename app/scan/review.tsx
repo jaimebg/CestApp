@@ -276,19 +276,32 @@ export default function ScanReviewScreen() {
   }, []);
 
   const [parsedData, setParsedData] = useState<ParsedReceipt | null>(initialParsedData);
-  const [hasUserEdited, setHasUserEdited] = useState(false);
   const [showRawText, setShowRawText] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const applyRefinement = useCallback((receipt: ParsedReceipt) => {
+  // Mirrors `parsedData` synchronously (writes happen alongside every
+  // `setParsedData` call, never via a passive effect) so the LLM refinement
+  // hook can merge against the live receipt instead of a stale snapshot,
+  // even while its own async model call is still in flight.
+  const parsedDataRef = useRef<ParsedReceipt | null>(initialParsedData);
+
+  const updateParsedData = useCallback((receipt: ParsedReceipt | null) => {
+    parsedDataRef.current = receipt;
     setParsedData(receipt);
   }, []);
 
+  const applyRefinement = useCallback(
+    (receipt: ParsedReceipt) => {
+      updateParsedData(receipt);
+    },
+    [updateParsedData]
+  );
+
   const refinement = useLlmRefinement({
     initial: initialParsedData,
+    currentRef: parsedDataRef,
     lines,
     detectedTotal,
-    hasUserEdited,
     onApply: applyRefinement,
   });
 
@@ -330,7 +343,7 @@ export default function ScanReviewScreen() {
               ocrText || lines.join('\n'),
               dimensions
             );
-            setParsedData(templateParsedData);
+            updateParsedData(templateParsedData);
             setTemplateApplied(true);
             setHasExistingTemplate(true);
             setShowZonePrompt(false);
@@ -338,7 +351,17 @@ export default function ScanReviewScreen() {
           }
         });
       }
-    }, [templateApplied, currentStoreId, blocks, parsedData, ocrText, lines, dimensions, isPdf])
+    }, [
+      templateApplied,
+      currentStoreId,
+      blocks,
+      parsedData,
+      ocrText,
+      lines,
+      dimensions,
+      isPdf,
+      updateParsedData,
+    ])
   );
 
   useEffect(() => {
@@ -372,7 +395,7 @@ export default function ScanReviewScreen() {
               ocrText || lines.join('\n'),
               dimensions
             );
-            setParsedData(templateParsedData);
+            updateParsedData(templateParsedData);
             setTemplateApplied(true);
             setAppliedZones(template.zones);
             // Don't show zone prompt if template was successfully applied
@@ -406,6 +429,7 @@ export default function ScanReviewScreen() {
     dimensions,
     ocrText,
     lines,
+    updateParsedData,
   ]);
 
   const [editStoreName, setEditStoreName] = useState('');
@@ -538,11 +562,11 @@ export default function ScanReviewScreen() {
 
   const handleRemoveItem = (index: number) => {
     if (!parsedData) return;
-    setParsedData({
+    updateParsedData({
       ...parsedData,
       items: parsedData.items.filter((_, i) => i !== index),
     });
-    setHasUserEdited(true);
+    refinement.markEdited();
   };
 
   const openStoreEdit = () => {
@@ -552,8 +576,8 @@ export default function ScanReviewScreen() {
 
   const saveStoreEdit = () => {
     if (!parsedData) return;
-    setParsedData({ ...parsedData, storeName: editStoreName.trim() || null });
-    setHasUserEdited(true);
+    updateParsedData({ ...parsedData, storeName: editStoreName.trim() || null });
+    refinement.markEdited();
     setShowStoreModal(false);
   };
 
@@ -573,12 +597,12 @@ export default function ScanReviewScreen() {
     const year = parseInt(editYear) || new Date().getFullYear();
     const newDate = new Date(year, month - 1, day);
 
-    setParsedData({
+    updateParsedData({
       ...parsedData,
       date: newDate,
       time: editTime || null,
     });
-    setHasUserEdited(true);
+    refinement.markEdited();
     setShowDateModal(false);
   };
 
@@ -590,21 +614,21 @@ export default function ScanReviewScreen() {
   const saveTotalEdit = () => {
     if (!parsedData) return;
     const newTotal = parseFloat(editTotal) || 0;
-    setParsedData({
+    updateParsedData({
       ...parsedData,
       total: newTotal,
     });
-    setHasUserEdited(true);
+    refinement.markEdited();
     setShowTotalModal(false);
   };
 
   const setTotalToItemsSum = () => {
     if (!parsedData) return;
-    setParsedData({
+    updateParsedData({
       ...parsedData,
       total: itemsSum,
     });
-    setHasUserEdited(true);
+    refinement.markEdited();
   };
 
   const openItemEdit = (index: number | null) => {
@@ -643,17 +667,17 @@ export default function ScanReviewScreen() {
     };
 
     if (editingItemIndex !== null) {
-      setParsedData({
+      updateParsedData({
         ...parsedData,
         items: parsedData.items.map((item, i) => (i === editingItemIndex ? newItem : item)),
       });
-      setHasUserEdited(true);
+      refinement.markEdited();
     } else {
-      setParsedData({
+      updateParsedData({
         ...parsedData,
         items: [...parsedData.items, newItem],
       });
-      setHasUserEdited(true);
+      refinement.markEdited();
     }
 
     setShowItemModal(false);
@@ -694,8 +718,8 @@ export default function ScanReviewScreen() {
       // Re-parse with generic parser
       if (lines.length > 0) {
         const genericParsed = parseReceipt(lines, parserOptions);
-        setParsedData(genericParsed);
-        setHasUserEdited(true);
+        updateParsedData(genericParsed);
+        refinement.markEdited();
       }
 
       showSuccessToast(t('common.success'), t('scan.templateDeleted'));

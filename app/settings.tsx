@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Constants from 'expo-constants';
 import { usePreferencesStore } from '@/src/store/preferences';
 import { SUPPORTED_LANGUAGES, SupportedLanguage } from '@/src/i18n';
@@ -28,8 +28,17 @@ export default function SettingsScreen() {
   const { language, setLanguage, colorScheme, setColorScheme } = usePreferencesStore();
   const llmRefinementEnabled = usePreferencesStore((state) => state.llmRefinementEnabled);
   const setLlmRefinementEnabled = usePreferencesStore((state) => state.setLlmRefinementEnabled);
-  const llmSupported = isLlmAvailable();
   const invalidateCache = useReceiptsStore((s) => s.invalidateCache);
+
+  const [llmSupported, setLlmSupported] = useState(false);
+
+  useEffect(() => {
+    // Deferred out of the render path: the first call to `isLlmAvailable()`
+    // performs a synchronous TurboModule check and `require`s the LLM
+    // package barrel (pulling in zod and @ai-sdk/provider-utils), which
+    // should never block this screen's initial paint.
+    setLlmSupported(isLlmAvailable());
+  }, []);
 
   const [showDevMenu, setShowDevMenu] = useState(false);
   const [isLoading, setIsLoading] = useState(false);

@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { RefObject } from 'react';
 import { getChainTemplate } from '@/src/config/spanishChains';
 import { recordLlmAutoApplied, recordLlmFeedback } from '@/src/db/queries/parsingFeedback';
 import { isLlmAvailable, mergeParsedReceipts, structureReceipt } from '@/src/services/llm';
 import { decideOutcome, shouldRefine } from '@/src/services/llm/trigger';
-import type { ParsedReceipt } from '@/src/services/ocr/parser';
+import { validateReceipt, type ParsedReceipt } from '@/src/services/ocr/parser';
 import { usePreferencesStore } from '@/src/store/preferences';
 import { createScopedLogger } from '@/src/utils/debug';
 
@@ -17,21 +18,22 @@ export interface LlmRefinement {
   acceptProposal: () => void;
   dismissProposal: () => void;
   undoApplied: () => void;
+  markEdited: () => void;
 }
 
 interface Params {
   initial: ParsedReceipt | null;
+  currentRef: RefObject<ParsedReceipt | null>;
   lines: string[];
   detectedTotal: number | null;
-  hasUserEdited: boolean;
   onApply: (receipt: ParsedReceipt) => void;
 }
 
 export function useLlmRefinement({
   initial,
+  currentRef,
   lines,
   detectedTotal,
-  hasUserEdited,
   onApply,
 }: Params): LlmRefinement {
   const enabled = usePreferencesStore((state) => state.llmRefinementEnabled);
@@ -39,12 +41,21 @@ export function useLlmRefinement({
   const [proposal, setProposal] = useState<ParsedReceipt | null>(null);
 
   const hasRun = useRef(false);
-  const editedRef = useRef(hasUserEdited);
+  const editedRef = useRef(false);
   const unmountedRef = useRef(false);
 
-  useEffect(() => {
-    editedRef.current = hasUserEdited;
-  }, [hasUserEdited]);
+  /**
+   * Exposed so edit handlers (event callbacks, not render) can flip this the
+   * instant the user touches the receipt. The alternative — mirroring a
+   * `hasUserEdited` prop into this ref from a passive effect — leaves a
+   * window between the edit's `setState` call and that effect's flush where
+   * a same-tick-resolving refinement would still read `false` and auto-apply
+   * over the edit. A direct write from the handler itself has no such
+   * window: it lands before the refinement's `.then()` can possibly run.
+   */
+  const markEdited = useCallback(() => {
+    editedRef.current = true;
+  }, []);
 
   /**
    * Tracked separately from the dispatch effect below so that a dependency
@@ -86,16 +97,28 @@ export function useLlmRefinement({
           return;
         }
 
-        const { merged, outcome } = mergeParsedReceipts(initial, llmResult, lines, detectedTotal);
+        /**
+         * Merged against the live receipt (`currentRef.current`), not the
+         * `initial` snapshot captured when this effect dispatched:
+         * `structureReceipt` takes seconds, while a store template can apply
+         * in the meantime in milliseconds (two SQLite queries). Merging
+         * against a stale `initial` would silently overwrite that template's
+         * result — the template's item count is exactly what makes
+         * `mergeParsedReceipts`'s `losesItems` check meaningful. Falls back
+         * to `initial` only for the render where nothing has been written to
+         * the ref yet.
+         */
+        const baseline = currentRef.current ?? initial;
+        const { merged, outcome } = mergeParsedReceipts(baseline, llmResult, lines, detectedTotal);
         const decision = decideOutcome(outcome, editedRef.current);
         logger.log('Refinement decision:', decision);
 
         if (decision === 'apply') {
           recordLlmAutoApplied({
-            ocrContext: initial.rawText,
-            originalValue: JSON.stringify(initial.items),
+            ocrContext: baseline.rawText,
+            originalValue: JSON.stringify(baseline.items),
             correctedValue: JSON.stringify(merged.items),
-            originalConfidence: initial.confidence,
+            originalConfidence: baseline.confidence,
           }).catch((error) => logger.warn('Feedback failed:', error));
           onApply(merged);
           setStatus('applied');
@@ -110,7 +133,7 @@ export function useLlmRefinement({
         logger.warn('Refinement failed:', error);
         if (!unmountedRef.current) setStatus('idle');
       });
-  }, [enabled, initial, lines, detectedTotal, onApply]);
+  }, [enabled, initial, lines, detectedTotal, onApply, currentRef]);
 
   const logFeedback = useCallback(
     (accepted: boolean, candidate: ParsedReceipt) => {
@@ -129,10 +152,28 @@ export function useLlmRefinement({
   const acceptProposal = useCallback(() => {
     if (!proposal) return;
     logFeedback(true, proposal);
-    onApply(proposal);
+
+    /**
+     * Overlays the proposal's items and total onto the live receipt rather
+     * than applying the frozen `proposal` object outright. The diff modal
+     * only ever rendered items and the total, so if the user corrected a
+     * field it never showed (store name, date, time) between when this
+     * proposal was computed and when they tapped accept, applying `proposal`
+     * verbatim would silently revert that correction. Rebuilding from
+     * `currentRef.current` guarantees accepting an item-level proposal can
+     * never touch a field the modal didn't put in front of them.
+     */
+    const base = currentRef.current ?? proposal;
+    const appliedFields: ParsedReceipt = { ...base, items: proposal.items, total: proposal.total };
+    const applied: ParsedReceipt = {
+      ...appliedFields,
+      confidence: validateReceipt(appliedFields).confidence,
+    };
+
+    onApply(applied);
     setProposal(null);
     setStatus('applied');
-  }, [proposal, onApply, logFeedback]);
+  }, [proposal, currentRef, onApply, logFeedback]);
 
   const dismissProposal = useCallback(() => {
     if (proposal) logFeedback(false, proposal);
@@ -145,5 +186,5 @@ export function useLlmRefinement({
     setStatus('idle');
   }, [initial, onApply]);
 
-  return { status, proposal, acceptProposal, dismissProposal, undoApplied };
+  return { status, proposal, acceptProposal, dismissProposal, undoApplied, markEdited };
 }
