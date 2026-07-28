@@ -66,12 +66,6 @@
       ],
       "expo-sqlite",
       "expo-localization",
-      [
-        "rn-mlkit-ocr",
-        {
-          "ocrModels": ["latin"]
-        }
-      ],
       "@react-native-community/datetimepicker",
       [
         "react-native-document-scanner-plugin",
