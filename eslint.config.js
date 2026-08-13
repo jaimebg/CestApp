@@ -23,6 +23,15 @@ module.exports = defineConfig([
     rules: {
       'react-compiler/react-compiler': 'error',
       'no-restricted-imports': ['error', { paths: [RESTRICTED_APPLE_LLM_IMPORT] }],
+      // Enabled by eslint-config-expo 57 (eslint-plugin-react-hooks v7.1.1),
+      // flagged pre-existing intentional patterns on upgrade:
+      // - set-state-in-effect: deferred one-shot init and async data loading
+      //   in effects used across the app (see settings.tsx, useLlmRefinement.ts)
+      // - immutability: false positives on Reanimated shared value writes
+      //   (AnimatedList.tsx) - .value assignment is the only API
+      // Re-enable after migrating those patterns (e.g. to a caching data layer).
+      'react-hooks/set-state-in-effect': 'off',
+      'react-hooks/immutability': 'off',
     },
   },
   {

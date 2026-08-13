@@ -1,12 +1,5 @@
 export type ZoneType =
-  | 'product_names'
-  | 'prices'
-  | 'quantities'
-  | 'total'
-  | 'date'
-  | 'store_name'
-  | 'tax'
-  | 'subtotal';
+  'product_names' | 'prices' | 'quantities' | 'total' | 'date' | 'store_name' | 'tax' | 'subtotal';
 
 export interface NormalizedBoundingBox {
   x: number;
