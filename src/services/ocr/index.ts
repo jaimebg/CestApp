@@ -1,5 +1,6 @@
 import { recognizeText as mlkitRecognizeText } from '@infinitered/react-native-mlkit-text-recognition';
 import { createScopedLogger } from '../../utils/debug';
+import { reconstructRows } from './rowReconstructor';
 
 const logger = createScopedLogger('OCR');
 
@@ -91,12 +92,9 @@ export async function recognizeText(
       boundingBox: rectToBoundingBox(block.frame),
     }));
 
-    const lines: string[] = [];
-    result.blocks.forEach((block) => {
-      block.lines.forEach((line) => {
-        lines.push(line.text);
-      });
-    });
+    // Rebuild the printed rows from geometry. ML Kit emits one block per column on
+    // columnar receipts, so raw block order separates a product from its prices.
+    const lines: string[] = reconstructRows(blocks);
 
     let inferredDimensions: { width: number; height: number } | undefined;
 

@@ -129,13 +129,13 @@ export const MERCADONA_TEMPLATE: ChainTemplate = {
     itemPatterns: [
       // Type 1: Qty + Name + Unit Price + Total (e.g., "2 QUESO COTTAGE 1,35 2,70")
       {
-        pattern: /^(\d+)\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ0-9\s\.\/\-%+]+?)\s+(\d+,\d{2})\s+(\d+,\d{2})$/,
+        pattern: /^(\d+)\s+([A-ZÁÉÍÓÚÑ0-9][A-ZÁÉÍÓÚÑ0-9\s\.\/\-%+]+?)\s+(\d+,\d{2})\s+(\d+,\d{2})$/,
         groups: { quantity: 1, name: 2, unitPrice: 3, totalPrice: 4 },
         description: 'Qty + Name + unit price + total price',
       },
       // Type 2: Qty + Name + Total only (e.g., "1 MINI PIZZAS 2,90")
       {
-        pattern: /^(\d+)\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ0-9\s\.\/\-%+]+?)\s+(\d+,\d{2})$/,
+        pattern: /^(\d+)\s+([A-ZÁÉÍÓÚÑ0-9][A-ZÁÉÍÓÚÑ0-9\s\.\/\-%+]+?)\s+(\d+,\d{2})$/,
         groups: { quantity: 1, name: 2, totalPrice: 3 },
         description: 'Qty + Name + total price',
       },

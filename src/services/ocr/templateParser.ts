@@ -2,6 +2,7 @@ import type { OcrBlock } from './index';
 import type { ParsedReceipt, ParsedItem } from './parser';
 import { parseReceipt } from './parser';
 import { parseItemsSpatially } from './spatialCorrelator';
+import { reconstructRows } from './rowReconstructor';
 import type { ZoneDefinition, NormalizedBoundingBox } from '../../types/zones';
 import type {
   StoreParsingTemplate,
@@ -415,6 +416,42 @@ function isHeaderLine(text: string): boolean {
   return false;
 }
 
+function sumItems(items: ParsedItem[]): number {
+  return items.reduce((sum, item) => sum + item.totalPrice, 0);
+}
+
+/**
+ * True when the item lines add up to the receipt total, which is the strongest
+ * available signal that item extraction got every row right.
+ */
+function itemsReconcileWithTotal(items: ParsedItem[], total: number | null): boolean {
+  if (total === null || items.length === 0) return false;
+  return Math.abs(sumItems(items) - total) <= Math.max(0.02, Math.abs(total) * 0.02);
+}
+
+/**
+ * Choose between two candidate item sets. Agreement with the receipt total wins;
+ * item count is only a tie-breaker, since spurious rows inflate the count.
+ */
+function pickBetterItems(
+  current: ParsedItem[],
+  candidate: ParsedItem[],
+  total: number | null
+): ParsedItem[] {
+  if (candidate.length === 0) return current;
+  if (current.length === 0) return candidate;
+
+  if (total !== null) {
+    const currentDiff = Math.abs(sumItems(current) - total);
+    const candidateDiff = Math.abs(sumItems(candidate) - total);
+    if (currentDiff !== candidateDiff) {
+      return candidateDiff < currentDiff ? candidate : current;
+    }
+  }
+
+  return candidate.length > current.length ? candidate : current;
+}
+
 function correlateProductsWithPrices(
   productBlocks: OcrBlockWithNormalized[],
   priceBlocks: OcrBlockWithNormalized[],
@@ -519,8 +556,9 @@ export function parseWithTemplate(
   logger.log('Number of blocks:', blocks.length);
   logger.log('Number of zones:', template.zones.length);
 
-  // First, get the text-based parsing result as a baseline
-  const allLines = blocks.flatMap((block) => block.lines.map((line) => line.text));
+  // First, get the text-based parsing result as a baseline. Rows are rebuilt from
+  // geometry so columnar receipts keep each product on one line with its prices.
+  const allLines = reconstructRows(blocks);
   const textBasedResult = parseReceipt(allLines);
   logger.log('Text-based baseline:', {
     items: textBasedResult.items.length,
@@ -582,8 +620,11 @@ export function parseWithTemplate(
 
     switch (zone.type) {
       case 'store_name':
-        // Only override if zone extraction found something
-        if (textLines.length > 0 && textLines[0].trim()) {
+        // A detected chain already gives the canonical brand name. The raw header
+        // line would put the legal suffix and tax ID back into it
+        // ("MERCADONA, S.A. A-46103834"), so only fall back to the zone text when
+        // no chain was recognised.
+        if (!textBasedResult.chainId && textLines.length > 0 && textLines[0].trim()) {
           storeName = textLines[0].trim();
           logger.log('Zone extracted store name:', storeName);
         }
@@ -634,6 +675,14 @@ export function parseWithTemplate(
 
         if (!productZone) break;
 
+        // Row-reconstructed text parsing already understands quantity columns,
+        // unit-vs-line prices and weighted products. Nearest-price correlation
+        // knows none of that, so only reach for it when text parsing fell short.
+        if (itemsReconcileWithTotal(items, total)) {
+          logger.log('Text-based items reconcile with total, skipping correlation');
+          break;
+        }
+
         // Get blocks in each zone for spatial correlation
         const productBlocks = getBlocksInZone(normalizedBlocks, productZone);
 
@@ -657,12 +706,10 @@ export function parseWithTemplate(
 
           logger.log('Spatially correlated items:', correlatedItems.length);
 
-          if (correlatedItems.length > 0) {
-            // Use correlated items if we got a good result
-            if (correlatedItems.length >= items.length * 0.5 || items.length === 0) {
-              items = correlatedItems;
-              logger.log('Using spatially correlated items');
-            }
+          const chosen = pickBetterItems(items, correlatedItems, total);
+          if (chosen !== items) {
+            items = chosen;
+            logger.log('Using spatially correlated items');
           }
         }
 
@@ -674,8 +721,9 @@ export function parseWithTemplate(
           const zoneItemsResult = parseReceipt(productLines);
           logger.log('Inline parsing result:', zoneItemsResult.items.length, 'items');
 
-          if (zoneItemsResult.items.length > items.length) {
-            items = zoneItemsResult.items;
+          const chosen = pickBetterItems(items, zoneItemsResult.items, total);
+          if (chosen !== items) {
+            items = chosen;
             logger.log('Using inline-parsed items');
           }
         }
@@ -756,8 +804,9 @@ export function parseWithSpatialCorrelation(
 ): ParsedReceipt {
   logger.log('Starting enhanced spatial parsing');
 
-  // First, get text-based result as baseline
-  const allLines = blocks.flatMap((block) => block.lines.map((line) => line.text));
+  // First, get text-based result as baseline. Rows are rebuilt from geometry so
+  // columnar receipts keep each product on one line with its prices.
+  const allLines = reconstructRows(blocks);
   const textBasedResult = parseReceipt(allLines);
 
   // Detect regional preset if not provided
@@ -785,33 +834,17 @@ export function parseWithSpatialCorrelation(
   // Decide which items to use based on quality
   let finalItems: ParsedItem[];
 
-  // If spatial found more items and they have reasonable quality, prefer spatial
-  if (
-    spatialResult.items.length > textBasedResult.items.length &&
-    spatialResult.items.length >= 2
-  ) {
-    // Check which sum is closer to detected total
-    if (textBasedResult.total !== null) {
-      const spatialDiff = Math.abs(spatialItemsSum - textBasedResult.total);
-      const textDiff = Math.abs(textItemsSum - textBasedResult.total);
-
-      finalItems = spatialDiff <= textDiff ? spatialResult.items : textBasedResult.items;
-      logger.log(
-        `Selected ${spatialDiff <= textDiff ? 'spatial' : 'text'} items based on total match`
-      );
-    } else {
-      // No total to compare, use spatial if it found more
-      finalItems = spatialResult.items;
-      logger.log('Selected spatial items (more items found)');
-    }
-  } else if (spatialResult.layout.isColumnar && spatialResult.items.length > 0) {
-    // For columnar layouts, prefer spatial correlation
-    finalItems = spatialResult.items;
-    logger.log('Selected spatial items (columnar layout)');
-  } else {
-    // Stick with text-based
+  // Text parsing over reconstructed rows understands quantity columns, unit-vs-line
+  // prices and weighted products; spatial correlation does not. Only prefer spatial
+  // when text parsing failed to reconcile with the total.
+  if (itemsReconcileWithTotal(textBasedResult.items, textBasedResult.total)) {
     finalItems = textBasedResult.items;
-    logger.log('Selected text-based items');
+    logger.log('Selected text-based items (reconcile with total)');
+  } else {
+    finalItems = pickBetterItems(textBasedResult.items, spatialResult.items, textBasedResult.total);
+    logger.log(
+      `Selected ${finalItems === spatialResult.items ? 'spatial' : 'text'} items based on total match`
+    );
   }
 
   // Calculate combined confidence
