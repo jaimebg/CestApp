@@ -29,9 +29,9 @@ CestApp is a **Spain-focused** supermarket receipt scanner app built with React 
 | i18next                                          | 25.7.4  | Internationalization (EN/ES)                |
 | @infinitered/react-native-mlkit-text-recognition | 5.0.1   | On-device ML Kit text recognition (OCR)     |
 | pako                                             | 2.1.0   | PDF stream decompression                    |
-| React Native Reanimated                          | 4.2.1   | Animations                                  |
-| react-native-gifted-charts                       | 1.4.70  | Analytics charts                            |
-| sonner-native                                    | 0.23.0  | Toast notifications                         |
+| React Native Reanimated                          | 4.5.1   | Animations                                  |
+| react-native-gifted-charts                       | 1.4.78  | Analytics charts                            |
+| sonner-native                                    | 0.26.5  | Toast notifications                         |
 | @shopify/flash-list                              | 2.0.2   | High-performance virtualized lists          |
 
 ## Code Style Guidelines
