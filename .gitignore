@@ -44,3 +44,6 @@ app-example
 
 # local planning files
 IMPLEMENTATION_PLAN.md
+
+# planning docs (kept out of git)
+docs/
