@@ -23,12 +23,15 @@ describe('isBackendAvailable', () => {
 
   it('returns false when the native module throws', () => {
     const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-    mockModule.isAvailable.mockImplementation(() => {
-      throw new Error('module missing');
-    });
-    expect(isBackendAvailable()).toBe(false);
-    expect(warnSpy).toHaveBeenCalled();
-    warnSpy.mockRestore();
+    try {
+      mockModule.isAvailable.mockImplementation(() => {
+        throw new Error('module missing');
+      });
+      expect(isBackendAvailable()).toBe(false);
+      expect(warnSpy).toHaveBeenCalled();
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 });
 
@@ -56,20 +59,30 @@ describe('generateStructured', () => {
 
   it('returns null when the text is not valid JSON', async () => {
     const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-    mockModule.generateText.mockResolvedValue([{ type: 'text', text: 'lo siento, no puedo' }]);
-    const result = await generateStructured([{ role: 'user', content: 'hi' }], { type: 'object' });
-    expect(result).toBeNull();
-    expect(warnSpy).toHaveBeenCalled();
-    warnSpy.mockRestore();
+    try {
+      mockModule.generateText.mockResolvedValue([{ type: 'text', text: 'lo siento, no puedo' }]);
+      const result = await generateStructured([{ role: 'user', content: 'hi' }], {
+        type: 'object',
+      });
+      expect(result).toBeNull();
+      expect(warnSpy).toHaveBeenCalled();
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 
   it('returns null when the native call rejects', async () => {
     const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-    mockModule.generateText.mockRejectedValue(new Error('modelUnavailable'));
-    const result = await generateStructured([{ role: 'user', content: 'hi' }], { type: 'object' });
-    expect(result).toBeNull();
-    expect(warnSpy).toHaveBeenCalled();
-    warnSpy.mockRestore();
+    try {
+      mockModule.generateText.mockRejectedValue(new Error('modelUnavailable'));
+      const result = await generateStructured([{ role: 'user', content: 'hi' }], {
+        type: 'object',
+      });
+      expect(result).toBeNull();
+      expect(warnSpy).toHaveBeenCalled();
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 });
 
@@ -119,14 +132,15 @@ describe('when requiring the native library throws', () => {
       throw new Error('native module missing');
     });
     const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports -- fresh module instance needed after jest.resetModules().
+      const backend = require('../appleBackend') as typeof import('../appleBackend');
 
-    // eslint-disable-next-line @typescript-eslint/no-require-imports -- fresh module instance needed after jest.resetModules().
-    const backend = require('../appleBackend') as typeof import('../appleBackend');
-
-    expect(backend.isBackendAvailable()).toBe(false);
-    expect(warnSpy).toHaveBeenCalled();
-
-    warnSpy.mockRestore();
+      expect(backend.isBackendAvailable()).toBe(false);
+      expect(warnSpy).toHaveBeenCalled();
+    } finally {
+      warnSpy.mockRestore();
+    }
     jest.resetModules();
   });
 });

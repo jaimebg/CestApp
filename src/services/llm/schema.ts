@@ -84,7 +84,7 @@ function sanitizeItem(raw: unknown): ParsedItem | null {
 
   const providedUnitPrice = record.unitPrice === undefined ? undefined : asPrice(record.unitPrice);
   if (providedUnitPrice === null) return null;
-  const unitPrice = providedUnitPrice ?? totalPrice / quantity;
+  const unitPrice = Math.round((providedUnitPrice ?? totalPrice / quantity) * 100) / 100;
 
   return {
     name,

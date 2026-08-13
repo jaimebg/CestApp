@@ -54,4 +54,8 @@ describe('reconciles', () => {
   it('rejects an empty item list even when the total is zero', () => {
     expect(reconciles([], null, 0)).toBe(false);
   });
+
+  it('accepts non-empty items summing to zero against a zero total', () => {
+    expect(reconciles([item(0), item(0)], null, 0)).toBe(true);
+  });
 });

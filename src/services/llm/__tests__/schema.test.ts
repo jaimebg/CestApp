@@ -97,6 +97,20 @@ describe('sanitizeLlmReceipt', () => {
     expect(result?.items[0].unitPrice).toBe(3);
   });
 
+  it('rounds a derived unitPrice to cents like the parser does', () => {
+    const result = sanitizeLlmReceipt({
+      items: [{ name: 'Tomates', quantity: 3, totalPrice: 0.98 }],
+    });
+    expect(result?.items[0].unitPrice).toBe(0.33);
+  });
+
+  it('rounds a provided unitPrice to cents', () => {
+    const result = sanitizeLlmReceipt({
+      items: [{ name: 'Tomates', quantity: 1, unitPrice: 0.985, totalPrice: 0.98 }],
+    });
+    expect(result?.items[0].unitPrice).toBe(0.99);
+  });
+
   it('falls back quantity to 1 when it is zero', () => {
     const result = sanitizeLlmReceipt({
       items: [{ name: 'Leche', quantity: 0, totalPrice: 0.98 }],

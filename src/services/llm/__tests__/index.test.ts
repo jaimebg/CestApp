@@ -37,10 +37,13 @@ describe('structureReceipt', () => {
 
   it('returns null on a malformed response', async () => {
     const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-    mockBackend.generateStructured.mockResolvedValue({ nonsense: true });
-    expect(await structureReceipt(LINES)).toBeNull();
-    expect(warnSpy).toHaveBeenCalled();
-    warnSpy.mockRestore();
+    try {
+      mockBackend.generateStructured.mockResolvedValue({ nonsense: true });
+      expect(await structureReceipt(LINES)).toBeNull();
+      expect(warnSpy).toHaveBeenCalled();
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 
   it('returns null when the backend resolves null', async () => {
@@ -50,10 +53,13 @@ describe('structureReceipt', () => {
 
   it('returns null when the backend rejects', async () => {
     const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-    mockBackend.generateStructured.mockRejectedValue(new Error('boom'));
-    expect(await structureReceipt(LINES)).toBeNull();
-    expect(warnSpy).toHaveBeenCalled();
-    warnSpy.mockRestore();
+    try {
+      mockBackend.generateStructured.mockRejectedValue(new Error('boom'));
+      expect(await structureReceipt(LINES)).toBeNull();
+      expect(warnSpy).toHaveBeenCalled();
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 
   it('returns null when the backend never resolves', async () => {
@@ -61,12 +67,15 @@ describe('structureReceipt', () => {
     jest.useFakeTimers();
     mockBackend.generateStructured.mockReturnValue(new Promise(() => {}));
 
-    const pending = structureReceipt(LINES);
-    jest.advanceTimersByTime(15000);
+    try {
+      const pending = structureReceipt(LINES);
+      jest.advanceTimersByTime(15000);
 
-    expect(await pending).toBeNull();
-    expect(warnSpy).toHaveBeenCalled();
-    jest.useRealTimers();
-    warnSpy.mockRestore();
+      expect(await pending).toBeNull();
+      expect(warnSpy).toHaveBeenCalled();
+    } finally {
+      warnSpy.mockRestore();
+      jest.useRealTimers();
+    }
   });
 });
