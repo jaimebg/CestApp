@@ -19,12 +19,12 @@ CestApp is a **Spain-focused** supermarket receipt scanner app built with React 
 
 | Technology                                       | Version | Purpose                                     |
 | ------------------------------------------------ | ------- | ------------------------------------------- |
-| React Native                                     | 0.83.4  | Mobile framework (New Architecture enabled) |
-| Expo SDK                                         | 55      | Development platform                        |
-| Expo Router                                      | 55.0.8  | File-based navigation                       |
+| React Native                                     | 0.86.2  | Mobile framework (New Architecture enabled) |
+| Expo SDK                                         | 57      | Development platform                        |
+| Expo Router                                      | 57.0.12 | File-based navigation                       |
 | NativeWind                                       | 4.2.1   | Tailwind CSS styling                        |
 | Drizzle ORM                                      | 0.45.1  | Type-safe database queries                  |
-| expo-sqlite                                      | 55.0.11 | Local SQLite database                       |
+| expo-sqlite                                      | 57.0.1  | Local SQLite database                       |
 | Zustand                                          | 5.0.10  | State management with persistence           |
 | i18next                                          | 25.7.4  | Internationalization (EN/ES)                |
 | @infinitered/react-native-mlkit-text-recognition | 5.0.1   | On-device ML Kit text recognition (OCR)     |
@@ -469,6 +469,7 @@ CI (`.github/workflows/ci.yml`) runs type check, lint, format check, and tests o
 11. **FlashList v2**: Does not have `estimatedItemSize` prop - removed in v2.0
 12. **Theme Colors**: Use `useAppColors()` hook instead of duplicating colors in components
 13. **Debug Logging**: Use `createScopedLogger()` instead of `console.log`
+14. **tsconfig `types` Allowlist**: `compilerOptions.types` is an explicit allowlist (`"types": ["jest"]`), so any future `@types/*` package must be added there deliberately
 
 ## Development Setup
 
