@@ -64,7 +64,7 @@
 ## Installation
 
 ```bash
-git clone https://github.com/jaimebarreto/CestApp.git
+git clone https://github.com/jaimebg/CestApp.git
 cd CestApp
 npm install
 
