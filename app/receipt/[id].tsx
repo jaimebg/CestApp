@@ -26,7 +26,7 @@ import {
 import { getCategories } from '../../src/db/queries/categories';
 import { findOrCreateStore } from '../../src/db/queries/stores';
 import { ReceiptSummary } from '../../src/components/receipt/ReceiptSummary';
-import { ItemRow } from '../../src/components/receipt/ItemRow';
+import { CollapsibleItemList } from '../../src/components/receipt/CollapsibleItemList';
 import { ConfirmationModal } from '../../src/components/ui/ConfirmationModal';
 import { ModalHeader } from '../../src/components/ui/ModalHeader';
 import { Amount } from '../../src/components/ui/Amount';
@@ -578,14 +578,7 @@ export default function ReceiptDetailScreen() {
                 </View>
               )
             ) : items.length > 0 ? (
-              items.map(({ item, category }, index) => (
-                <ItemRow
-                  key={item.id}
-                  item={item}
-                  category={category}
-                  isLast={index === items.length - 1}
-                />
-              ))
+              <CollapsibleItemList items={items} />
             ) : (
               <View className="py-8 items-center">
                 <Text className="text-text-secondary dark:text-text-dark-secondary">

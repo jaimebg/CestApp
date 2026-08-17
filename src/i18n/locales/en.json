@@ -221,7 +221,9 @@
     "itemQuantity": "Quantity",
     "notFound": "Receipt not found",
     "backToHistory": "Back to history",
-    "photoOf": "Photo of the receipt from {{store}}"
+    "photoOf": "Photo of the receipt from {{store}}",
+    "showAllItems_one": "Show 1 more item",
+    "showAllItems_other": "Show {{count}} more items"
   },
   "item": {
     "name": "Item name",

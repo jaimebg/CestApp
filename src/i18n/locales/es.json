@@ -221,7 +221,9 @@
     "itemQuantity": "Cantidad",
     "notFound": "Recibo no encontrado",
     "backToHistory": "Volver al historial",
-    "photoOf": "Foto del recibo de {{store}}"
+    "photoOf": "Foto del recibo de {{store}}",
+    "showAllItems_one": "Ver 1 artículo más",
+    "showAllItems_other": "Ver {{count}} artículos más"
   },
   "item": {
     "name": "Nombre del artículo",
