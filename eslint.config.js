@@ -41,6 +41,13 @@ module.exports = defineConfig([
     },
   },
   {
+    // Runs inside Jest but sits outside the test-file patterns that get its globals.
+    files: ['jest.setup.js'],
+    languageOptions: {
+      globals: { jest: 'readonly' },
+    },
+  },
+  {
     ignores: ['dist/*', '.expo/*', 'android/*', 'ios/*'],
   },
 ]);
