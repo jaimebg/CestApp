@@ -13,6 +13,7 @@ import {
   Currency,
   getCurrency,
   formatPrice as formatPriceUtil,
+  formatAmountInput as formatAmountInputUtil,
   DEFAULT_CURRENCY,
 } from '../config/currency';
 import {
@@ -43,6 +44,7 @@ interface PreferencesState {
   resetOnboarding: () => void;
 
   formatPrice: (amount: number | null, options?: { showCode?: boolean }) => string;
+  formatAmountInput: (amount: number | null | undefined, decimals?: number) => string;
 }
 
 /**
@@ -122,6 +124,11 @@ export const usePreferencesStore = create<PreferencesState>()(
         const { currency } = get();
         return formatPriceUtil(amount, currency, options);
       },
+
+      formatAmountInput: (amount: number | null | undefined, decimals?: number) => {
+        const { currency } = get();
+        return formatAmountInputUtil(amount, currency, decimals);
+      },
     }),
     {
       name: 'user-preferences',
@@ -148,6 +155,7 @@ export const usePreferencesStore = create<PreferencesState>()(
 
 export function useFormatPrice() {
   const formatPrice = usePreferencesStore((state) => state.formatPrice);
+  const formatAmountInput = usePreferencesStore((state) => state.formatAmountInput);
   const currency = usePreferencesStore((state) => state.currency);
-  return { formatPrice, currency };
+  return { formatPrice, formatAmountInput, currency };
 }

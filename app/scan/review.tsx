@@ -26,6 +26,7 @@ import {
 } from '@/src/services/ocr/templateParser';
 import type { OcrBlock } from '@/src/services/ocr';
 import { useFormatPrice, usePreferencesStore } from '@/src/store/preferences';
+import { parseAmountInput } from '@/src/config/currency';
 import { useAppColors } from '@/src/hooks/useAppColors';
 import { ICON_HIT_SLOP } from '@/src/theme/a11y';
 import { ScanItemRow } from '@/src/components/scan/ScanItemRow';
@@ -94,7 +95,7 @@ export default function ScanReviewScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const colors = useAppColors();
-  const { formatPrice } = useFormatPrice();
+  const { formatPrice, formatAmountInput } = useFormatPrice();
   const dateFormat = usePreferencesStore((state) => state.dateFormat);
   const decimalSeparator = usePreferencesStore((state) => state.decimalSeparator);
 
@@ -674,13 +675,13 @@ export default function ScanReviewScreen() {
   };
 
   const openTotalEdit = () => {
-    setEditTotal((parsedData?.total || 0).toFixed(2));
+    setEditTotal(formatAmountInput(parsedData?.total || 0, 2));
     setShowTotalModal(true);
   };
 
   const saveTotalEdit = () => {
     if (!parsedData) return;
-    const newTotal = parseFloat(editTotal) || 0;
+    const newTotal = parseAmountInput(editTotal) ?? 0;
     updateParsedData({
       ...parsedData,
       total: newTotal,
@@ -703,8 +704,8 @@ export default function ScanReviewScreen() {
       const item = parsedData.items[index];
       setEditingItemIndex(index);
       setEditItemName(item.name);
-      setEditItemPrice(item.totalPrice.toFixed(2));
-      setEditItemQuantity(item.quantity.toString());
+      setEditItemPrice(formatAmountInput(item.totalPrice, 2));
+      setEditItemQuantity(formatAmountInput(item.quantity));
       setEditItemCategoryId((item as ParsedItem & { categoryId?: number }).categoryId || null);
     } else {
       setEditingItemIndex(null);
@@ -719,8 +720,8 @@ export default function ScanReviewScreen() {
   const saveItemEdit = () => {
     if (!parsedData) return;
 
-    const price = parseFloat(editItemPrice) || 0;
-    const quantity = parseFloat(editItemQuantity) || 1;
+    const price = parseAmountInput(editItemPrice) ?? 0;
+    const quantity = parseAmountInput(editItemQuantity) || 1;
     const unitPrice = price / quantity;
 
     const newItem: ParsedItem & { categoryId?: number } = {

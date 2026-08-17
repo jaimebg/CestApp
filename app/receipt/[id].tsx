@@ -35,6 +35,7 @@ import { useAppColors } from '../../src/hooks/useAppColors';
 import { ICON_HIT_SLOP, MIN_TARGET } from '../../src/theme/a11y';
 import { fonts } from '../../src/theme/type';
 import { useFormatPrice } from '../../src/store/preferences';
+import { parseAmountInput } from '../../src/config/currency';
 import { createScopedLogger } from '../../src/utils/debug';
 import { showSuccessToast, showErrorToast } from '../../src/utils/toast';
 import type { Receipt } from '../../src/db/schema/receipts';
@@ -63,7 +64,7 @@ export default function ReceiptDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { isReady } = useDatabaseReady();
-  const { formatPrice } = useFormatPrice();
+  const { formatPrice, formatAmountInput } = useFormatPrice();
   const colors = useAppColors();
 
   const [receipt, setReceipt] = useState<Receipt | null>(null);
@@ -80,6 +81,8 @@ export default function ReceiptDetailScreen() {
 
   const [showItemModal, setShowItemModal] = useState(false);
   const [editingItem, setEditingItem] = useState<EditableItem | null>(null);
+  const [editingItemPrice, setEditingItemPrice] = useState('');
+  const [editingItemQuantity, setEditingItemQuantity] = useState('1');
   const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -216,37 +219,52 @@ export default function ReceiptDetailScreen() {
     }
   }, [receipt, router, t]);
 
-  const openItemEditor = useCallback((item: EditableItem | null, index: number | null) => {
-    if (item) {
-      setEditingItem({ ...item });
-      setEditingItemIndex(index);
-    } else {
-      setEditingItem({
-        id: null,
-        name: '',
-        price: 0,
-        quantity: 1,
-        categoryId: null,
-      });
-      setEditingItemIndex(null);
-    }
-    setShowItemModal(true);
-  }, []);
+  const openItemEditor = useCallback(
+    (item: EditableItem | null, index: number | null) => {
+      if (item) {
+        setEditingItem({ ...item });
+        setEditingItemPrice(formatAmountInput(item.price / 100, 2));
+        setEditingItemQuantity(String(item.quantity));
+        setEditingItemIndex(index);
+      } else {
+        setEditingItem({
+          id: null,
+          name: '',
+          price: 0,
+          quantity: 1,
+          categoryId: null,
+        });
+        setEditingItemPrice('');
+        setEditingItemQuantity('1');
+        setEditingItemIndex(null);
+      }
+      setShowItemModal(true);
+    },
+    [formatAmountInput]
+  );
 
   const saveItemEdit = useCallback(() => {
     if (!editingItem || !editingItem.name.trim()) return;
 
+    const editedItem: EditableItem = {
+      ...editingItem,
+      price: Math.round((parseAmountInput(editingItemPrice) ?? 0) * 100),
+      quantity: parseInt(editingItemQuantity, 10) || 1,
+    };
+
     const newItems = [...editedItems];
     if (editingItemIndex !== null) {
-      newItems[editingItemIndex] = editingItem;
+      newItems[editingItemIndex] = editedItem;
     } else {
-      newItems.push(editingItem);
+      newItems.push(editedItem);
     }
     setEditedItems(newItems);
     setShowItemModal(false);
     setEditingItem(null);
+    setEditingItemPrice('');
+    setEditingItemQuantity('1');
     setEditingItemIndex(null);
-  }, [editingItem, editingItemIndex, editedItems]);
+  }, [editingItem, editingItemPrice, editingItemQuantity, editingItemIndex, editedItems]);
 
   const deleteItemFromList = useCallback(
     (index: number) => {
@@ -688,12 +706,9 @@ export default function ReceiptDetailScreen() {
             </Text>
             <TextInput
               className="bg-surface dark:bg-surface-dark text-text dark:text-text-dark rounded-xl px-4 py-3 mb-4 border border-border dark:border-border-dark"
-              value={editingItem?.price ? (editingItem.price / 100).toString() : ''}
-              onChangeText={(text) => {
-                const num = parseFloat(text) || 0;
-                setEditingItem((prev) => (prev ? { ...prev, price: Math.round(num * 100) } : null));
-              }}
-              placeholder="0.00"
+              value={editingItemPrice}
+              onChangeText={setEditingItemPrice}
+              placeholder={formatAmountInput(0, 2)}
               placeholderTextColor={colors.textTertiary}
               accessibilityLabel={t('receipt.itemPrice')}
               keyboardType="decimal-pad"
@@ -705,11 +720,8 @@ export default function ReceiptDetailScreen() {
             </Text>
             <TextInput
               className="bg-surface dark:bg-surface-dark text-text dark:text-text-dark rounded-xl px-4 py-3 mb-4 border border-border dark:border-border-dark"
-              value={editingItem?.quantity?.toString() || '1'}
-              onChangeText={(text) => {
-                const num = parseInt(text, 10) || 1;
-                setEditingItem((prev) => (prev ? { ...prev, quantity: num } : null));
-              }}
+              value={editingItemQuantity}
+              onChangeText={setEditingItemQuantity}
               placeholder="1"
               placeholderTextColor={colors.textTertiary}
               accessibilityLabel={t('receipt.itemQuantity')}

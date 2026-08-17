@@ -6,6 +6,7 @@ import { View, Text, TextInput, Modal, KeyboardAvoidingView, Platform } from 're
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { ModalHeader } from '../../ui/ModalHeader';
+import { useFormatPrice } from '../../../store/preferences';
 import type { ReviewColors } from '../types';
 
 interface TotalEditModalProps {
@@ -28,6 +29,7 @@ export function TotalEditModal({
   colors,
 }: TotalEditModalProps) {
   const { t } = useTranslation();
+  const { formatAmountInput } = useFormatPrice();
   const insets = useSafeAreaInsets();
 
   return (
@@ -67,7 +69,7 @@ export function TotalEditModal({
             <TextInput
               value={value}
               onChangeText={onChangeText}
-              placeholder="0.00"
+              placeholder={formatAmountInput(0, 2)}
               placeholderTextColor={colors.textSecondary}
               className="px-4 py-3 rounded-xl text-base"
               style={{

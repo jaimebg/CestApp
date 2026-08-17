@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { ModalHeader } from '../../ui/ModalHeader';
+import { useFormatPrice } from '../../../store/preferences';
 import type { ReviewColors } from '../types';
 
 interface ItemEditModalProps {
@@ -50,6 +51,7 @@ export function ItemEditModal({
   colors,
 }: ItemEditModalProps) {
   const { t } = useTranslation();
+  const { formatAmountInput } = useFormatPrice();
   const insets = useSafeAreaInsets();
   const canSave = !!name.trim() && !!price;
 
@@ -113,7 +115,7 @@ export function ItemEditModal({
             <TextInput
               value={price}
               onChangeText={onChangePrice}
-              placeholder="0.00"
+              placeholder={formatAmountInput(0, 2)}
               placeholderTextColor={colors.textSecondary}
               className="px-4 py-3 rounded-xl text-base mb-4"
               style={inputStyle}

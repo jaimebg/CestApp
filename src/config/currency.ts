@@ -58,6 +58,59 @@ export function formatPrice(
 }
 
 /**
+ * Read a number out of a text field the user typed into.
+ *
+ * Accepts either decimal separator: the iOS decimal pad offers only the one for
+ * the device locale, which in Spain is a comma, while a hardware keyboard gives
+ * a dot. When both appear the last one is the decimal separator and the rest are
+ * thousands grouping. Returns null when there is no number to read, so callers
+ * can tell an empty or malformed field from a genuine zero.
+ */
+export function parseAmountInput(text: string): number | null {
+  const cleaned = text.replace(/[^0-9.,-]/g, '');
+  if (!cleaned) return null;
+
+  const isNegative = cleaned.startsWith('-');
+  const unsigned = cleaned.replace(/-/g, '');
+
+  const lastSeparator = Math.max(unsigned.lastIndexOf('.'), unsigned.lastIndexOf(','));
+  const hasSeparator = lastSeparator !== -1;
+
+  const integerPart = (hasSeparator ? unsigned.slice(0, lastSeparator) : unsigned).replace(
+    /[.,]/g,
+    ''
+  );
+  const fractionPart = hasSeparator ? unsigned.slice(lastSeparator + 1).replace(/[.,]/g, '') : '';
+
+  if (!integerPart && !fractionPart) return null;
+
+  const value = Number(`${integerPart || '0'}.${fractionPart || '0'}`);
+  if (!Number.isFinite(value)) return null;
+
+  return isNegative ? -value : value;
+}
+
+/**
+ * Render a number for an editable text field: the currency's decimal separator,
+ * no symbol and no thousands grouping, so the value the user sees is one they
+ * can retype and `parseAmountInput` reads back unchanged.
+ *
+ * Omit `decimals` to keep the number's own precision, for fields like quantity
+ * where a trailing "1,00" would be noise.
+ */
+export function formatAmountInput(
+  amount: number | null | undefined,
+  currency: Currency,
+  decimals?: number
+): string {
+  if (amount === null || amount === undefined || !Number.isFinite(amount)) return '';
+
+  const fixed = decimals === undefined ? String(amount) : amount.toFixed(decimals);
+
+  return fixed.replace('.', currency.decimalSeparator);
+}
+
+/**
  * Get currency by code
  * Defaults to EUR if not found
  */
