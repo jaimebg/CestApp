@@ -64,8 +64,13 @@ CestApp is a **Spain-focused** supermarket receipt scanner app built with React 
 - **Never use Tailwind weight classes** (`font-semibold`, `font-bold`). They set
   `fontWeight` and leave `fontFamily` unset, which silently renders that text in
   the system font instead of Inter.
-- Wrap monetary values in `<Amount>` so prices share one tabular-figure
-  treatment and line up in a column.
+- Wrap monetary values in `<Amount>`. Currency is set in IBM Plex Mono, not
+  Inter — receipts are printed in mono, and every digit sharing an advance
+  width keeps a column of prices aligned. Mono is for currency only: not dates,
+  quantities, percentages or chart axes.
+- Fonts are declared once in `src/theme/type.ts`. `fontModules` is what
+  `useFonts` loads and `fonts`/`mono` are what styles reference, derived from
+  the same object so they cannot drift into a silent system-font fallback.
 - Route entering animations through `useEntering()` (`src/hooks/useEntering.ts`)
   so they respect the OS "Reduce Motion" setting. Avoid `.springify()` — spring
   overshoot on arriving content is a vestibular trigger.
@@ -117,28 +122,38 @@ app/                           # Screens (Expo Router)
 src/
   components/
     ui/                        # Reusable UI components
-      Button.tsx               # Primary button
-      Card.tsx                 # Card wrapper
-      Input.tsx                # Text input
-      Badge.tsx                # Status badges
-      Skeleton.tsx             # Loading placeholders
-      AnimatedList.tsx         # Animated list items
+      Amount.tsx               # Monetary value, tabular mono
+      Badge.tsx                # Status indicators
+      Button.tsx               # Primary action button
+      Card.tsx                 # Content container
       ConfirmationModal.tsx    # Delete confirmations
       EmptyState.tsx           # Empty/error states
+      Input.tsx                # Text input field
+      ModalHeader.tsx          # Shared modal header bar
+      Skeleton.tsx             # Loading placeholders
     receipt/                   # Receipt-specific components
+      CollapsibleItemList.tsx  # Read-only receipt rows, collapses past 25
+      ItemRow.tsx              # Line item display
       ReceiptCard.tsx          # Receipt preview card
       ReceiptCardSkeleton.tsx  # Loading skeleton
       ReceiptSummary.tsx       # Summary stats
-      ItemRow.tsx              # Line item display
-    scan/
+    scan/                      # Scan flow components
+      DuplicateBanner.tsx      # Duplicate receipt warning
+      RefinementBanner.tsx     # LLM refinement status banner
+      ScanItemRow.tsx          # Parsed line item on review screen
       types.ts                 # Shared types for review screen components
       modals/                  # Review screen modals
-        StoreEditModal.tsx     # Store name editing
+        CategoryPickerModal.tsx # Category selection
         DateEditModal.tsx      # Date & time editing
         ItemEditModal.tsx      # Line item add/edit
-        CategoryPickerModal.tsx # Category selection
+        ProposalDiffModal.tsx  # LLM proposal comparison
+        StoreEditModal.tsx     # Store name editing
         TotalEditModal.tsx     # Total editing
         ZonesPreviewModal.tsx  # Zones preview
+    zones/                     # Zone selection components
+      ZoneSelectionCanvas.tsx  # Interactive zone drawing
+      ZoneSelectionToolbar.tsx # Zone editing controls
+      ZoneTypePicker.tsx       # Zone type selector
     ErrorBoundary.tsx          # React error boundary
 
   db/
@@ -184,9 +199,14 @@ src/
 
   hooks/
     useAppColors.ts            # Theme colors hook
+    useEntering.ts             # Entering animations that respect Reduce Motion
+    useLlmRefinement.ts        # LLM-powered receipt refinement
 
   theme/
+    a11y.ts                    # Tap-target and hit-slop constants
     colors.ts                  # Centralized color definitions
+    palette.js                 # Single source of colour, shared with Tailwind
+    type.ts                    # Font families and currency treatment
 
   types/
     index.ts                   # Type exports
@@ -217,18 +237,19 @@ src/
 
 Available in `src/components/ui/`:
 
-| Component         | Props                                                                   | Description             |
-| ----------------- | ----------------------------------------------------------------------- | ----------------------- |
-| Button            | `variant` (primary, secondary, ghost, destructive), `size` (sm, md, lg) | Primary action button   |
-| Card              | `variant` (elevated, outlined, filled), `padding` (sm, md, lg)          | Content container       |
-| Input             | `label`, `error`, `leftIcon`, `rightIcon`                               | Text input field        |
-| Badge             | `variant` (default, success, warning, error, info), `size` (sm, md)     | Status indicator        |
-| Amount            | `size` (sm, base, lg, xl, hero), `weight`                               | Monetary value          |
-| ModalHeader       | `title`, `onClose`, `closeLabel`, `confirmLabel`, `onConfirm`           | Shared modal header bar |
-| Skeleton          | `SkeletonText`, `SkeletonCircle`, `SkeletonCard`                        | Loading placeholders    |
-| ConfirmationModal | `visible`, `title`, `message`, `onConfirm`, `onCancel`                  | Delete confirmation     |
-| EmptyState        | `icon`, `title`, `description`, `action`                                | Empty/error states      |
-| ErrorBoundary     | `children`, `fallback`, `onError`                                       | React error boundary    |
+| Component           | Props                                                                   | Description             |
+| ------------------- | ----------------------------------------------------------------------- | ----------------------- |
+| Button              | `variant` (primary, secondary, ghost, destructive), `size` (sm, md, lg) | Primary action button   |
+| Card                | `variant` (elevated, outlined, filled), `padding` (sm, md, lg)          | Content container       |
+| Input               | `label`, `error`, `leftIcon`, `rightIcon`                               | Text input field        |
+| Badge               | `variant` (default, success, warning, error, info), `size` (sm, md)     | Status indicator        |
+| Amount              | `size` (sm, base, lg, xl, hero), `weight`                               | Monetary value          |
+| CollapsibleItemList | `items`                                                                 | Read-only receipt rows  |
+| ModalHeader         | `title`, `onClose`, `closeLabel`, `confirmLabel`, `onConfirm`           | Shared modal header bar |
+| Skeleton            | `SkeletonText`, `SkeletonCircle`, `SkeletonCard`                        | Loading placeholders    |
+| ConfirmationModal   | `visible`, `title`, `message`, `onConfirm`, `onCancel`                  | Delete confirmation     |
+| EmptyState          | `icon`, `title`, `description`, `action`                                | Empty/error states      |
+| ErrorBoundary       | `children`, `fallback`, `onError`                                       | React error boundary    |
 
 Use these rather than hand-rolling equivalents — they carry the accessibility
 role, label and 44pt minimum target that screens otherwise forget.
