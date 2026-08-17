@@ -18,6 +18,7 @@ import { TotalEditModal } from '@/src/components/scan/modals/TotalEditModal';
 import { ZonesPreviewModal } from '@/src/components/scan/modals/ZonesPreviewModal';
 import type { Category } from '@/src/components/scan/types';
 import { parseReceipt, ParsedReceipt, ParsedItem, ParserOptions } from '@/src/services/ocr/parser';
+import { openSavedReceipt } from '@/src/navigation/receiptFlow';
 import {
   parseWithTemplate,
   shouldUseTemplate,
@@ -482,17 +483,11 @@ export default function ScanReviewScreen() {
     }, 100);
   };
 
-  /**
-   * Leaves the scan flow for the receipt that was just saved. The scan stack is
-   * dropped first so the detail screen sits directly on the tabs and Back
-   * returns there instead of re-entering the review flow.
-   */
-  const openSavedReceipt = (receiptId: number) => {
+  const showSavedReceipt = (receiptId: number) => {
     closeAllModals();
 
     setTimeout(() => {
-      router.dismissAll();
-      router.push(`/receipt/${receiptId}`);
+      openSavedReceipt(router, receiptId);
     }, 150);
   };
 
@@ -562,7 +557,7 @@ export default function ScanReviewScreen() {
       }
 
       showSuccessToast(t('common.success'), t('scan.receiptSaved'));
-      openSavedReceipt(receipt.id);
+      showSavedReceipt(receipt.id);
     } catch (error) {
       logger.error('Save error:', error);
       showErrorToast(t('common.error'), t('errors.saveFailed'));
