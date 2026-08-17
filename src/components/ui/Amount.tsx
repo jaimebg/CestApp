@@ -9,7 +9,7 @@
 
 import { Text } from 'react-native';
 import type { TextProps } from 'react-native';
-import { money, type FontWeight } from '@/src/theme/type';
+import { money, type MonoWeight } from '@/src/theme/type';
 
 type AmountSize = 'sm' | 'base' | 'lg' | 'xl' | 'hero';
 
@@ -21,19 +21,21 @@ const sizeClasses: Record<AmountSize, string> = {
   hero: 'text-4xl',
 };
 
-const sizeWeights: Record<AmountSize, FontWeight> = {
-  sm: 'medium',
-  base: 'medium',
+// No Bold: a monospace reads heavier than a proportional face at the same
+// weight, and a third font file is not worth the startup cost.
+const sizeWeights: Record<AmountSize, MonoWeight> = {
+  sm: 'regular',
+  base: 'regular',
   lg: 'semibold',
-  xl: 'bold',
-  hero: 'bold',
+  xl: 'semibold',
+  hero: 'semibold',
 };
 
 interface AmountProps extends TextProps {
   children: React.ReactNode;
   size?: AmountSize;
   /** Overrides the weight the size would otherwise pick. */
-  weight?: FontWeight;
+  weight?: MonoWeight;
   className?: string;
 }
 

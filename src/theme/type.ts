@@ -15,6 +15,7 @@ import {
   Inter_600SemiBold,
   Inter_700Bold,
 } from '@expo-google-fonts/inter';
+import { IBMPlexMono_400Regular, IBMPlexMono_600SemiBold } from '@expo-google-fonts/ibm-plex-mono';
 
 export const fonts = {
   light: 'Inter_300Light',
@@ -25,6 +26,21 @@ export const fonts = {
 } as const;
 
 export type FontWeight = keyof typeof fonts;
+
+/**
+ * The face currency is set in.
+ *
+ * Thermal printers set receipts in monospace, so the app's figures read as
+ * receipt figures — and every digit shares an advance width, so a column of
+ * prices lines up down the screen. Two weights only: each is a separate file
+ * loaded before first paint, and five Inter weights already load.
+ */
+export const mono = {
+  regular: 'IBMPlexMono_400Regular',
+  semibold: 'IBMPlexMono_600SemiBold',
+} as const;
+
+export type MonoWeight = keyof typeof mono;
 
 /**
  * The binaries `useFonts` loads, keyed by the family name styles reference.
@@ -41,23 +57,21 @@ export const fontModules = {
   [fonts.medium]: Inter_500Medium,
   [fonts.semibold]: Inter_600SemiBold,
   [fonts.bold]: Inter_700Bold,
+  [mono.regular]: IBMPlexMono_400Regular,
+  [mono.semibold]: IBMPlexMono_600SemiBold,
 };
 
 /**
  * Monetary values.
  *
- * A paper receipt aligns its prices in a column; the app should too. Inter's
- * tabular figures give every digit the same advance width, so a list of
- * totals lines up down the screen instead of wandering with the digits. The
- * slight negative tracking stops long euro amounts from looking loose.
- *
- * This is the one place the app's typography is allowed to be distinctive —
- * amounts are the subject, so they get the treatment.
+ * `fontVariant: ['tabular-nums']` is deliberately absent — a true monospace is
+ * already tabular, so the declaration would be redundant. Plex Mono sets wider
+ * than Inter, hence the firmer negative tracking; without it long euro amounts
+ * such as €1.234,56 read loose.
  */
-export function money(weight: FontWeight = 'semibold'): TextStyle {
+export function money(weight: MonoWeight = 'semibold'): TextStyle {
   return {
-    fontFamily: fonts[weight],
-    fontVariant: ['tabular-nums'],
-    letterSpacing: -0.2,
+    fontFamily: mono[weight],
+    letterSpacing: -0.4,
   };
 }
