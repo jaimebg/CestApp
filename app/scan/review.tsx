@@ -807,8 +807,8 @@ export default function ScanReviewScreen() {
   };
 
   const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 70) return colors.primary;
-    if (confidence >= 50) return colors.accent;
+    if (confidence >= 70) return colors.action;
+    if (confidence >= 50) return colors.warning;
     return colors.error;
   };
 
@@ -927,7 +927,7 @@ export default function ScanReviewScreen() {
                     onPress={() => setShowZonesPreview(true)}
                     className="p-2 rounded-lg"
                     style={{ backgroundColor: colors.surface }}
-                    hitSlop={8}
+                    hitSlop={ICON_HIT_SLOP}
                   >
                     <Ionicons name="eye-outline" size={18} color={colors.textSecondary} />
                   </Pressable>
@@ -944,7 +944,7 @@ export default function ScanReviewScreen() {
                       className="rounded-full p-2 mr-3"
                       style={{ backgroundColor: colors.primary + '20' }}
                     >
-                      <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
+                      <Ionicons name="checkmark-circle" size={20} color={colors.action} />
                     </View>
                     <View className="flex-1">
                       <Text
@@ -966,7 +966,7 @@ export default function ScanReviewScreen() {
                       onPress={() => setShowZonesPreview(true)}
                       className="p-2 rounded-lg"
                       style={{ backgroundColor: colors.surface }}
-                      hitSlop={8}
+                      hitSlop={ICON_HIT_SLOP}
                     >
                       <Ionicons name="eye-outline" size={18} color={colors.textSecondary} />
                     </Pressable>
@@ -974,7 +974,7 @@ export default function ScanReviewScreen() {
                       onPress={handleConfigureZones}
                       className="p-2 rounded-lg"
                       style={{ backgroundColor: colors.surface }}
-                      hitSlop={8}
+                      hitSlop={ICON_HIT_SLOP}
                     >
                       <Ionicons name="pencil" size={18} color={colors.textSecondary} />
                     </Pressable>
@@ -982,7 +982,7 @@ export default function ScanReviewScreen() {
                       onPress={handleDeleteTemplate}
                       className="p-2 rounded-lg"
                       style={{ backgroundColor: colors.error + '15' }}
-                      hitSlop={8}
+                      hitSlop={ICON_HIT_SLOP}
                     >
                       <Ionicons name="trash-outline" size={18} color={colors.error} />
                     </Pressable>
@@ -1022,7 +1022,7 @@ export default function ScanReviewScreen() {
                       onPress={handleConfigureZones}
                       className="p-2 rounded-lg"
                       style={{ backgroundColor: colors.surface }}
-                      hitSlop={8}
+                      hitSlop={ICON_HIT_SLOP}
                     >
                       <Ionicons name="pencil" size={18} color={colors.textSecondary} />
                     </Pressable>
@@ -1030,7 +1030,7 @@ export default function ScanReviewScreen() {
                       onPress={handleDeleteTemplate}
                       className="p-2 rounded-lg"
                       style={{ backgroundColor: colors.error + '15' }}
-                      hitSlop={8}
+                      hitSlop={ICON_HIT_SLOP}
                     >
                       <Ionicons name="trash-outline" size={18} color={colors.error} />
                     </Pressable>
@@ -1080,7 +1080,7 @@ export default function ScanReviewScreen() {
                   <Pressable
                     onPress={handleConfigureZones}
                     className="flex-1 py-2 rounded-lg items-center"
-                    style={{ backgroundColor: colors.primary }}
+                    style={{ backgroundColor: colors.primaryDeep }}
                   >
                     <Text
                       className="text-sm text-white"
@@ -1233,10 +1233,10 @@ export default function ScanReviewScreen() {
                 className="flex-row items-center justify-center py-3 mt-2 rounded-lg"
                 style={{ backgroundColor: colors.primary + '15' }}
               >
-                <Ionicons name="add-circle-outline" size={20} color={colors.primary} />
+                <Ionicons name="add-circle-outline" size={20} color={colors.action} />
                 <Text
                   className="text-sm ml-2"
-                  style={{ color: colors.primary, fontFamily: 'Inter_500Medium' }}
+                  style={{ color: colors.action, fontFamily: 'Inter_500Medium' }}
                 >
                   {t('scan.addItem')}
                 </Text>
@@ -1282,13 +1282,13 @@ export default function ScanReviewScreen() {
                 <View className="flex-row justify-between mb-2">
                   <Text
                     className="text-sm"
-                    style={{ color: colors.primary, fontFamily: 'Inter_400Regular' }}
+                    style={{ color: colors.action, fontFamily: 'Inter_400Regular' }}
                   >
                     {t('receipt.discount')}
                   </Text>
                   <Text
                     className="text-sm"
-                    style={{ color: colors.primary, fontFamily: 'Inter_500Medium' }}
+                    style={{ color: colors.action, fontFamily: 'Inter_500Medium' }}
                   >
                     -{formatPrice(parsedData.discount)}
                   </Text>
@@ -1358,10 +1358,10 @@ export default function ScanReviewScreen() {
                     className="flex-row items-center justify-center py-2 mt-2 rounded-lg"
                     style={{ backgroundColor: colors.primary + '15' }}
                   >
-                    <Ionicons name="checkmark-circle-outline" size={18} color={colors.primary} />
+                    <Ionicons name="checkmark-circle-outline" size={18} color={colors.action} />
                     <Text
                       className="text-sm ml-2"
-                      style={{ color: colors.primary, fontFamily: 'Inter_500Medium' }}
+                      style={{ color: colors.action, fontFamily: 'Inter_500Medium' }}
                     >
                       {t('scan.matchToItemsSum')}
                     </Text>

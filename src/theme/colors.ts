@@ -40,7 +40,7 @@ export const darkColors: AppColors = {
   primaryDark: palette.primary.dark,
   primaryDeep: palette.primary.deep,
   action: palette.action.dark,
-  accent: palette.accent.DEFAULT,
+  accent: palette.accent.dark,
   warning: palette.warning.dark,
   error: palette.error.light,
   info: palette.info.dark,

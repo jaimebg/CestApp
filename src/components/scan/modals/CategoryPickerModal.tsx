@@ -73,9 +73,7 @@ export function CategoryPickerModal({
                 >
                   {item.name}
                 </Text>
-                {isSelected && (
-                  <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
-                )}
+                {isSelected && <Ionicons name="checkmark-circle" size={24} color={colors.action} />}
               </Pressable>
             );
           }}

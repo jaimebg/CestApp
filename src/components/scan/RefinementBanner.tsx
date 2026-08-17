@@ -2,6 +2,7 @@ import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppColors } from '@/src/hooks/useAppColors';
+import { ICON_HIT_SLOP } from '@/src/theme/a11y';
 import type { RefinementStatus } from '@/src/hooks/useLlmRefinement';
 
 interface Props {
@@ -42,7 +43,7 @@ export function RefinementBanner({ status, onUndo, onCompare, onDismiss }: Props
         <Ionicons
           name={isApplied ? 'sparkles' : 'git-compare-outline'}
           size={16}
-          color={colors.primary}
+          color={colors.action}
         />
         <Text className="text-sm" style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}>
           {isApplied ? t('scan.refinementApplied') : t('scan.refinementProposed')}
@@ -50,17 +51,17 @@ export function RefinementBanner({ status, onUndo, onCompare, onDismiss }: Props
       </View>
 
       {isApplied ? (
-        <Pressable onPress={onUndo} hitSlop={8}>
+        <Pressable onPress={onUndo} hitSlop={ICON_HIT_SLOP}>
           <Text
             className="text-sm"
-            style={{ color: colors.primary, fontFamily: 'Inter_600SemiBold' }}
+            style={{ color: colors.action, fontFamily: 'Inter_600SemiBold' }}
           >
             {t('scan.refinementUndo')}
           </Text>
         </Pressable>
       ) : (
         <View className="flex-row gap-3">
-          <Pressable onPress={onDismiss} hitSlop={8}>
+          <Pressable onPress={onDismiss} hitSlop={ICON_HIT_SLOP}>
             <Text
               className="text-sm"
               style={{ color: colors.textSecondary, fontFamily: 'Inter_500Medium' }}
@@ -68,10 +69,10 @@ export function RefinementBanner({ status, onUndo, onCompare, onDismiss }: Props
               {t('scan.refinementDismiss')}
             </Text>
           </Pressable>
-          <Pressable onPress={onCompare} hitSlop={8}>
+          <Pressable onPress={onCompare} hitSlop={ICON_HIT_SLOP}>
             <Text
               className="text-sm"
-              style={{ color: colors.primary, fontFamily: 'Inter_600SemiBold' }}
+              style={{ color: colors.action, fontFamily: 'Inter_600SemiBold' }}
             >
               {t('scan.refinementCompare')}
             </Text>

@@ -379,7 +379,7 @@ export default function ReceiptDetailScreen() {
               className="p-2 -mr-2"
               hitSlop={ICON_HIT_SLOP}
               accessibilityRole="button"
-              accessibilityLabel={t('receipt.deleteConfirm')}
+              accessibilityLabel={t('common.delete')}
               accessibilityState={{ disabled: isDeleting, busy: isDeleting }}
               style={{ minHeight: MIN_TARGET, justifyContent: 'center' }}
             >
@@ -663,6 +663,7 @@ export default function ReceiptDetailScreen() {
             confirmLabel={t('common.save')}
             onConfirm={saveItemEdit}
             confirmDisabled={!editingItem?.name.trim()}
+            insetTop={insets.top}
           />
 
           <ScrollView className="flex-1 px-6 py-4">

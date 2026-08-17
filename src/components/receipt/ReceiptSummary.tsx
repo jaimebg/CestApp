@@ -44,7 +44,7 @@ export function ReceiptSummary({ subtotal, tax, discount, total }: ReceiptSummar
               <Text className="text-action dark:text-action-dark text-base">
                 {t('receipt.discount')}
               </Text>
-              <Amount size="base" className="text-action dark:text-action-dark">
+              <Amount size="base" tone="action">
                 -{formatPrice(discount / 100)}
               </Amount>
             </View>

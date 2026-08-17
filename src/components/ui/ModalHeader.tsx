@@ -21,6 +21,14 @@ interface ModalHeaderProps {
   confirmLabel?: string;
   onConfirm?: () => void;
   confirmDisabled?: boolean;
+  /**
+   * Extra top padding, on top of the header's own vertical padding. Pass
+   * `insets.top` for a modal presented without its own safe-area container
+   * (e.g. an in-screen `Modal` on Android edge-to-edge, where
+   * `presentationStyle="pageSheet"` doesn't apply). Omit when the modal
+   * already accounts for the inset on an outer container.
+   */
+  insetTop?: number;
 }
 
 export function ModalHeader({
@@ -30,6 +38,7 @@ export function ModalHeader({
   confirmLabel,
   onConfirm,
   confirmDisabled = false,
+  insetTop,
 }: ModalHeaderProps) {
   const { t } = useTranslation();
   const colors = useAppColors();
@@ -37,7 +46,11 @@ export function ModalHeader({
   return (
     <View
       className="flex-row items-center px-4 py-3 border-b"
-      style={{ borderColor: colors.border, minHeight: MIN_TARGET + 12 }}
+      style={{
+        borderColor: colors.border,
+        minHeight: MIN_TARGET + 12,
+        paddingTop: insetTop ? insetTop + 12 : undefined,
+      }}
     >
       <View className="flex-1 items-start">
         <Pressable

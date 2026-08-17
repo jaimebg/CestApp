@@ -154,14 +154,14 @@ export default function OnboardingScreen() {
             <FeatureItem
               icon={features[0].icon}
               label={t(features[0].labelKey)}
-              primaryColor={colors.primary}
+              primaryColor={colors.action}
               textColor={colors.textSecondary}
               align="left"
             />
             <FeatureItem
               icon={features[1].icon}
               label={t(features[1].labelKey)}
-              primaryColor={colors.primary}
+              primaryColor={colors.action}
               textColor={colors.textSecondary}
               align="right"
             />
@@ -170,14 +170,14 @@ export default function OnboardingScreen() {
             <FeatureItem
               icon={features[2].icon}
               label={t(features[2].labelKey)}
-              primaryColor={colors.primary}
+              primaryColor={colors.action}
               textColor={colors.textSecondary}
               align="left"
             />
             <FeatureItem
               icon={features[3].icon}
               label={t(features[3].labelKey)}
-              primaryColor={colors.primary}
+              primaryColor={colors.action}
               textColor={colors.textSecondary}
               align="right"
             />

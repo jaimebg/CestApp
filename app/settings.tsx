@@ -285,7 +285,7 @@ export default function SettingsScreen() {
           }}
         >
           <View className="flex-row items-start">
-            <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
+            <Ionicons name="information-circle-outline" size={20} color={colors.action} />
             <View className="flex-1 ml-2">
               <Text
                 className="text-sm"
@@ -375,11 +375,11 @@ export default function SettingsScreen() {
               style={{
                 backgroundColor: `${colors.primary}15`,
                 borderWidth: 1,
-                borderColor: colors.primary,
+                borderColor: colors.action,
                 opacity: isLoading ? 0.5 : 1,
               }}
             >
-              <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
+              <Ionicons name="add-circle-outline" size={24} color={colors.action} />
               <View className="flex-1 ml-3">
                 <Text style={{ color: colors.text, fontFamily: 'Inter_600SemiBold', fontSize: 16 }}>
                   {t('settings.addDemoData')}

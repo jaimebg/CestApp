@@ -10,6 +10,7 @@ import { Modal, View, Text, ScrollView, Pressable, Platform } from 'react-native
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppColors } from '@/src/hooks/useAppColors';
+import { ICON_HIT_SLOP } from '@/src/theme/a11y';
 import { usePreferencesStore } from '@/src/store/preferences';
 import { Button } from '@/src/components/ui/Button';
 import type { ParsedItem, ParsedReceipt } from '@/src/services/ocr/parser';
@@ -97,7 +98,7 @@ function Column({ receipt, title, differingIndices, totalDiffers }: ColumnProps)
               className="flex-1"
               numberOfLines={1}
               style={{
-                color: differs ? colors.primary : colors.text,
+                color: differs ? colors.action : colors.text,
                 fontFamily: differs ? 'Inter_600SemiBold' : 'Inter_400Regular',
                 fontSize: 12,
               }}
@@ -106,7 +107,7 @@ function Column({ receipt, title, differingIndices, totalDiffers }: ColumnProps)
             </Text>
             <Text
               style={{
-                color: differs ? colors.primary : colors.text,
+                color: differs ? colors.action : colors.text,
                 fontFamily: differs ? 'Inter_600SemiBold' : 'Inter_500Medium',
                 fontSize: 12,
               }}
@@ -119,7 +120,7 @@ function Column({ receipt, title, differingIndices, totalDiffers }: ColumnProps)
       <View className="mt-2 border-t pt-2" style={{ borderColor: colors.border }}>
         <Text
           style={{
-            color: totalDiffers ? colors.primary : colors.text,
+            color: totalDiffers ? colors.action : colors.text,
             fontFamily: 'Inter_700Bold',
             fontSize: 13,
           }}
@@ -169,7 +170,7 @@ export function ProposalDiffModal({ visible, current, proposed, onAccept, onDism
           className="flex-row items-center justify-between px-4 py-4 border-b"
           style={{ borderColor: colors.border }}
         >
-          <Pressable onPress={onDismiss} hitSlop={8} accessibilityRole="button">
+          <Pressable onPress={onDismiss} hitSlop={ICON_HIT_SLOP} accessibilityRole="button">
             <Text style={{ color: colors.textSecondary, fontFamily: 'Inter_500Medium' }}>
               {t('common.cancel')}
             </Text>

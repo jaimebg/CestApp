@@ -340,7 +340,7 @@ export default function ScanPreviewScreen() {
               trustAllCerts={false}
               renderActivityIndicator={() => (
                 <View className="flex-1 justify-center items-center">
-                  <ActivityIndicator size="large" color={colors.primary} />
+                  <ActivityIndicator size="large" color={colors.action} />
                   <Text
                     className="text-sm mt-3"
                     style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
@@ -407,7 +407,7 @@ export default function ScanPreviewScreen() {
               className="flex-row items-center justify-center py-3 rounded-xl"
               style={{ backgroundColor: colors.surface }}
             >
-              <ActivityIndicator size="small" color={colors.primary} />
+              <ActivityIndicator size="small" color={colors.action} />
               <Text
                 className="text-sm ml-2"
                 style={{
@@ -427,12 +427,12 @@ export default function ScanPreviewScreen() {
               <Ionicons
                 name={zones.length > 0 ? 'checkmark-circle' : 'grid-outline'}
                 size={20}
-                color={zones.length > 0 ? colors.primary : colors.textSecondary}
+                color={zones.length > 0 ? colors.action : colors.textSecondary}
               />
               <Text
                 className="text-sm ml-2"
                 style={{
-                  color: zones.length > 0 ? colors.primary : colors.textSecondary,
+                  color: zones.length > 0 ? colors.action : colors.textSecondary,
                   fontFamily: 'Inter_500Medium',
                 }}
               >
@@ -443,7 +443,7 @@ export default function ScanPreviewScreen() {
               <Ionicons
                 name="chevron-forward"
                 size={16}
-                color={zones.length > 0 ? colors.primary : colors.textSecondary}
+                color={zones.length > 0 ? colors.action : colors.textSecondary}
                 style={{ marginLeft: 4 }}
               />
             </Pressable>

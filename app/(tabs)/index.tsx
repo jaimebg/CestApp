@@ -7,6 +7,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Card } from '@/src/components/ui/Card';
 import { Badge } from '@/src/components/ui/Badge';
+import { Amount } from '@/src/components/ui/Amount';
 import { Skeleton } from '@/src/components/ui/Skeleton';
 import { ReceiptCard } from '@/src/components/receipt/ReceiptCard';
 import { ReceiptCardSkeleton } from '@/src/components/receipt/ReceiptCardSkeleton';
@@ -197,12 +198,7 @@ export default function DashboardScreen() {
                 label={`${receiptCount} ${receiptCount === 1 ? t('analytics.receipt') : t('analytics.receipts')}`}
               />
             </View>
-            <Text
-              className="text-4xl text-text dark:text-text-dark"
-              style={{ fontFamily: 'Inter_700Bold' }}
-            >
-              {formatPrice(monthlyTotal)}
-            </Text>
+            <Amount size="hero">{formatPrice(monthlyTotal)}</Amount>
           </Card>
         </Animated.View>
 

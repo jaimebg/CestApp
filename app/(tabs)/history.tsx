@@ -462,6 +462,7 @@ export default function HistoryScreen() {
             closeLabel={t('common.cancel')}
             confirmLabel={t('common.done')}
             onConfirm={() => setShowFilters(false)}
+            insetTop={insets.top}
           />
 
           <ScrollView className="flex-1 px-6 py-4">

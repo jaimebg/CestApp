@@ -20,7 +20,10 @@ const variantClasses: Record<ButtonVariant, string> = {
   secondary:
     'bg-surface dark:bg-surface-dark border border-border dark:border-border-dark active:bg-border dark:active:bg-border-dark',
   ghost: 'bg-transparent active:bg-primary/10',
-  destructive: 'bg-error active:bg-error-light',
+  // `active:bg-error/90` rather than `error-light`: the light shade is
+  // ~2.5:1 against the white label, `/90` keeps the same hue and stays dark
+  // enough for white text to stay legible while still giving press feedback.
+  destructive: 'bg-error active:bg-error/90',
 };
 
 const variantTextClasses: Record<ButtonVariant, string> = {

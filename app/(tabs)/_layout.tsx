@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { View, PixelRatio } from 'react-native';
+import { View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,8 +13,12 @@ export default function TabLayout() {
   const { t } = useTranslation();
 
   // Font scaling is (correctly) left enabled app-wide, so a constant 60pt bar
-  // clipped its label at the larger accessibility text sizes.
-  const fontScale = Math.min(PixelRatio.getFontScale(), 1.6);
+  // clipped its label at the larger accessibility text sizes. `useWindowDimensions`
+  // (unlike `PixelRatio.getFontScale()`) is reactive, so the bar resizes if the
+  // user changes Dynamic Type while the app is open, not just on next launch.
+  // Cap the multiplier so the label cannot outgrow the bar it sits in.
+  const { fontScale: rawFontScale } = useWindowDimensions();
+  const fontScale = Math.min(rawFontScale, 1.6);
   const barHeight = Math.round(60 * fontScale);
   const hasCompletedOnboarding = usePreferencesStore((state) => state.hasCompletedOnboarding);
 
@@ -41,7 +45,6 @@ export default function TabLayout() {
           fontSize: 12,
           marginTop: 4,
         },
-        // Cap the multiplier so the label cannot outgrow the bar it sits in.
         tabBarLabelPosition: 'below-icon',
       }}
     >

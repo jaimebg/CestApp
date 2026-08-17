@@ -36,8 +36,8 @@ export function ConfirmationModal({
           className="absolute inset-0"
           style={{ backgroundColor: overlay }}
           onPress={onCancel}
-          accessibilityRole="button"
-          accessibilityLabel={cancelText}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
         />
         <View
           accessibilityViewIsModal

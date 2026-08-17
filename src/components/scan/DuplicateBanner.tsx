@@ -2,6 +2,7 @@ import { View, Text, Pressable } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppColors } from '@/src/hooks/useAppColors';
+import { ICON_HIT_SLOP } from '@/src/theme/a11y';
 
 interface Props {
   dateLabel: string;
@@ -40,11 +41,8 @@ export function DuplicateBanner({ dateLabel, totalLabel, onView }: Props) {
         </View>
       </View>
 
-      <Pressable onPress={onView} hitSlop={8}>
-        <Text
-          className="text-sm"
-          style={{ color: colors.primary, fontFamily: 'Inter_600SemiBold' }}
-        >
+      <Pressable onPress={onView} hitSlop={ICON_HIT_SLOP}>
+        <Text className="text-sm" style={{ color: colors.action, fontFamily: 'Inter_600SemiBold' }}>
           {t('scan.duplicateView')}
         </Text>
       </Pressable>

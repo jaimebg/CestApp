@@ -197,7 +197,7 @@ src/
       types.ts                 # LLM and backend message types
       merge.ts                 # Combines OCR and LLM readings with voting
       prompt.ts                # Spanish-language system and user prompts
-      trigger.ts               # Refine/propose/discard decision logic
+      trigger.ts               # shouldRefine / decideOutcome: apply, propose, or discard
       guards.ts                # Anchors LLM items to OCR; filters hallucinations
       reconcile.ts             # Validates item prices sum to total
       schema.ts                # JSON schema constrained to Spanish units
@@ -206,6 +206,9 @@ src/
   store/
     preferences.ts             # Zustand preferences store
     receipts.ts                # Receipts store with caching
+
+  navigation/
+    receiptFlow.ts             # Leaves the scan flow for the receipt just saved
 
   hooks/
     useAppColors.ts            # Theme colors hook
@@ -279,7 +282,15 @@ themes.
 **`primary` is a fill, `action` is ink.** `#93BD57` measures 2.11:1 on cream, so
 it must never carry text or tint an icon. Use `action` (`text-action
 dark:text-action-dark`, or `colors.action`) for anything the user reads or taps.
-`src/theme/__tests__/contrast.test.ts` enforces this.
+`src/theme/__tests__/contrast.test.ts` guards the palette's token _values_ (that
+`action` clears AA, that `primary` cannot masquerade as it) — it cannot see a
+call site pass `colors.primary` as an icon tint, so correct usage is a
+convention this file states, not something the test can enforce.
+
+Native chrome — the splash screen, `Alert`, the keyboard's appearance — still
+follows the OS rather than the in-app preference, because `app.json` sets
+`userInterfaceStyle: "automatic"`. That is a deliberate choice left to the
+user; don't change it to "chase" the in-app toggle.
 
 Centralized theme colors in `src/theme/colors.ts`:
 

@@ -129,7 +129,7 @@ export function ZoneSelectionToolbar({
           }`}
         >
           <Text
-            className={canSave ? 'text-white' : 'text-text-secondary'}
+            className={canSave ? 'text-white' : 'text-text-secondary dark:text-text-dark-secondary'}
             style={{ fontFamily: 'Inter_600SemiBold' }}
           >
             {t('common.save')}
