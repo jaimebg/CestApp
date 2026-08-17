@@ -1,4 +1,47 @@
-import { parsePrice, parseTime } from '../parseUtils';
+import { containsKeyword, parsePrice, parseTime } from '../parseUtils';
+
+describe('containsKeyword', () => {
+  it('matches a keyword standing on its own', () => {
+    expect(containsKeyword('iva 21% 4,20', 'iva')).toBe(true);
+    expect(containsKeyword('total (€) 54,20', 'total')).toBe(true);
+    expect(containsKeyword('tel: 928628756', 'tel')).toBe(true);
+  });
+
+  it('does not match a keyword buried inside a product name', () => {
+    expect(containsKeyword('1 atún claro oliva pk6 4,75', 'iva')).toBe(false);
+    expect(containsKeyword('1 aceite oliva virgen 6,90', 'iva')).toBe(false);
+    expect(containsKeyword('1 nutella 400g 3,49', 'tel')).toBe(false);
+    expect(containsKeyword('1 pastel de carne 2,10', 'tel')).toBe(false);
+    expect(containsKeyword('1 ribera del duero 7,95', 'due')).toBe(false);
+    expect(containsKeyword('1 cardo en conserva 1,85', 'card')).toBe(false);
+    expect(containsKeyword('1 consumo responsable 1,00', 'sum')).toBe(false);
+  });
+
+  it('still matches keywords whose own edges are not word characters', () => {
+    expect(containsKeyword('www.mercadona.es', 'www.')).toBe(true);
+    expect(containsKeyword('atencion@mercadona.es', '@')).toBe(true);
+    expect(containsKeyword('http://mercadona.es', 'http')).toBe(true);
+    expect(containsKeyword('mercadona, s.a.', 's.a.')).toBe(true);
+    expect(containsKeyword('c.i.f: a-46103834', 'c.i.f')).toBe(true);
+  });
+
+  it('handles repeated occurrences where only the later one is a whole word', () => {
+    expect(containsKeyword('oliva iva 4,20', 'iva')).toBe(true);
+  });
+
+  it('still matches the Spanish plural of a keyword', () => {
+    expect(containsKeyword('centros comerciales carrefour', 'centro')).toBe(true);
+    expect(containsKeyword('centros comerciales carrefour', 'comercial')).toBe(true);
+    expect(containsKeyword('totales 54,20', 'total')).toBe(true);
+  });
+
+  it('does not treat an arbitrary suffix as a plural', () => {
+    expect(containsKeyword('1 cardo en conserva 1,85', 'card')).toBe(false);
+    expect(containsKeyword('1 ribera del duero 7,95', 'due')).toBe(false);
+    expect(containsKeyword('1 telas de cocina 2,00', 'tel')).toBe(false);
+    expect(containsKeyword('1 aceitunas olivas 3,10', 'iva')).toBe(false);
+  });
+});
 
 describe('parsePrice', () => {
   it('parses Spanish decimal comma format', () => {

@@ -2,6 +2,58 @@
  * Shared low-level parsing helpers for receipt text
  */
 
+function isWordCharacter(char: string): boolean {
+  return char.length > 0 && /[\p{L}\p{N}]/u.test(char);
+}
+
+/** Spanish plural endings a keyword is still allowed to be followed by. */
+const PLURAL_SUFFIXES = ['s', 'es'];
+
+function endsAtWordBoundary(haystack: string, end: number): boolean {
+  if (!isWordCharacter(haystack[end] ?? '')) return true;
+
+  return PLURAL_SUFFIXES.some(
+    (suffix) =>
+      haystack.startsWith(suffix, end) && !isWordCharacter(haystack[end + suffix.length] ?? '')
+  );
+}
+
+/**
+ * Whole-word keyword test for the parser keyword lists.
+ *
+ * A plain substring test silently drops real products: "iva" sits inside
+ * "OLIVA", "tel" inside "NUTELLA", "due" inside "DUERO", "card" inside
+ * "CARDO". A boundary is only required on an edge of the keyword that is
+ * itself alphanumeric, so fragment keywords such as "www.", "@" and "s.a."
+ * keep matching the way they were written to, and a trailing Spanish plural
+ * still counts so "CENTROS COMERCIALES" matches "centro" and "comercial".
+ */
+export function containsKeyword(haystack: string, keyword: string): boolean {
+  if (keyword.length === 0) return false;
+
+  const checkStart = isWordCharacter(keyword[0]);
+  const checkEnd = isWordCharacter(keyword[keyword.length - 1]);
+
+  let from = 0;
+
+  for (;;) {
+    const index = haystack.indexOf(keyword, from);
+    if (index === -1) return false;
+
+    const before = index > 0 ? haystack[index - 1] : '';
+    const end = index + keyword.length;
+
+    if (
+      (!checkStart || !isWordCharacter(before)) &&
+      (!checkEnd || endsAtWordBoundary(haystack, end))
+    ) {
+      return true;
+    }
+
+    from = index + 1;
+  }
+}
+
 /**
  * Parse price from a string
  * Handles formats: $12.34, 12.34, $12,34, 12,34, 12, 34 (with space)

@@ -7,6 +7,7 @@ import type { OcrBlock } from './index';
 import type { ParsedItem } from './parser';
 import type { RegionalPreset } from '../../config/regionalPresets';
 import { createScopedLogger } from '../../utils/debug';
+import { containsKeyword } from './parseUtils';
 
 const logger = createScopedLogger('SpatialCorrelator');
 
@@ -289,7 +290,7 @@ function detectItemZone(elements: OcrElement[]): { start: number; end: number } 
   let endY = 0.85; // Default: before ~85% of receipt (footer)
   for (const element of elements) {
     const lowerText = element.text.toLowerCase();
-    if (totalKeywords.some((kw) => lowerText.includes(kw))) {
+    if (totalKeywords.some((kw) => containsKeyword(lowerText, kw))) {
       endY = element.y;
       break;
     }
@@ -325,13 +326,13 @@ export function extractItemsFromClusters(
     // Skip if matches skip keywords
     const lowerText = cluster.productText.toLowerCase();
     const skipKeywords = preset?.skipKeywords || [];
-    if (skipKeywords.some((kw) => lowerText.includes(kw.toLowerCase()))) {
+    if (skipKeywords.some((kw) => containsKeyword(lowerText, kw.toLowerCase()))) {
       continue;
     }
 
     // Skip total/subtotal lines
     const totalKeywords = ['total', 'subtotal', 'importe', 'suma', 'iva', 'tax'];
-    if (totalKeywords.some((kw) => lowerText.includes(kw))) {
+    if (totalKeywords.some((kw) => containsKeyword(lowerText, kw))) {
       continue;
     }
 

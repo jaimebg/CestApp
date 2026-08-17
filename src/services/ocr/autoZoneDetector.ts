@@ -7,6 +7,7 @@ import type { OcrBlock } from './index';
 import type { ZoneDefinition, ZoneType, NormalizedBoundingBox } from '../../types/zones';
 import { createScopedLogger } from '../../utils/debug';
 import { detectRegionFromText, type RegionalPreset } from '../../config/regionalPresets';
+import { containsKeyword } from './parseUtils';
 
 const logger = createScopedLogger('AutoZoneDetector');
 
@@ -224,7 +225,7 @@ function containsDate(text: string): boolean {
  */
 function isTotalLine(text: string): boolean {
   const lower = text.toLowerCase();
-  return TOTAL_KEYWORDS.some((kw) => lower.includes(kw));
+  return TOTAL_KEYWORDS.some((kw) => containsKeyword(lower, kw));
 }
 
 /**
@@ -232,7 +233,7 @@ function isTotalLine(text: string): boolean {
  */
 function shouldSkipLine(text: string): boolean {
   const lower = text.toLowerCase();
-  return SKIP_KEYWORDS.some((kw) => lower.includes(kw)) || isTotalLine(text);
+  return SKIP_KEYWORDS.some((kw) => containsKeyword(lower, kw)) || isTotalLine(text);
 }
 
 /**
@@ -261,7 +262,7 @@ function isProductName(text: string): boolean {
  */
 function isHeaderLine(text: string): boolean {
   const lower = text.toLowerCase();
-  return HEADER_KEYWORDS.some((kw) => lower.includes(kw));
+  return HEADER_KEYWORDS.some((kw) => containsKeyword(lower, kw));
 }
 
 /**
@@ -537,7 +538,7 @@ export function autoDetectZones(
     const lower = block.text.toLowerCase();
 
     // Check for any total keyword (from preset or default)
-    const hasTotalKeyword = totalKeywords.some((kw) => upper.includes(kw.toUpperCase()));
+    const hasTotalKeyword = totalKeywords.some((kw) => containsKeyword(upper, kw.toUpperCase()));
     const isSubtotal = lower.includes('sub');
     const hasPrice = containsPrice(block.text);
 
@@ -568,7 +569,7 @@ export function autoDetectZones(
       const upper = block.text.toUpperCase();
       const lower = block.text.toLowerCase();
 
-      const hasTotalKeyword = totalKeywords.some((kw) => upper.includes(kw.toUpperCase()));
+      const hasTotalKeyword = totalKeywords.some((kw) => containsKeyword(upper, kw.toUpperCase()));
       const isSubtotal = lower.includes('sub') || lower.includes('parcial');
 
       // Must be in bottom half and be a total (not subtotal)
@@ -654,7 +655,8 @@ export function autoDetectZones(
     const upper = block.text.toUpperCase();
     const lower = block.text.toLowerCase();
     const hasTotalKeyword =
-      totalKeywords.some((kw) => upper.includes(kw.toUpperCase())) && !lower.includes('articul');
+      totalKeywords.some((kw) => containsKeyword(upper, kw.toUpperCase())) &&
+      !lower.includes('articul');
     const hasPrice = containsPrice(block.text);
 
     if (hasTotalKeyword && hasPrice) {

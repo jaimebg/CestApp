@@ -64,6 +64,29 @@ describe('parseReceipt with a Mercadona receipt', () => {
   });
 });
 
+describe('parseReceipt with product names that embed skip keywords', () => {
+  const result = parseReceipt([
+    'MERCADONA, S.A.',
+    'NIF: A-46103834',
+    '10/03/2026 18:45',
+    '1 ATÚN CLARO OLIVA PK6 4,75',
+    '1 ACEITE OLIVA VIRGEN 6,90',
+    '1 TOMATE FRITO 1,20',
+    'TOTAL (€) 12,85',
+  ]);
+
+  it('keeps items whose name merely contains a keyword as a substring', () => {
+    const names = result.items.map((i) => i.name.toUpperCase());
+    expect(names).toContain('ATÚN CLARO OLIVA PK6');
+    expect(names).toContain('ACEITE OLIVA VIRGEN');
+  });
+
+  it('sums the items to the printed total', () => {
+    const sum = result.items.reduce((acc, i) => acc + i.totalPrice, 0);
+    expect(Math.round(sum * 100) / 100).toBe(12.85);
+  });
+});
+
 describe('parseReceipt with a generic receipt', () => {
   const result = parseReceipt(GENERIC_RECEIPT);
 

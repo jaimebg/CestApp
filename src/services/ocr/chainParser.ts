@@ -6,7 +6,7 @@
 import type { ChainTemplate, ItemPattern } from '../../config/spanishChains';
 import type { ParsedItem, ParsedReceipt } from './parser';
 import { ChainDetectionResult, applyChainOcrCorrectionsToLines } from './chainDetector';
-import { parsePrice, parseTime } from './parseUtils';
+import { containsKeyword, parsePrice, parseTime } from './parseUtils';
 
 /**
  * Chain parsing result with additional metadata
@@ -155,7 +155,7 @@ function parseItemsWithPatterns(
 
     // Skip non-item lines
     const lowerLine = line.toLowerCase();
-    if (SKIP_KEYWORDS.some((kw) => lowerLine.includes(kw))) {
+    if (SKIP_KEYWORDS.some((kw) => containsKeyword(lowerLine, kw))) {
       continue;
     }
 
