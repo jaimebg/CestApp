@@ -2,6 +2,8 @@
  * Shared types for the review screen components
  */
 
+import type { AppColors } from '../../theme/colors';
+
 export type Category = {
   id: number;
   name: string;
@@ -9,15 +11,8 @@ export type Category = {
   color: string | null;
 };
 
-export interface ReviewColors {
-  background: string;
-  surface: string;
-  text: string;
-  textSecondary: string;
-  border: string;
-  primary: string;
-  primaryDark: string;
-  primaryDeep: string;
-  accent: string;
-  error: string;
-}
+/**
+ * The review screen threads the theme down as a prop. Aliased rather than
+ * redeclared so it cannot drift from what `useAppColors()` actually returns.
+ */
+export type ReviewColors = AppColors;

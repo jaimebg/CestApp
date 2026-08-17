@@ -10,7 +10,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import Animated, { FadeInDown, Layout } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -24,6 +24,11 @@ import {
 } from '@/src/db/queries/receipts';
 import { ReceiptCard } from '@/src/components/receipt/ReceiptCard';
 import { ReceiptListSkeleton } from '@/src/components/receipt/ReceiptCardSkeleton';
+import { EmptyState } from '@/src/components/ui/EmptyState';
+import { ModalHeader } from '@/src/components/ui/ModalHeader';
+import { useAppColors } from '@/src/hooks/useAppColors';
+import { useEntering, staggerDelay } from '@/src/hooks/useEntering';
+import { ICON_HIT_SLOP, MIN_TARGET } from '@/src/theme/a11y';
 import { createScopedLogger } from '@/src/utils/debug';
 import type { Receipt } from '@/src/db/schema/receipts';
 import type { Store } from '@/src/db/schema/stores';
@@ -72,6 +77,8 @@ export default function HistoryScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { isReady } = useDatabaseReady();
+  const colors = useAppColors();
+  const entering = useEntering();
 
   const [receipts, setReceipts] = useState<ReceiptWithStore[]>([]);
   const [stores, setStores] = useState<{ id: number; name: string }[]>([]);
@@ -189,48 +196,36 @@ export default function HistoryScreen() {
   }, [selectedDatePreset, t]);
 
   const renderEmptyState = () => (
-    <View className="flex-1 justify-center items-center px-8">
-      <View className="bg-primary/20 dark:bg-primary/30 rounded-full p-6 mb-4">
-        <Ionicons name="receipt-outline" size={48} color="#93BD57" />
-      </View>
-      <Text
-        className="text-lg text-text dark:text-text-dark text-center"
-        style={{ fontFamily: 'Inter_600SemiBold' }}
-      >
-        {hasActiveFilters || searchQuery ? t('history.noResults') : t('history.noReceipts')}
-      </Text>
-      <Text
-        className="text-base text-text-secondary dark:text-text-dark-secondary text-center mt-2"
-        style={{ fontFamily: 'Inter_400Regular' }}
-      >
-        {searchQuery
+    <EmptyState
+      icon="receipt-outline"
+      title={hasActiveFilters || searchQuery ? t('history.noResults') : t('history.noReceipts')}
+      description={
+        searchQuery
           ? t('history.noResultsFor', { query: searchQuery })
           : hasActiveFilters
-            ? t('history.clearFilters')
-            : t('history.noReceiptsDesc')}
-      </Text>
-      {(hasActiveFilters || searchQuery) && (
-        <Pressable onPress={handleClearFilters} className="mt-4 px-4 py-2 bg-primary rounded-lg">
-          <Text className="text-white font-medium">{t('history.clearFilters')}</Text>
-        </Pressable>
-      )}
-    </View>
+            ? t('history.filtersHideEverything')
+            : t('history.noReceiptsDesc')
+      }
+      actionLabel={hasActiveFilters || searchQuery ? t('history.clearFilters') : undefined}
+      onAction={hasActiveFilters || searchQuery ? handleClearFilters : undefined}
+    />
   );
 
-  const renderReceiptItem = ({ item, index }: { item: ReceiptWithStore; index: number }) => (
-    <Animated.View
-      entering={FadeInDown.delay(index * 50)
-        .duration(300)
-        .springify()}
-      layout={Layout.springify()}
-    >
-      <ReceiptCard
-        receipt={item.receipt}
-        store={item.store}
-        itemCount={item.itemCount}
-        onPress={() => handleReceiptPress(item.receipt.id)}
-      />
-    </Animated.View>
+  // Defined with useCallback so FlashList keeps a stable component identity,
+  // and the stagger is capped: index-based delays on a recycled list mean a
+  // row 40 deep waits two seconds, and re-waits every time it scrolls back.
+  const renderReceiptItem = useCallback(
+    ({ item, index }: { item: ReceiptWithStore; index: number }) => (
+      <Animated.View entering={entering(FadeInDown, staggerDelay(index), 300)}>
+        <ReceiptCard
+          receipt={item.receipt}
+          store={item.store}
+          itemCount={item.itemCount}
+          onPress={() => handleReceiptPress(item.receipt.id)}
+        />
+      </Animated.View>
+    ),
+    [entering, handleReceiptPress]
   );
 
   if (!isReady || isLoading) {
@@ -285,12 +280,13 @@ export default function HistoryScreen() {
       {/* Search bar */}
       <View className="px-6 py-3">
         <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl px-4 py-3 border border-border dark:border-border-dark">
-          <Ionicons name="search-outline" size={20} color="#8D8680" />
+          <Ionicons name="search-outline" size={20} color={colors.textTertiary} />
           <TextInput
             className="flex-1 ml-3 text-text dark:text-text-dark text-base"
             style={{ fontFamily: 'Inter_400Regular' }}
             placeholder={t('common.search')}
-            placeholderTextColor="#8D8680"
+            accessibilityLabel={t('common.search')}
+            placeholderTextColor={colors.textTertiary}
             value={searchQuery}
             onChangeText={handleSearch}
             returnKeyType="search"
@@ -298,11 +294,16 @@ export default function HistoryScreen() {
             autoCorrect={false}
           />
           {searchQuery.length > 0 && (
-            <Pressable onPress={() => handleSearch('')}>
-              <Ionicons name="close-circle" size={20} color="#8D8680" />
+            <Pressable
+              onPress={() => handleSearch('')}
+              hitSlop={ICON_HIT_SLOP}
+              accessibilityRole="button"
+              accessibilityLabel={t('history.clearSearch')}
+            >
+              <Ionicons name="close-circle" size={20} color={colors.textTertiary} />
             </Pressable>
           )}
-          {isSearching && <ActivityIndicator size="small" color="#93BD57" className="ml-2" />}
+          {isSearching && <ActivityIndicator size="small" color={colors.action} className="ml-2" />}
         </View>
       </View>
 
@@ -316,6 +317,10 @@ export default function HistoryScreen() {
           {/* Filter button */}
           <Pressable
             onPress={() => setShowFilters(true)}
+            accessibilityRole="button"
+            accessibilityLabel={t('history.filters')}
+            accessibilityState={{ selected: hasActiveFilters }}
+            style={{ minHeight: MIN_TARGET }}
             className={`flex-row items-center px-3 py-2 rounded-full border ${
               hasActiveFilters
                 ? 'bg-primary/20 border-primary'
@@ -325,19 +330,19 @@ export default function HistoryScreen() {
             <Ionicons
               name="options-outline"
               size={16}
-              color={hasActiveFilters ? '#93BD57' : '#8D8680'}
+              color={hasActiveFilters ? colors.action : colors.textTertiary}
             />
             <Text
               className={`ml-2 text-sm ${
                 hasActiveFilters
-                  ? 'text-primary'
+                  ? 'text-action dark:text-action-dark'
                   : 'text-text-secondary dark:text-text-dark-secondary'
               }`}
             >
               {t('history.filters')}
             </Text>
             {hasActiveFilters && (
-              <View className="ml-1 w-5 h-5 rounded-full bg-primary items-center justify-center">
+              <View className="ml-1 w-5 h-5 rounded-full bg-primary-deep items-center justify-center">
                 <Text className="text-white text-xs font-bold">
                   {(selectedStoreId ? 1 : 0) + (selectedDatePreset !== 'all' ? 1 : 0)}
                 </Text>
@@ -348,6 +353,10 @@ export default function HistoryScreen() {
           {/* Date filter chip */}
           <Pressable
             onPress={() => setShowFilters(true)}
+            accessibilityRole="button"
+            accessibilityLabel={`${t('history.dateRange')}: ${datePresetLabel}`}
+            accessibilityState={{ selected: selectedDatePreset !== 'all' }}
+            style={{ minHeight: MIN_TARGET }}
             className={`flex-row items-center px-3 py-2 rounded-full border ${
               selectedDatePreset !== 'all'
                 ? 'bg-primary/20 border-primary'
@@ -357,12 +366,12 @@ export default function HistoryScreen() {
             <Ionicons
               name="calendar-outline"
               size={16}
-              color={selectedDatePreset !== 'all' ? '#93BD57' : '#8D8680'}
+              color={selectedDatePreset !== 'all' ? colors.action : colors.textTertiary}
             />
             <Text
               className={`ml-2 text-sm ${
                 selectedDatePreset !== 'all'
-                  ? 'text-primary'
+                  ? 'text-action dark:text-action-dark'
                   : 'text-text-secondary dark:text-text-dark-secondary'
               }`}
             >
@@ -373,6 +382,10 @@ export default function HistoryScreen() {
           {/* Store filter chip */}
           <Pressable
             onPress={() => setShowFilters(true)}
+            accessibilityRole="button"
+            accessibilityLabel={`${t('history.store')}: ${selectedStoreName}`}
+            accessibilityState={{ selected: selectedStoreId !== null }}
+            style={{ minHeight: MIN_TARGET }}
             className={`flex-row items-center px-3 py-2 rounded-full border ${
               selectedStoreId
                 ? 'bg-primary/20 border-primary'
@@ -382,12 +395,12 @@ export default function HistoryScreen() {
             <Ionicons
               name="storefront-outline"
               size={16}
-              color={selectedStoreId ? '#93BD57' : '#8D8680'}
+              color={selectedStoreId ? colors.action : colors.textTertiary}
             />
             <Text
               className={`ml-2 text-sm ${
                 selectedStoreId
-                  ? 'text-primary'
+                  ? 'text-action dark:text-action-dark'
                   : 'text-text-secondary dark:text-text-dark-secondary'
               }`}
               numberOfLines={1}
@@ -400,10 +413,15 @@ export default function HistoryScreen() {
           {hasActiveFilters && (
             <Pressable
               onPress={handleClearFilters}
+              accessibilityRole="button"
+              accessibilityLabel={t('history.clearFilters')}
+              style={{ minHeight: MIN_TARGET }}
               className="flex-row items-center px-3 py-2 rounded-full bg-error/10 border border-error/30"
             >
-              <Ionicons name="close" size={16} color="#980404" />
-              <Text className="ml-1 text-sm text-error">{t('history.clearFilters')}</Text>
+              <Ionicons name="close" size={16} color={colors.error} />
+              <Text className="ml-1 text-sm text-error dark:text-error-light">
+                {t('history.clearFilters')}
+              </Text>
             </Pressable>
           )}
         </ScrollView>
@@ -423,8 +441,8 @@ export default function HistoryScreen() {
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={handleRefresh}
-            tintColor="#93BD57"
-            colors={['#93BD57']}
+            tintColor={colors.action}
+            colors={[colors.action]}
           />
         }
         showsVerticalScrollIndicator={false}
@@ -438,24 +456,13 @@ export default function HistoryScreen() {
         onRequestClose={() => setShowFilters(false)}
       >
         <View className="flex-1 bg-background dark:bg-background-dark">
-          {/* Modal Header */}
-          <View
-            className="flex-row items-center justify-between px-4 py-4 border-b border-border dark:border-border-dark"
-            style={{ paddingTop: insets.top + 16 }}
-          >
-            <Pressable onPress={() => setShowFilters(false)}>
-              <Text className="text-primary text-base">{t('common.cancel')}</Text>
-            </Pressable>
-            <Text
-              className="text-lg text-text dark:text-text-dark"
-              style={{ fontFamily: 'Inter_600SemiBold' }}
-            >
-              {t('history.filters')}
-            </Text>
-            <Pressable onPress={() => setShowFilters(false)}>
-              <Text className="text-primary text-base font-semibold">{t('common.done')}</Text>
-            </Pressable>
-          </View>
+          <ModalHeader
+            title={t('history.filters')}
+            onClose={() => setShowFilters(false)}
+            closeLabel={t('common.cancel')}
+            confirmLabel={t('common.done')}
+            onConfirm={() => setShowFilters(false)}
+          />
 
           <ScrollView className="flex-1 px-6 py-4">
             {/* Date Range Section */}
@@ -471,9 +478,12 @@ export default function HistoryScreen() {
                   <Pressable
                     key={preset}
                     onPress={() => setSelectedDatePreset(preset)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: selectedDatePreset === preset }}
+                    style={{ minHeight: MIN_TARGET, justifyContent: 'center' }}
                     className={`px-4 py-2 rounded-full border ${
                       selectedDatePreset === preset
-                        ? 'bg-primary border-primary'
+                        ? 'bg-primary-deep border-primary-deep'
                         : 'bg-surface dark:bg-surface-dark border-border dark:border-border-dark'
                     }`}
                   >
@@ -501,9 +511,12 @@ export default function HistoryScreen() {
             <View className="flex-row flex-wrap gap-2 mb-6">
               <Pressable
                 onPress={() => setSelectedStoreId(null)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: selectedStoreId === null }}
+                style={{ minHeight: MIN_TARGET, justifyContent: 'center' }}
                 className={`px-4 py-2 rounded-full border ${
                   selectedStoreId === null
-                    ? 'bg-primary border-primary'
+                    ? 'bg-primary-deep border-primary-deep'
                     : 'bg-surface dark:bg-surface-dark border-border dark:border-border-dark'
                 }`}
               >
@@ -521,9 +534,13 @@ export default function HistoryScreen() {
                 <Pressable
                   key={store.id}
                   onPress={() => setSelectedStoreId(store.id)}
+                  accessibilityRole="button"
+                  accessibilityLabel={store.name}
+                  accessibilityState={{ selected: selectedStoreId === store.id }}
+                  style={{ minHeight: MIN_TARGET, justifyContent: 'center' }}
                   className={`px-4 py-2 rounded-full border ${
                     selectedStoreId === store.id
-                      ? 'bg-primary border-primary'
+                      ? 'bg-primary-deep border-primary-deep'
                       : 'bg-surface dark:bg-surface-dark border-border dark:border-border-dark'
                   }`}
                 >
@@ -544,9 +561,14 @@ export default function HistoryScreen() {
             {hasActiveFilters && (
               <Pressable
                 onPress={handleClearFilters}
-                className="bg-error/10 border border-error/30 rounded-xl py-3 items-center mt-4"
+                accessibilityRole="button"
+                accessibilityLabel={t('history.clearFilters')}
+                style={{ minHeight: MIN_TARGET }}
+                className="bg-error/10 border border-error/30 rounded-xl py-3 items-center justify-center mt-4"
               >
-                <Text className="text-error font-medium">{t('history.clearFilters')}</Text>
+                <Text className="text-error dark:text-error-light font-medium">
+                  {t('history.clearFilters')}
+                </Text>
               </Pressable>
             )}
           </ScrollView>

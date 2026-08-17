@@ -1,15 +1,21 @@
 import { Tabs } from 'expo-router';
-import { View } from 'react-native';
+import { View, PixelRatio } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { usePreferencesStore } from '@/src/store/preferences';
 import { useAppColors } from '@/src/hooks/useAppColors';
+import { fonts } from '@/src/theme/type';
 
 export default function TabLayout() {
   const colors = useAppColors();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
+
+  // Font scaling is (correctly) left enabled app-wide, so a constant 60pt bar
+  // clipped its label at the larger accessibility text sizes.
+  const fontScale = Math.min(PixelRatio.getFontScale(), 1.6);
+  const barHeight = Math.round(60 * fontScale);
   const hasCompletedOnboarding = usePreferencesStore((state) => state.hasCompletedOnboarding);
 
   if (!hasCompletedOnboarding) {
@@ -20,7 +26,7 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.primary,
+        tabBarActiveTintColor: colors.action,
         tabBarInactiveTintColor: colors.textSecondary,
         tabBarStyle: {
           backgroundColor: colors.surface,
@@ -28,13 +34,15 @@ export default function TabLayout() {
           borderTopWidth: 1,
           paddingTop: 8,
           paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
-          height: 60 + (insets.bottom > 0 ? insets.bottom : 8),
+          height: barHeight + (insets.bottom > 0 ? insets.bottom : 8),
         },
         tabBarLabelStyle: {
-          fontFamily: 'Inter_500Medium',
+          fontFamily: fonts.medium,
           fontSize: 12,
           marginTop: 4,
         },
+        // Cap the multiplier so the label cannot outgrow the bar it sits in.
+        tabBarLabelPosition: 'below-icon',
       }}
     >
       <Tabs.Screen

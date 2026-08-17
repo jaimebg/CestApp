@@ -43,7 +43,6 @@ CestApp is a **Spain-focused** supermarket receipt scanner app built with React 
 - Prefer named exports for components
 - Use `useTranslation()` hook for all user-facing text
 - **No comments** unless JSDoc or absolutely necessary - code should be self-documenting
-- **Never create new .md files** unless explicitly asked
 - **Use direct imports** instead of barrel imports for better tree-shaking:
   ```typescript
   // Good
@@ -59,8 +58,17 @@ CestApp is a **Spain-focused** supermarket receipt scanner app built with React 
 - Use NativeWind classes via `className` prop
 - Follow the color palette defined in `tailwind.config.js`
 - Use `useSafeAreaInsets()` hook for safe area handling (NOT SafeAreaView component)
-- Apply `fontFamily` via inline styles for Inter font weights:
+- Apply `fontFamily` via inline styles for Inter font weights, using the
+  `fonts` map in `src/theme/type.ts`:
   - `Inter_300Light`, `Inter_400Regular`, `Inter_500Medium`, `Inter_600SemiBold`, `Inter_700Bold`
+- **Never use Tailwind weight classes** (`font-semibold`, `font-bold`). They set
+  `fontWeight` and leave `fontFamily` unset, which silently renders that text in
+  the system font instead of Inter.
+- Wrap monetary values in `<Amount>` so prices share one tabular-figure
+  treatment and line up in a column.
+- Route entering animations through `useEntering()` (`src/hooks/useEntering.ts`)
+  so they respect the OS "Reduce Motion" setting. Avoid `.springify()` — spring
+  overshoot on arriving content is a vestibular trigger.
 
 ### Color Palette
 
@@ -209,19 +217,38 @@ src/
 
 Available in `src/components/ui/`:
 
-| Component         | Props                                                                   | Description           |
-| ----------------- | ----------------------------------------------------------------------- | --------------------- |
-| Button            | `variant` (primary, secondary, ghost, destructive), `size` (sm, md, lg) | Primary action button |
-| Card              | `variant` (elevated, outlined, filled), `padding` (sm, md, lg)          | Content container     |
-| Input             | `label`, `error`, `leftIcon`, `rightIcon`                               | Text input field      |
-| Badge             | `variant` (default, success, warning, error, info), `size` (sm, md, lg) | Status indicator      |
-| Skeleton          | `SkeletonText`, `SkeletonCircle`, `SkeletonCard`                        | Loading placeholders  |
-| AnimatedList      | `entering`, `layout`                                                    | Animated list items   |
-| ConfirmationModal | `visible`, `title`, `message`, `onConfirm`, `onCancel`                  | Delete confirmation   |
-| EmptyState        | `icon`, `title`, `description`, `action`                                | Empty/error states    |
-| ErrorBoundary     | `children`, `fallback`, `onError`                                       | React error boundary  |
+| Component         | Props                                                                   | Description             |
+| ----------------- | ----------------------------------------------------------------------- | ----------------------- |
+| Button            | `variant` (primary, secondary, ghost, destructive), `size` (sm, md, lg) | Primary action button   |
+| Card              | `variant` (elevated, outlined, filled), `padding` (sm, md, lg)          | Content container       |
+| Input             | `label`, `error`, `leftIcon`, `rightIcon`                               | Text input field        |
+| Badge             | `variant` (default, success, warning, error, info), `size` (sm, md)     | Status indicator        |
+| Amount            | `size` (sm, base, lg, xl, hero), `weight`                               | Monetary value          |
+| ModalHeader       | `title`, `onClose`, `closeLabel`, `confirmLabel`, `onConfirm`           | Shared modal header bar |
+| Skeleton          | `SkeletonText`, `SkeletonCircle`, `SkeletonCard`                        | Loading placeholders    |
+| ConfirmationModal | `visible`, `title`, `message`, `onConfirm`, `onCancel`                  | Delete confirmation     |
+| EmptyState        | `icon`, `title`, `description`, `action`                                | Empty/error states      |
+| ErrorBoundary     | `children`, `fallback`, `onError`                                       | React error boundary    |
+
+Use these rather than hand-rolling equivalents — they carry the accessibility
+role, label and 44pt minimum target that screens otherwise forget.
 
 ## Theme System
+
+`src/theme/palette.js` is the single source of truth for colour. It is plain
+CommonJS so `tailwind.config.js` (Node, build time) and `src/theme/colors.ts`
+(Metro, runtime) both read it and cannot drift.
+
+Tailwind runs in `darkMode: 'class'`, so `dark:` variants follow the in-app
+appearance preference rather than the OS. `app/_layout.tsx` pushes the stored
+preference into NativeWind via `colorScheme.set()` — without that sync the
+`className` half and the `useAppColors()` half of a screen render different
+themes.
+
+**`primary` is a fill, `action` is ink.** `#93BD57` measures 2.11:1 on cream, so
+it must never carry text or tint an icon. Use `action` (`text-action
+dark:text-action-dark`, or `colors.action`) for anything the user reads or taps.
+`src/theme/__tests__/contrast.test.ts` enforces this.
 
 Centralized theme colors in `src/theme/colors.ts`:
 
@@ -234,7 +261,9 @@ function MyComponent() {
 }
 ```
 
-Available color keys: `background`, `surface`, `text`, `textSecondary`, `border`, `primary`, `primaryDark`, `primaryDeep`, `accent`, `error`
+Available color keys: `background`, `surface`, `text`, `textSecondary`,
+`textTertiary`, `border`, `primary` (fill only), `primaryDark`, `primaryDeep`,
+`action` (interactive ink), `accent` (fill only), `warning`, `error`, `info`
 
 ## Debug Utilities
 
@@ -467,9 +496,15 @@ CI (`.github/workflows/ci.yml`) runs type check, lint, format check, and tests o
 9. **Kerning in PDFs**: TJ operator kerning values need threshold (-100) to detect word spacing
 10. **NUL Bytes**: PDF extracted text may contain NUL bytes - must be cleaned
 11. **FlashList v2**: Does not have `estimatedItemSize` prop - removed in v2.0
-12. **Theme Colors**: Use `useAppColors()` hook instead of duplicating colors in components
-13. **Debug Logging**: Use `createScopedLogger()` instead of `console.log`
-14. **tsconfig `types` Allowlist**: `compilerOptions.types` is an explicit allowlist (`"types": ["jest"]`), so any future `@types/*` package must be added there deliberately
+12. **Index-based stagger on recycled lists**: `delay(index * n)` re-runs every
+    time a cell scrolls back into view, and hides deep rows for seconds. Use
+    `staggerDelay()` from `useEntering`, which caps it.
+13. **React Compiler is on** (`app.json` → `experiments.reactCompiler`): never
+    add an `eslint-disable` for a React rule, it opts the whole component out of
+    compilation.
+14. **Theme Colors**: Use `useAppColors()` hook instead of duplicating colors in components
+15. **Debug Logging**: Use `createScopedLogger()` instead of `console.log`
+16. **tsconfig `types` Allowlist**: `compilerOptions.types` is an explicit allowlist (`"types": ["jest"]`), so any future `@types/*` package must be added there deliberately
 
 ## Development Setup
 

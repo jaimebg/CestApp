@@ -2,11 +2,11 @@
  * Modal for previewing applied zones on a receipt image
  */
 
-import { View, Text, ScrollView, Pressable, Modal, Platform } from 'react-native';
+import { View, Text, ScrollView, Modal, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
+import { ModalHeader } from '../../ui/ModalHeader';
 import Svg, { Rect } from 'react-native-svg';
-import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { ZONE_COLORS, type ZoneDefinition } from '@/src/types/zones';
 import type { ReviewColors } from '../types';
@@ -55,20 +55,8 @@ export function ZonesPreviewModal({
         }}
       >
         {/* Header */}
-        <View
-          className="flex-row items-center justify-between px-4 py-4 border-b"
-          style={{ borderColor: colors.border }}
-        >
-          <Pressable onPress={onClose} hitSlop={8}>
-            <Ionicons name="close" size={24} color={colors.text} />
-          </Pressable>
-          <Text className="text-lg" style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}>
-            {t('scan.appliedZones')}
-          </Text>
-          <View style={{ width: 24 }} />
-        </View>
+        <ModalHeader title={t('scan.appliedZones')} onClose={onClose} />
 
-        {/* Zones Preview */}
         <ScrollView className="flex-1 p-4">
           {imageUri && !isPdf && (
             <View className="items-center">

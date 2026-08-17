@@ -17,6 +17,8 @@ import { seedDemoData, clearAllData } from '@/src/db/demoData';
 import { useReceiptsStore } from '@/src/store/receipts';
 import { showSuccessToast, showErrorToast } from '@/src/utils/toast';
 import { useAppColors } from '@/src/hooks/useAppColors';
+import { ModalHeader } from '@/src/components/ui/ModalHeader';
+import { MIN_TARGET } from '@/src/theme/a11y';
 import { isLlmAvailable } from '@/src/services/llm';
 
 export default function SettingsScreen() {
@@ -107,10 +109,10 @@ export default function SettingsScreen() {
       <View className="flex-row items-center px-4 py-3">
         <Pressable
           onPress={() => router.back()}
-          className="w-10 h-10 rounded-full items-center justify-center"
-          style={{ backgroundColor: colors.surface }}
+          className="rounded-full items-center justify-center"
+          style={{ backgroundColor: colors.surface, width: MIN_TARGET, height: MIN_TARGET }}
           accessibilityRole="button"
-          accessibilityLabel={t('common.done')}
+          accessibilityLabel={t('common.close')}
         >
           <Ionicons name="close" size={22} color={colors.text} />
         </Pressable>
@@ -129,6 +131,7 @@ export default function SettingsScreen() {
       >
         {/* Language Section */}
         <Text
+          accessibilityRole="header"
           className="text-sm uppercase tracking-wide mb-3 mt-4"
           style={{ color: colors.textSecondary, fontFamily: 'Inter_600SemiBold' }}
         >
@@ -163,7 +166,10 @@ export default function SettingsScreen() {
                 <Pressable
                   key={lang.code}
                   className="flex-1 items-center justify-center rounded-md py-2"
-                  style={isSelected ? { backgroundColor: colors.primaryDeep } : undefined}
+                  style={[
+                    isSelected ? { backgroundColor: colors.primaryDeep } : undefined,
+                    { minHeight: MIN_TARGET },
+                  ]}
                   onPress={() => setLanguage(lang.code as SupportedLanguage)}
                   accessibilityRole="button"
                   accessibilityState={{ selected: isSelected }}
@@ -212,7 +218,10 @@ export default function SettingsScreen() {
                 <Pressable
                   key={scheme}
                   className="flex-1 items-center justify-center rounded-md py-2"
-                  style={isSelected ? { backgroundColor: colors.primaryDeep } : undefined}
+                  style={[
+                    isSelected ? { backgroundColor: colors.primaryDeep } : undefined,
+                    { minHeight: MIN_TARGET },
+                  ]}
                   onPress={() => setColorScheme(scheme)}
                   accessibilityRole="button"
                   accessibilityState={{ selected: isSelected }}
@@ -296,6 +305,7 @@ export default function SettingsScreen() {
 
         {/* About Section */}
         <Text
+          accessibilityRole="header"
           className="text-sm uppercase tracking-wide mb-3 mt-6"
           style={{ color: colors.textSecondary, fontFamily: 'Inter_600SemiBold' }}
         >
@@ -304,6 +314,8 @@ export default function SettingsScreen() {
 
         <Pressable
           onPress={handleVersionTap}
+          accessibilityRole="button"
+          accessibilityLabel={`${t('settings.version')} ${Constants.expoConfig?.version ?? '0.1.0'}`}
           className="p-4 rounded-xl"
           style={{
             backgroundColor: colors.surface,
@@ -343,21 +355,8 @@ export default function SettingsScreen() {
             paddingBottom: insets.bottom,
           }}
         >
-          <View
-            className="flex-row items-center justify-between px-4 py-4 border-b"
-            style={{ borderColor: colors.border }}
-          >
-            <Pressable onPress={() => setShowDevMenu(false)} hitSlop={8}>
-              <Ionicons name="close" size={24} color={colors.text} />
-            </Pressable>
-            <Text
-              className="text-lg"
-              style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
-            >
-              {t('settings.devMenu')}
-            </Text>
-            <View style={{ width: 24 }} />
-          </View>
+          <ModalHeader title={t('settings.devMenu')} onClose={() => setShowDevMenu(false)} />
+
           <ScrollView className="flex-1 p-4">
             <Text
               className="text-sm mb-4"
@@ -369,6 +368,9 @@ export default function SettingsScreen() {
             <Pressable
               onPress={handleSeedDemoData}
               disabled={isLoading}
+              accessibilityRole="button"
+              accessibilityLabel={t('settings.addDemoData')}
+              accessibilityState={{ disabled: isLoading, busy: isLoading }}
               className="flex-row items-center p-4 rounded-xl mb-3"
               style={{
                 backgroundColor: `${colors.primary}15`,
@@ -398,6 +400,9 @@ export default function SettingsScreen() {
             <Pressable
               onPress={handleClearAllData}
               disabled={isLoading}
+              accessibilityRole="button"
+              accessibilityLabel={t('settings.clearAllData')}
+              accessibilityState={{ disabled: isLoading, busy: isLoading }}
               className="flex-row items-center p-4 rounded-xl"
               style={{
                 backgroundColor: `${colors.error}15`,

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
@@ -5,6 +6,8 @@ import type { Receipt } from '../../db/schema/receipts';
 import type { Store } from '../../db/schema/stores';
 import { useFormatPrice } from '../../store/preferences';
 import { useAppColors } from '../../hooks/useAppColors';
+import { Amount } from '../ui/Amount';
+import { fonts } from '../../theme/type';
 
 interface ReceiptCardProps {
   receipt: Receipt;
@@ -13,7 +16,7 @@ interface ReceiptCardProps {
   onPress?: () => void;
 }
 
-export function ReceiptCard({ receipt, store, itemCount = 0, onPress }: ReceiptCardProps) {
+function ReceiptCardComponent({ receipt, store, itemCount = 0, onPress }: ReceiptCardProps) {
   const { t } = useTranslation();
   const { formatPrice } = useFormatPrice();
   const colors = useAppColors();
@@ -34,19 +37,22 @@ export function ReceiptCard({ receipt, store, itemCount = 0, onPress }: ReceiptC
     : '';
 
   const storeName = store?.name || t('scan.unknownStore');
+  const formattedTotal = formatPrice(receipt.totalAmount ? receipt.totalAmount / 100 : null);
 
   return (
     <Pressable
       onPress={onPress}
       className="bg-surface dark:bg-surface-dark rounded-2xl p-4 mb-3 border border-border dark:border-border-dark active:opacity-80"
       accessibilityRole="button"
-      accessibilityLabel={`${storeName}, ${formattedDate}, ${formatPrice(receipt.totalAmount ? receipt.totalAmount / 100 : null)}`}
+      accessibilityLabel={`${storeName}, ${formattedDate}, ${formattedTotal}`}
+      accessibilityHint={t('history.openReceipt')}
     >
       <View className="flex-row items-start justify-between">
         {/* Left side: Store and date info */}
         <View className="flex-1 mr-4">
           <Text
-            className="text-text dark:text-text-dark text-base font-semibold mb-1"
+            className="text-text dark:text-text-dark text-base mb-1"
+            style={{ fontFamily: fonts.semibold }}
             numberOfLines={1}
           >
             {storeName}
@@ -76,9 +82,7 @@ export function ReceiptCard({ receipt, store, itemCount = 0, onPress }: ReceiptC
 
         {/* Right side: Total amount */}
         <View className="items-end">
-          <Text className="text-text dark:text-text-dark text-lg font-bold">
-            {formatPrice(receipt.totalAmount ? receipt.totalAmount / 100 : null)}
-          </Text>
+          <Amount size="lg">{formattedTotal}</Amount>
           {receipt.paymentMethod && (
             <View className="flex-row items-center mt-1">
               <Ionicons
@@ -102,3 +106,9 @@ export function ReceiptCard({ receipt, store, itemCount = 0, onPress }: ReceiptC
     </Pressable>
   );
 }
+
+/**
+ * Memoised: the history list re-renders on every keystroke in the search
+ * field, and without this each one re-rendered every mounted row.
+ */
+export const ReceiptCard = memo(ReceiptCardComponent);

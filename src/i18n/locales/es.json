@@ -17,7 +17,9 @@
     "yes": "Sí",
     "no": "No",
     "ok": "OK",
-    "skip": "Omitir"
+    "skip": "Omitir",
+    "close": "Cerrar",
+    "back": "Atrás"
   },
   "tabs": {
     "dashboard": "Inicio",
@@ -165,7 +167,10 @@
     "thisMonth": "Este mes",
     "last3Months": "Últimos 3 meses",
     "thisYear": "Este año",
-    "custom": "Personalizado"
+    "custom": "Personalizado",
+    "clearSearch": "Borrar búsqueda",
+    "openReceipt": "Abre el recibo",
+    "filtersHideEverything": "Ningún recibo coincide con estos filtros. Bórralos para verlos todos."
   },
   "analytics": {
     "title": "Estadísticas",
@@ -213,7 +218,10 @@
     "deleteItem": "Eliminar Artículo",
     "itemName": "Nombre del artículo",
     "itemPrice": "Precio",
-    "itemQuantity": "Cantidad"
+    "itemQuantity": "Cantidad",
+    "notFound": "Recibo no encontrado",
+    "backToHistory": "Volver al historial",
+    "photoOf": "Foto del recibo de {{store}}"
   },
   "item": {
     "name": "Nombre del artículo",
@@ -273,14 +281,14 @@
     "demoDataAdded": "Se agregaron {{receipts}} recibos con {{items}} artículos"
   },
   "errors": {
-    "galleryPermission": "Se requiere permiso de galería para seleccionar fotos",
-    "ocrFailed": "Error al procesar el recibo",
-    "saveFailed": "Error al guardar el recibo",
-    "deleteFailed": "Error al eliminar el recibo",
-    "loadFailed": "Error al cargar datos",
-    "networkError": "Error de red. Por favor intenta de nuevo.",
-    "unknownError": "Ocurrió un error desconocido",
-    "somethingWentWrong": "Algo salió mal"
+    "galleryPermission": "El acceso a las fotos está desactivado. Actívalo en Ajustes para elegir un recibo.",
+    "ocrFailed": "No se pudo leer este recibo. Prueba con una foto más plana y con mejor luz.",
+    "saveFailed": "No se pudo guardar el recibo. Libera espacio e inténtalo de nuevo.",
+    "deleteFailed": "No se pudo eliminar el recibo. Inténtalo de nuevo.",
+    "loadFailed": "No se pudieron cargar tus recibos. Desliza hacia abajo para reintentar.",
+    "networkError": "Sin conexión. Vuelve a conectarte e inténtalo de nuevo.",
+    "unknownError": "Ha ocurrido algo inesperado. Inténtalo de nuevo.",
+    "somethingWentWrong": "Esta pantalla ha tenido un problema"
   },
   "onboarding": {
     "welcome": "Bienvenido a CestApp",

@@ -3,11 +3,12 @@
  */
 
 import { Component, type ReactNode } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { createScopedLogger } from '../utils/debug';
 import { useAppColors } from '../hooks/useAppColors';
+import { Button } from './ui/Button';
 
 const logger = createScopedLogger('ErrorBoundary');
 
@@ -74,6 +75,7 @@ function ErrorFallback({ error, onRetry }: ErrorFallbackProps) {
       </View>
 
       <Text
+        accessibilityRole="header"
         className="text-lg text-center mb-2"
         style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
       >
@@ -87,16 +89,7 @@ function ErrorFallback({ error, onRetry }: ErrorFallbackProps) {
         {error?.message || t('errors.unknownError')}
       </Text>
 
-      <Pressable
-        onPress={onRetry}
-        className="px-6 py-3 rounded-xl"
-        style={{ backgroundColor: colors.primaryDeep }}
-        accessibilityRole="button"
-      >
-        <Text className="text-base" style={{ color: '#FFFFFF', fontFamily: 'Inter_600SemiBold' }}>
-          {t('common.retry')}
-        </Text>
-      </Pressable>
+      <Button onPress={onRetry}>{t('common.retry')}</Button>
     </View>
   );
 }

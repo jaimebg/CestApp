@@ -1,5 +1,7 @@
 import { Pressable, Text, ActivityIndicator, View } from 'react-native';
 import type { PressableProps } from 'react-native';
+import { useAppColors } from '@/src/hooks/useAppColors';
+import { MIN_TARGET } from '@/src/theme/a11y';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'destructive';
 type ButtonSize = 'sm' | 'md' | 'lg';
@@ -24,7 +26,7 @@ const variantClasses: Record<ButtonVariant, string> = {
 const variantTextClasses: Record<ButtonVariant, string> = {
   primary: 'text-white',
   secondary: 'text-text dark:text-text-dark',
-  ghost: 'text-primary-deep dark:text-primary',
+  ghost: 'text-action dark:text-action-dark',
   destructive: 'text-white',
 };
 
@@ -49,13 +51,27 @@ export function Button({
   rightIcon,
   children,
   className,
+  style,
+  accessibilityLabel,
   ...props
 }: ButtonProps & { className?: string }) {
   const isDisabled = disabled || loading;
+  const colors = useAppColors();
 
   return (
     <Pressable
       disabled={isDisabled}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: !!isDisabled, busy: loading }}
+      accessibilityLabel={
+        accessibilityLabel ?? (typeof children === 'string' ? children : undefined)
+      }
+      // `sm` padding alone lands around 34pt, below the reliable-tap floor.
+      style={
+        typeof style === 'function'
+          ? (state) => [{ minHeight: MIN_TARGET }, style(state)]
+          : [{ minHeight: MIN_TARGET }, style]
+      }
       className={`
         flex-row items-center justify-center
         ${variantClasses[variant]}
@@ -68,7 +84,7 @@ export function Button({
       {loading ? (
         <ActivityIndicator
           size="small"
-          color={variant === 'primary' || variant === 'destructive' ? '#FFFFFF' : '#3D6B23'}
+          color={variant === 'primary' || variant === 'destructive' ? '#FFFFFF' : colors.action}
         />
       ) : (
         <>

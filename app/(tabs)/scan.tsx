@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Card } from '@/src/components/ui/Card';
+import { useAppColors } from '@/src/hooks/useAppColors';
 import { selectFromGallery, selectPdf, scanDocument, CaptureResult } from '@/src/services/capture';
 
 export default function ScanScreen() {
@@ -13,6 +14,7 @@ export default function ScanScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState<'scanner' | 'gallery' | 'pdf' | null>(null);
+  const colors = useAppColors();
 
   const handleCaptureResult = (result: CaptureResult) => {
     if (result.success && result.localUri) {
@@ -89,6 +91,10 @@ export default function ScanScreen() {
             className="bg-primary-deep rounded-2xl p-6 flex-row items-center active:bg-primary-dark"
             onPress={handleScanDocument}
             disabled={isLoading !== null}
+            accessibilityRole="button"
+            accessibilityLabel={t('scan.scanDocument')}
+            accessibilityHint={t('scan.scanDocumentDesc')}
+            accessibilityState={{ disabled: isLoading !== null, busy: isLoading === 'scanner' }}
             style={{ opacity: isLoading !== null && isLoading !== 'scanner' ? 0.5 : 1 }}
           >
             <View className="bg-white/20 rounded-full p-3 mr-4">
@@ -116,6 +122,8 @@ export default function ScanScreen() {
             padding="lg"
             onPress={handleGallery}
             disabled={isLoading !== null}
+            accessibilityLabel={t('scan.fromGallery')}
+            accessibilityHint={t('scan.fromGalleryDesc')}
             style={{ opacity: isLoading !== null && isLoading !== 'gallery' ? 0.5 : 1 }}
           >
             <View className="flex-row items-center">
@@ -123,7 +131,7 @@ export default function ScanScreen() {
                 <Ionicons
                   name={isLoading === 'gallery' ? 'hourglass-outline' : 'images-outline'}
                   size={28}
-                  color="#3D6B23"
+                  color={colors.action}
                 />
               </View>
               <View className="flex-1">
@@ -148,6 +156,8 @@ export default function ScanScreen() {
             padding="lg"
             onPress={handlePdf}
             disabled={isLoading !== null}
+            accessibilityLabel={t('scan.importPdf')}
+            accessibilityHint={t('scan.importPdfDesc')}
             style={{ opacity: isLoading !== null && isLoading !== 'pdf' ? 0.5 : 1 }}
           >
             <View className="flex-row items-center">
@@ -155,7 +165,7 @@ export default function ScanScreen() {
                 <Ionicons
                   name={isLoading === 'pdf' ? 'hourglass-outline' : 'document-outline'}
                   size={28}
-                  color="#3D6B23"
+                  color={colors.action}
                 />
               </View>
               <View className="flex-1">

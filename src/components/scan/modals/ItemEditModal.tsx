@@ -15,6 +15,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { ModalHeader } from '../../ui/ModalHeader';
 import type { ReviewColors } from '../types';
 
 interface ItemEditModalProps {
@@ -77,32 +78,14 @@ export function ItemEditModal({
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           className="flex-1"
         >
-          <View
-            className="flex-row items-center justify-between px-4 py-4 border-b"
-            style={{ borderColor: colors.border }}
-          >
-            <Pressable onPress={onClose} hitSlop={8} accessibilityRole="button">
-              <Text style={{ color: colors.textSecondary, fontFamily: 'Inter_500Medium' }}>
-                {t('common.cancel')}
-              </Text>
-            </Pressable>
-            <Text
-              className="text-lg"
-              style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
-            >
-              {isEditing ? t('scan.editItem') : t('scan.addItem')}
-            </Text>
-            <Pressable onPress={onSave} hitSlop={8} disabled={!canSave} accessibilityRole="button">
-              <Text
-                style={{
-                  color: canSave ? colors.primary : colors.textSecondary,
-                  fontFamily: 'Inter_600SemiBold',
-                }}
-              >
-                {t('common.save')}
-              </Text>
-            </Pressable>
-          </View>
+          <ModalHeader
+            title={isEditing ? t('scan.editItem') : t('scan.addItem')}
+            onClose={onClose}
+            closeLabel={t('common.cancel')}
+            confirmLabel={t('common.save')}
+            onConfirm={onSave}
+            confirmDisabled={!canSave}
+          />
 
           <ScrollView className="p-4">
             <Text

@@ -1,5 +1,6 @@
 import { View, Text, Pressable, Modal } from 'react-native';
 import { useAppColors, useIsDarkMode } from '@/src/hooks/useAppColors';
+import { MIN_TARGET } from '@/src/theme/a11y';
 
 interface ConfirmationModalProps {
   visible: boolean;
@@ -35,8 +36,11 @@ export function ConfirmationModal({
           className="absolute inset-0"
           style={{ backgroundColor: overlay }}
           onPress={onCancel}
+          accessibilityRole="button"
+          accessibilityLabel={cancelText}
         />
         <View
+          accessibilityViewIsModal
           className="w-full max-w-sm rounded-2xl overflow-hidden"
           style={{
             backgroundColor: colors.surface,
@@ -49,6 +53,7 @@ export function ConfirmationModal({
         >
           <View className="p-6">
             <Text
+              accessibilityRole="header"
               className="text-lg text-center mb-2"
               style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
             >
@@ -66,12 +71,19 @@ export function ConfirmationModal({
             <Pressable
               onPress={onCancel}
               disabled={isLoading}
+              accessibilityRole="button"
+              accessibilityLabel={cancelText}
+              accessibilityState={{ disabled: isLoading }}
               className="flex-1 py-4 items-center justify-center border-r active:opacity-70"
-              style={{ borderColor: colors.border, opacity: isLoading ? 0.5 : 1 }}
+              style={{
+                borderColor: colors.border,
+                opacity: isLoading ? 0.5 : 1,
+                minHeight: MIN_TARGET,
+              }}
             >
               <Text
                 className="text-base"
-                style={{ color: colors.primary, fontFamily: 'Inter_500Medium' }}
+                style={{ color: colors.action, fontFamily: 'Inter_500Medium' }}
               >
                 {cancelText}
               </Text>
@@ -79,13 +91,16 @@ export function ConfirmationModal({
             <Pressable
               onPress={onConfirm}
               disabled={isLoading}
+              accessibilityRole="button"
+              accessibilityLabel={confirmText}
+              accessibilityState={{ disabled: isLoading, busy: isLoading }}
               className="flex-1 py-4 items-center justify-center active:opacity-70"
-              style={{ opacity: isLoading ? 0.5 : 1 }}
+              style={{ opacity: isLoading ? 0.5 : 1, minHeight: MIN_TARGET }}
             >
               <Text
                 className="text-base"
                 style={{
-                  color: isDestructive ? colors.error : colors.primary,
+                  color: isDestructive ? colors.error : colors.action,
                   fontFamily: 'Inter_600SemiBold',
                 }}
               >

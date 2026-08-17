@@ -16,6 +16,8 @@ import { getReceiptsWithItemCount } from '@/src/db/queries/receipts';
 import { getTotalSpending, getReceiptCount } from '@/src/db/queries/analytics';
 import { useFormatPrice } from '@/src/store/preferences';
 import { useAppColors } from '@/src/hooks/useAppColors';
+import { useEntering, staggerDelay } from '@/src/hooks/useEntering';
+import { MIN_TARGET } from '@/src/theme/a11y';
 import type { Receipt } from '@/src/db/schema/receipts';
 import type { Store } from '@/src/db/schema/stores';
 
@@ -34,6 +36,7 @@ export default function DashboardScreen() {
   const { isReady } = useDatabaseReady();
   const { formatPrice } = useFormatPrice();
   const colors = useAppColors();
+  const entering = useEntering();
 
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -142,8 +145,8 @@ export default function DashboardScreen() {
         <RefreshControl
           refreshing={isRefreshing}
           onRefresh={handleRefresh}
-          tintColor={colors.primary}
-          colors={[colors.primary]}
+          tintColor={colors.action}
+          colors={[colors.action]}
         />
       }
     >
@@ -151,35 +154,35 @@ export default function DashboardScreen() {
         <View className="flex-row items-start justify-between">
           <View className="flex-1">
             <Animated.Text
-              entering={FadeIn.duration(400)}
+              entering={entering(FadeIn, 0, 400)}
               className="text-3xl text-text dark:text-text-dark"
               style={{ fontFamily: 'Inter_700Bold' }}
             >
               {t('dashboard.title')}
             </Animated.Text>
             <Animated.Text
-              entering={FadeIn.delay(100).duration(400)}
+              entering={entering(FadeIn, 100, 400)}
               className="text-base text-text-secondary dark:text-text-dark-secondary mt-2"
               style={{ fontFamily: 'Inter_400Regular' }}
             >
               {t('dashboard.subtitle')}
             </Animated.Text>
           </View>
-          <Animated.View entering={FadeIn.delay(200).duration(400)}>
+          <Animated.View entering={entering(FadeIn, 200, 400)}>
             <Pressable
               onPress={() => router.push('/settings')}
-              className="w-10 h-10 rounded-full bg-surface dark:bg-surface-dark items-center justify-center"
-              style={{ marginTop: 4 }}
+              className="rounded-full bg-surface dark:bg-surface-dark items-center justify-center"
+              style={{ marginTop: 4, width: MIN_TARGET, height: MIN_TARGET }}
               accessibilityRole="button"
               accessibilityLabel={t('settings.title')}
             >
-              <Ionicons name="settings-outline" size={24} color={colors.primary} />
+              <Ionicons name="settings-outline" size={24} color={colors.action} />
             </Pressable>
           </Animated.View>
         </View>
 
         {/* Monthly Spending Card */}
-        <Animated.View entering={FadeInUp.delay(200).duration(500).springify()}>
+        <Animated.View entering={entering(FadeInUp, 200, 400)}>
           <Card variant="elevated" padding="lg" className="mt-8">
             <View className="flex-row items-center justify-between mb-2">
               <Text
@@ -205,12 +208,13 @@ export default function DashboardScreen() {
 
         {/* Quick Scan CTA */}
         {!hasReceipts && (
-          <Animated.View entering={FadeInUp.delay(300).duration(500).springify()}>
+          <Animated.View entering={entering(FadeInUp, 300, 400)}>
             <Pressable
               onPress={handleScanPress}
               className="mt-4 bg-primary-deep rounded-2xl p-6 flex-row items-center active:opacity-90"
               accessibilityRole="button"
               accessibilityLabel={t('dashboard.scanFirst')}
+              accessibilityHint={t('dashboard.startScanning')}
             >
               <View className="bg-white/20 rounded-full p-3 mr-4">
                 <Ionicons name="scan-outline" size={24} color="#FFFFFF" />
@@ -232,7 +236,7 @@ export default function DashboardScreen() {
         )}
 
         {/* Recent Receipts */}
-        <Animated.View entering={FadeInUp.delay(400).duration(500).springify()} className="mt-8">
+        <Animated.View entering={entering(FadeInUp, 400, 400)} className="mt-8">
           <View className="flex-row items-center justify-between mb-4">
             <Text
               className="text-lg text-text dark:text-text-dark"
@@ -247,8 +251,10 @@ export default function DashboardScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={t('common.all')}
               >
-                <Text className="text-primary text-sm mr-1">{t('common.all')}</Text>
-                <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+                <Text className="text-action dark:text-action-dark text-sm mr-1">
+                  {t('common.all')}
+                </Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.action} />
               </Pressable>
             )}
           </View>
@@ -257,9 +263,7 @@ export default function DashboardScreen() {
             recentReceipts.map((item, index) => (
               <Animated.View
                 key={item.receipt.id}
-                entering={FadeInDown.delay(500 + index * 100)
-                  .duration(400)
-                  .springify()}
+                entering={entering(FadeInDown, 500 + staggerDelay(index, 100), 400)}
               >
                 <ReceiptCard
                   receipt={item.receipt}
@@ -270,11 +274,11 @@ export default function DashboardScreen() {
               </Animated.View>
             ))
           ) : (
-            <Animated.View entering={FadeIn.delay(500).duration(400)}>
+            <Animated.View entering={entering(FadeIn, 500, 400)}>
               <Card variant="outlined" padding="md">
                 <View className="flex-row items-center">
                   <View className="bg-primary/20 rounded-full p-3 mr-4">
-                    <Ionicons name="receipt-outline" size={24} color={colors.primary} />
+                    <Ionicons name="receipt-outline" size={24} color={colors.action} />
                   </View>
                   <View className="flex-1">
                     <Text

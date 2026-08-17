@@ -2,6 +2,8 @@ import { View, Text, Pressable } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { type ZoneType, ZONE_COLORS, ZONE_LABELS } from '../../types/zones';
+import { useAppColors } from '../../hooks/useAppColors';
+import { MIN_TARGET } from '../../theme/a11y';
 
 type ToolMode = 'draw' | 'select' | 'delete';
 
@@ -25,6 +27,7 @@ export function ZoneSelectionToolbar({
   canSave,
 }: ZoneSelectionToolbarProps) {
   const { i18n, t } = useTranslation();
+  const colors = useAppColors();
   const lang = i18n.language === 'es' ? 'es' : 'en';
 
   const tools: { id: ToolMode; icon: string; label: string }[] = [
@@ -52,6 +55,10 @@ export function ZoneSelectionToolbar({
           <Pressable
             key={tool.id}
             onPress={() => onModeChange(tool.id)}
+            accessibilityRole="button"
+            accessibilityLabel={tool.label}
+            accessibilityState={{ selected: mode === tool.id }}
+            style={{ minHeight: MIN_TARGET }}
             className={`items-center px-4 py-2 rounded-xl ${
               mode === tool.id ? 'bg-primary-deep' : 'bg-background dark:bg-background-dark'
             }`}
@@ -59,13 +66,13 @@ export function ZoneSelectionToolbar({
             <Feather
               name={tool.icon as any}
               size={20}
-              color={mode === tool.id ? '#FFFFFF' : '#666666'}
+              color={mode === tool.id ? '#FFFFFF' : colors.textSecondary}
             />
             <Text
               className={`text-xs mt-1 ${
                 mode === tool.id
                   ? 'text-white'
-                  : 'text-text-secondary dark:text-text-secondary-dark'
+                  : 'text-text-secondary dark:text-text-dark-secondary'
               }`}
               style={{ fontFamily: 'Inter_500Medium' }}
             >
@@ -77,6 +84,9 @@ export function ZoneSelectionToolbar({
 
       <Pressable
         onPress={onZoneTypePress}
+        accessibilityRole="button"
+        accessibilityLabel={`${t('common.edit')}: ${ZONE_LABELS[activeZoneType][lang]}`}
+        style={{ minHeight: MIN_TARGET }}
         className="flex-row items-center justify-between mx-4 mb-3 p-3 rounded-xl bg-background dark:bg-background-dark border border-border dark:border-border-dark"
       >
         <View className="flex-row items-center">
@@ -89,16 +99,19 @@ export function ZoneSelectionToolbar({
             {ZONE_LABELS[activeZoneType][lang]}
           </Text>
         </View>
-        <Feather name="chevron-right" size={20} color="#666666" />
+        <Feather name="chevron-right" size={20} color={colors.textSecondary} />
       </Pressable>
 
       <View className="flex-row px-4 pb-4 gap-3">
         <Pressable
           onPress={onCancel}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.cancel')}
+          style={{ minHeight: MIN_TARGET }}
           className="flex-1 py-3 rounded-xl border border-border dark:border-border-dark items-center"
         >
           <Text
-            className="text-text-secondary dark:text-text-secondary-dark"
+            className="text-text-secondary dark:text-text-dark-secondary"
             style={{ fontFamily: 'Inter_600SemiBold' }}
           >
             {t('common.cancel')}
@@ -107,6 +120,10 @@ export function ZoneSelectionToolbar({
         <Pressable
           onPress={onSave}
           disabled={!canSave}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.save')}
+          accessibilityState={{ disabled: !canSave }}
+          style={{ minHeight: MIN_TARGET }}
           className={`flex-1 py-3 rounded-xl items-center ${
             canSave ? 'bg-primary-deep' : 'bg-border dark:bg-border-dark'
           }`}

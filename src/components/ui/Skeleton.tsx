@@ -4,11 +4,12 @@ import type { DimensionValue } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
+  useReducedMotion,
   withRepeat,
   withTiming,
   interpolate,
 } from 'react-native-reanimated';
-import { useIsDarkMode } from '@/src/hooks/useAppColors';
+import { useAppColors } from '@/src/hooks/useAppColors';
 
 interface SkeletonProps {
   width: DimensionValue;
@@ -18,15 +19,17 @@ interface SkeletonProps {
 }
 
 export function Skeleton({ width, height, borderRadius = 8, className }: SkeletonProps) {
-  const isDark = useIsDarkMode();
+  const colors = useAppColors();
+  const reduceMotion = useReducedMotion();
   const shimmer = useSharedValue(0);
 
   useEffect(() => {
+    if (reduceMotion) return;
     shimmer.value = withRepeat(withTiming(1, { duration: 1200 }), -1, false);
-  }, [shimmer]);
+  }, [shimmer, reduceMotion]);
 
   const animatedStyle = useAnimatedStyle(() => {
-    const opacity = interpolate(shimmer.value, [0, 0.5, 1], [0.3, 0.6, 0.3]);
+    const opacity = reduceMotion ? 0.45 : interpolate(shimmer.value, [0, 0.5, 1], [0.3, 0.6, 0.3]);
     return {
       opacity,
     };
@@ -35,6 +38,8 @@ export function Skeleton({ width, height, borderRadius = 8, className }: Skeleto
   return (
     <View
       className={className}
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
       style={{
         width,
         height,
@@ -46,7 +51,7 @@ export function Skeleton({ width, height, borderRadius = 8, className }: Skeleto
         style={[
           {
             flex: 1,
-            backgroundColor: isDark ? '#4A4640' : '#E8E4D9',
+            backgroundColor: colors.border,
           },
           animatedStyle,
         ]}

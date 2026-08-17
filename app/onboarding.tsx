@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { usePreferencesStore, type ColorScheme } from '@/src/store/preferences';
 import { useAppColors } from '@/src/hooks/useAppColors';
+import { MIN_TARGET } from '@/src/theme/a11y';
 import type { SupportedLanguage } from '@/src/i18n';
 
 type FeatureItemProps = {
@@ -45,7 +46,7 @@ type SegmentedControlProps = {
   colors: {
     surface: string;
     border: string;
-    primary: string;
+    primaryDeep: string;
     textSecondary: string;
   };
 };
@@ -66,8 +67,14 @@ function SegmentedControl({ options, selectedValue, onSelect, colors }: Segmente
           <Pressable
             key={option.value}
             className="flex-1 items-center justify-center rounded-lg py-2.5"
-            style={isSelected ? { backgroundColor: colors.primary } : undefined}
             onPress={() => onSelect(option.value)}
+            accessibilityRole="button"
+            accessibilityLabel={option.label}
+            accessibilityState={{ selected: isSelected }}
+            style={[
+              isSelected ? { backgroundColor: colors.primaryDeep } : undefined,
+              { minHeight: MIN_TARGET },
+            ]}
           >
             <Text
               style={{
@@ -125,6 +132,8 @@ export default function OnboardingScreen() {
             className="w-20 h-20 mb-4 overflow-hidden"
             style={{ borderRadius: 18 }}
             resizeMode="cover"
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
           />
           <Text
             className="text-3xl text-center"
@@ -209,8 +218,10 @@ export default function OnboardingScreen() {
       <View className="px-6 pt-4" style={{ paddingBottom: insets.bottom + 16 }}>
         <Pressable
           onPress={handleGetStarted}
+          accessibilityRole="button"
+          accessibilityLabel={t('onboarding.getStarted')}
           className="rounded-2xl py-4 items-center"
-          style={{ backgroundColor: colors.primaryDeep }}
+          style={{ backgroundColor: colors.primaryDeep, minHeight: MIN_TARGET }}
         >
           <Text className="text-white text-lg" style={{ fontFamily: 'Inter_600SemiBold' }}>
             {t('onboarding.getStarted')}

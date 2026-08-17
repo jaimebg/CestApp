@@ -18,7 +18,7 @@ const variantClasses: Record<BadgeVariant, { bg: string; text: string }> = {
   },
   success: {
     bg: 'bg-primary/20',
-    text: 'text-primary-deep dark:text-primary',
+    text: 'text-action dark:text-action-dark',
   },
   warning: {
     bg: 'bg-golden/40',
@@ -29,8 +29,8 @@ const variantClasses: Record<BadgeVariant, { bg: string; text: string }> = {
     text: 'text-error dark:text-error-light',
   },
   info: {
-    bg: 'bg-category-dairy/20',
-    text: 'text-category-dairy',
+    bg: 'bg-info/15 dark:bg-info/25',
+    text: 'text-info dark:text-info-dark',
   },
 };
 

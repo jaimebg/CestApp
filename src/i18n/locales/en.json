@@ -17,7 +17,9 @@
     "yes": "Yes",
     "no": "No",
     "ok": "OK",
-    "skip": "Skip"
+    "skip": "Skip",
+    "close": "Close",
+    "back": "Back"
   },
   "tabs": {
     "dashboard": "Dashboard",
@@ -165,7 +167,10 @@
     "thisMonth": "This month",
     "last3Months": "Last 3 months",
     "thisYear": "This year",
-    "custom": "Custom"
+    "custom": "Custom",
+    "clearSearch": "Clear search",
+    "openReceipt": "Opens the receipt",
+    "filtersHideEverything": "No receipts match these filters. Clear them to see everything."
   },
   "analytics": {
     "title": "Analytics",
@@ -213,7 +218,10 @@
     "deleteItem": "Delete Item",
     "itemName": "Item name",
     "itemPrice": "Price",
-    "itemQuantity": "Quantity"
+    "itemQuantity": "Quantity",
+    "notFound": "Receipt not found",
+    "backToHistory": "Back to history",
+    "photoOf": "Photo of the receipt from {{store}}"
   },
   "item": {
     "name": "Item name",
@@ -273,14 +281,14 @@
     "demoDataAdded": "Added {{receipts}} receipts with {{items}} items"
   },
   "errors": {
-    "galleryPermission": "Gallery permission is required to select photos",
-    "ocrFailed": "Failed to process receipt",
-    "saveFailed": "Failed to save receipt",
-    "deleteFailed": "Failed to delete receipt",
-    "loadFailed": "Failed to load data",
-    "networkError": "Network error. Please try again.",
-    "unknownError": "An unknown error occurred",
-    "somethingWentWrong": "Something went wrong"
+    "galleryPermission": "Photo access is off. Turn it on in Settings to pick a receipt.",
+    "ocrFailed": "Couldn't read this receipt. Try a flatter shot in better light.",
+    "saveFailed": "Couldn't save this receipt. Free up some storage and try again.",
+    "deleteFailed": "Couldn't delete this receipt. Try again.",
+    "loadFailed": "Couldn't load your receipts. Pull down to retry.",
+    "networkError": "No connection. Reconnect and try again.",
+    "unknownError": "Something unexpected happened. Try again.",
+    "somethingWentWrong": "This screen ran into a problem"
   },
   "onboarding": {
     "welcome": "Welcome to CestApp",

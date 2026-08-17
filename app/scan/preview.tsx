@@ -22,6 +22,7 @@ import { autoDetectZones } from '@/src/services/ocr/autoZoneDetector';
 import { Button } from '@/src/components/ui/Button';
 import { ZONE_COLORS, type ZoneDefinition } from '@/src/types/zones';
 import { useAppColors } from '@/src/hooks/useAppColors';
+import { ICON_HIT_SLOP } from '@/src/theme/a11y';
 import Pdf from 'react-native-pdf';
 
 const logger = createScopedLogger('Preview');
@@ -300,7 +301,13 @@ export default function ScanPreviewScreen() {
     <View className="flex-1" style={{ backgroundColor: colors.background, paddingTop: insets.top }}>
       {/* Header */}
       <View className="flex-row items-center justify-between px-4 py-3">
-        <Pressable onPress={handleCancel} className="flex-row items-center" hitSlop={8}>
+        <Pressable
+          onPress={handleCancel}
+          className="flex-row items-center"
+          hitSlop={ICON_HIT_SLOP}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.cancel')}
+        >
           <Ionicons name="close" size={24} color={colors.text} />
         </Pressable>
         <Text className="text-lg" style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}>

@@ -1,13 +1,23 @@
 import { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  Pressable,
+  ActivityIndicator,
+  useWindowDimensions,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-import { Ionicons } from '@expo/vector-icons';
 import { BarChart, PieChart } from 'react-native-gifted-charts';
 import { useDatabaseReady } from '@/src/db/provider';
 import { getAnalyticsSummary, TimePeriod } from '@/src/db/queries/analytics';
 import { useFormatPrice } from '@/src/store/preferences';
 import { useAppColors } from '@/src/hooks/useAppColors';
+import { chartSeries } from '@/src/theme/colors';
+import { EmptyState } from '@/src/components/ui/EmptyState';
+import { Amount } from '@/src/components/ui/Amount';
+import { MIN_TARGET } from '@/src/theme/a11y';
 import { createScopedLogger } from '@/src/utils/debug';
 
 const logger = createScopedLogger('Analytics');
@@ -20,23 +30,15 @@ export default function AnalyticsScreen() {
   const colors = useAppColors();
   const { isReady } = useDatabaseReady();
   const { formatPrice } = useFormatPrice();
+  const { width: windowWidth } = useWindowDimensions();
+
+  // The chart card is mx-4 (32) inside p-4 (32). A fixed 280 clipped its right
+  // edge on a 320pt phone and left ~86pt of dead card on a Pro Max.
+  const chartWidth = Math.max(240, windowWidth - 64 - 24);
 
   const [period, setPeriod] = useState<TimePeriod>('month');
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  const categoryColors = [
-    '#93BD57',
-    '#5BA4D9',
-    '#980404',
-    '#FBE580',
-    '#8B7EC8',
-    '#4DB6AC',
-    '#E8976C',
-    '#8D8680',
-    '#D4A574',
-    '#A8CE6F',
-  ];
 
   const loadAnalytics = useCallback(async () => {
     if (!isReady) return;
@@ -84,12 +86,20 @@ export default function AnalyticsScreen() {
       .slice(0, 8)
       .map((item, index) => ({
         value: item.amount,
-        color: item.categoryColor || categoryColors[index % categoryColors.length],
+        color: item.categoryColor || chartSeries[index % chartSeries.length],
         text: `${item.percentage.toFixed(0)}%`,
         textColor: colors.text,
         shiftTextX: -8,
         shiftTextY: 0,
       })) || [];
+
+  // Fit the bars to the width we actually have rather than to the period.
+  const barLayout = (() => {
+    const count = Math.max(barChartData.length, 1);
+    const slot = chartWidth / count;
+    const barWidth = Math.max(2, Math.min(28, Math.floor(slot * 0.7)));
+    return { barWidth, spacing: Math.max(1, Math.floor(slot - barWidth)) };
+  })();
 
   const hasData = data && data.receiptCount > 0;
 
@@ -99,7 +109,7 @@ export default function AnalyticsScreen() {
         className="flex-1 bg-background dark:bg-background-dark justify-center items-center"
         style={{ paddingTop: insets.top }}
       >
-        <ActivityIndicator size="large" color="#93BD57" />
+        <ActivityIndicator size="large" color={colors.action} />
       </View>
     );
   }
@@ -137,8 +147,12 @@ export default function AnalyticsScreen() {
               <Pressable
                 key={option.key}
                 onPress={() => setPeriod(option.key)}
+                accessibilityRole="button"
+                accessibilityLabel={option.label}
+                accessibilityState={{ selected: period === option.key }}
+                style={{ minHeight: MIN_TARGET, justifyContent: 'center' }}
                 className={`flex-1 py-2.5 rounded-lg items-center ${
-                  period === option.key ? 'bg-primary' : ''
+                  period === option.key ? 'bg-primary-deep' : ''
                 }`}
               >
                 <Text
@@ -159,22 +173,12 @@ export default function AnalyticsScreen() {
         </View>
 
         {!hasData ? (
-          <View className="flex-1 justify-center items-center py-20">
-            <View className="bg-primary/20 rounded-full p-6 mb-4">
-              <Ionicons name="stats-chart-outline" size={48} color={colors.primary} />
-            </View>
-            <Text
-              className="text-lg text-text dark:text-text-dark text-center"
-              style={{ fontFamily: 'Inter_600SemiBold' }}
-            >
-              {t('analytics.noData')}
-            </Text>
-            <Text
-              className="text-base text-text-secondary dark:text-text-dark-secondary text-center mt-2 px-8"
-              style={{ fontFamily: 'Inter_400Regular' }}
-            >
-              {t('analytics.noDataDesc')}
-            </Text>
+          <View className="py-20">
+            <EmptyState
+              icon="stats-chart-outline"
+              title={t('analytics.noData')}
+              description={t('analytics.noDataDesc')}
+            />
           </View>
         ) : (
           <>
@@ -187,12 +191,7 @@ export default function AnalyticsScreen() {
                 >
                   {t('analytics.total')}
                 </Text>
-                <Text
-                  className="text-xl text-text dark:text-text-dark"
-                  style={{ fontFamily: 'Inter_700Bold' }}
-                >
-                  {formatPrice(data.total)}
-                </Text>
+                <Amount size="xl">{formatPrice(data.total)}</Amount>
               </View>
               <View className="flex-1 bg-surface dark:bg-surface-dark rounded-2xl p-4">
                 <Text
@@ -201,12 +200,7 @@ export default function AnalyticsScreen() {
                 >
                   {t('analytics.average')}
                 </Text>
-                <Text
-                  className="text-xl text-text dark:text-text-dark"
-                  style={{ fontFamily: 'Inter_700Bold' }}
-                >
-                  {formatPrice(data.average)}
-                </Text>
+                <Amount size="xl">{formatPrice(data.average)}</Amount>
               </View>
             </View>
 
@@ -222,10 +216,10 @@ export default function AnalyticsScreen() {
                 <View style={{ marginLeft: -10 }}>
                   <BarChart
                     data={barChartData}
-                    width={280}
+                    width={chartWidth}
                     height={180}
-                    barWidth={period === 'week' ? 28 : period === 'month' ? 8 : 4}
-                    spacing={period === 'week' ? 12 : period === 'month' ? 4 : 2}
+                    barWidth={barLayout.barWidth}
+                    spacing={barLayout.spacing}
                     barBorderRadius={4}
                     noOfSections={4}
                     yAxisThickness={0}
@@ -274,12 +268,9 @@ export default function AnalyticsScreen() {
                           >
                             {t('analytics.total')}
                           </Text>
-                          <Text
-                            className="text-sm text-text dark:text-text-dark"
-                            style={{ fontFamily: 'Inter_600SemiBold' }}
-                          >
+                          <Amount size="sm" weight="semibold">
                             {formatPrice(data.total)}
-                          </Text>
+                          </Amount>
                         </View>
                       )}
                     />
@@ -291,8 +282,7 @@ export default function AnalyticsScreen() {
                           className="w-3 h-3 rounded-full mr-2"
                           style={{
                             backgroundColor:
-                              category.categoryColor ||
-                              categoryColors[index % categoryColors.length],
+                              category.categoryColor || chartSeries[index % chartSeries.length],
                           }}
                         />
                         <Text
@@ -334,19 +324,16 @@ export default function AnalyticsScreen() {
                       >
                         {store.storeName}
                       </Text>
-                      <Text
-                        className="text-sm text-text dark:text-text-dark"
-                        style={{ fontFamily: 'Inter_600SemiBold' }}
-                      >
+                      <Amount size="sm" weight="semibold">
                         {formatPrice(store.amount)}
-                      </Text>
+                      </Amount>
                     </View>
                     <View className="h-2 bg-border dark:bg-border-dark rounded-full overflow-hidden">
                       <View
                         className="h-full rounded-full"
                         style={{
                           width: `${store.percentage}%`,
-                          backgroundColor: categoryColors[index % categoryColors.length],
+                          backgroundColor: chartSeries[index % chartSeries.length],
                         }}
                       />
                     </View>

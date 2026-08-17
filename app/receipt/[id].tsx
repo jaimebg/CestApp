@@ -5,12 +5,12 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
-  Image,
   TextInput,
   Modal,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -26,7 +26,14 @@ import {
 import { getCategories } from '../../src/db/queries/categories';
 import { findOrCreateStore } from '../../src/db/queries/stores';
 import { ReceiptSummary } from '../../src/components/receipt/ReceiptSummary';
+import { ItemRow } from '../../src/components/receipt/ItemRow';
 import { ConfirmationModal } from '../../src/components/ui/ConfirmationModal';
+import { ModalHeader } from '../../src/components/ui/ModalHeader';
+import { Amount } from '../../src/components/ui/Amount';
+import { Button } from '../../src/components/ui/Button';
+import { useAppColors } from '../../src/hooks/useAppColors';
+import { ICON_HIT_SLOP, MIN_TARGET } from '../../src/theme/a11y';
+import { fonts } from '../../src/theme/type';
 import { useFormatPrice } from '../../src/store/preferences';
 import { createScopedLogger } from '../../src/utils/debug';
 import { showSuccessToast, showErrorToast } from '../../src/utils/toast';
@@ -57,6 +64,7 @@ export default function ReceiptDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { isReady } = useDatabaseReady();
   const { formatPrice } = useFormatPrice();
+  const colors = useAppColors();
 
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [store, setStore] = useState<Store | null>(null);
@@ -275,7 +283,11 @@ export default function ReceiptDetailScreen() {
         className="flex-1 bg-background dark:bg-background-dark justify-center items-center"
         style={{ paddingTop: insets.top }}
       >
-        <ActivityIndicator size="large" color="#93BD57" />
+        <ActivityIndicator
+          size="large"
+          color={colors.action}
+          accessibilityLabel={t('common.loading')}
+        />
       </View>
     );
   }
@@ -286,10 +298,12 @@ export default function ReceiptDetailScreen() {
         className="flex-1 bg-background dark:bg-background-dark justify-center items-center"
         style={{ paddingTop: insets.top }}
       >
-        <Text className="text-text-secondary dark:text-text-dark-secondary">Receipt not found</Text>
-        <Pressable onPress={() => router.back()} className="mt-4 px-4 py-2 bg-primary rounded-lg">
-          <Text className="text-white font-medium">{t('common.ok')}</Text>
-        </Pressable>
+        <Text className="text-text-secondary dark:text-text-dark-secondary">
+          {t('receipt.notFound')}
+        </Text>
+        <Button onPress={() => router.back()} className="mt-4">
+          {t('receipt.backToHistory')}
+        </Button>
       </View>
     );
   }
@@ -304,18 +318,23 @@ export default function ReceiptDetailScreen() {
         <Pressable
           onPress={() => (isEditing ? cancelEditing() : router.back())}
           className="p-2 -ml-2"
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          hitSlop={ICON_HIT_SLOP}
+          accessibilityRole="button"
+          accessibilityLabel={isEditing ? t('common.cancel') : t('common.back')}
+          style={{ minHeight: MIN_TARGET, justifyContent: 'center' }}
         >
           {isEditing ? (
-            <Text className="text-error text-base">{t('common.cancel')}</Text>
+            <Text className="text-error dark:text-error-light text-base">{t('common.cancel')}</Text>
           ) : (
-            <Ionicons name="arrow-back" size={24} color="#93BD57" />
+            <Ionicons name="arrow-back" size={24} color={colors.action} />
           )}
         </Pressable>
 
         <Text
+          accessibilityRole="header"
+          numberOfLines={1}
           className="text-lg text-text dark:text-text-dark flex-1 text-center"
-          style={{ fontFamily: 'Inter_600SemiBold' }}
+          style={{ fontFamily: fonts.semibold }}
         >
           {isEditing ? t('receipt.editReceipt') : t('receipt.details')}
         </Text>
@@ -325,12 +344,21 @@ export default function ReceiptDetailScreen() {
             onPress={saveChanges}
             disabled={isSaving}
             className="p-2 -mr-2"
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            hitSlop={ICON_HIT_SLOP}
+            accessibilityRole="button"
+            accessibilityLabel={t('common.save')}
+            accessibilityState={{ disabled: isSaving, busy: isSaving }}
+            style={{ minHeight: MIN_TARGET, justifyContent: 'center' }}
           >
             {isSaving ? (
-              <ActivityIndicator size="small" color="#93BD57" />
+              <ActivityIndicator size="small" color={colors.action} />
             ) : (
-              <Text className="text-primary text-base font-semibold">{t('common.save')}</Text>
+              <Text
+                className="text-action dark:text-action-dark text-base"
+                style={{ fontFamily: fonts.semibold }}
+              >
+                {t('common.save')}
+              </Text>
             )}
           </Pressable>
         ) : (
@@ -338,20 +366,27 @@ export default function ReceiptDetailScreen() {
             <Pressable
               onPress={startEditing}
               className="p-2 mr-1"
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              hitSlop={ICON_HIT_SLOP}
+              accessibilityRole="button"
+              accessibilityLabel={t('receipt.editReceipt')}
+              style={{ minHeight: MIN_TARGET, justifyContent: 'center' }}
             >
-              <Ionicons name="pencil-outline" size={22} color="#93BD57" />
+              <Ionicons name="pencil-outline" size={22} color={colors.action} />
             </Pressable>
             <Pressable
               onPress={handleDelete}
               disabled={isDeleting}
               className="p-2 -mr-2"
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              hitSlop={ICON_HIT_SLOP}
+              accessibilityRole="button"
+              accessibilityLabel={t('receipt.deleteConfirm')}
+              accessibilityState={{ disabled: isDeleting, busy: isDeleting }}
+              style={{ minHeight: MIN_TARGET, justifyContent: 'center' }}
             >
               {isDeleting ? (
-                <ActivityIndicator size="small" color="#980404" />
+                <ActivityIndicator size="small" color={colors.error} />
               ) : (
-                <Ionicons name="trash-outline" size={22} color="#980404" />
+                <Ionicons name="trash-outline" size={22} color={colors.error} />
               )}
             </Pressable>
           </View>
@@ -368,8 +403,15 @@ export default function ReceiptDetailScreen() {
           <View className="mx-4 mt-4">
             <Image
               source={{ uri: receipt.imagePath }}
-              className="w-full h-48 rounded-xl"
-              resizeMode="cover"
+              style={{ width: '100%', height: 192, borderRadius: 12 }}
+              contentFit="cover"
+              transition={150}
+              cachePolicy="memory-disk"
+              accessible
+              accessibilityRole="image"
+              accessibilityLabel={t('receipt.photoOf', {
+                store: store?.name || t('scan.unknownStore'),
+              })}
             />
           </View>
         )}
@@ -378,7 +420,7 @@ export default function ReceiptDetailScreen() {
         <View className="mx-4 mt-4 bg-surface dark:bg-surface-dark rounded-2xl p-4">
           <View className="flex-row items-center mb-4">
             <View className="w-12 h-12 bg-primary/20 dark:bg-primary/30 rounded-full items-center justify-center mr-4">
-              <Ionicons name="storefront-outline" size={24} color="#93BD57" />
+              <Ionicons name="storefront-outline" size={24} color={colors.action} />
             </View>
             <View className="flex-1">
               {isEditing ? (
@@ -388,7 +430,8 @@ export default function ReceiptDetailScreen() {
                   value={editedStoreName}
                   onChangeText={setEditedStoreName}
                   placeholder={t('receipt.store')}
-                  placeholderTextColor="#8D8680"
+                  placeholderTextColor={colors.textTertiary}
+                  accessibilityLabel={t('receipt.store')}
                 />
               ) : (
                 <>
@@ -411,7 +454,7 @@ export default function ReceiptDetailScreen() {
           {!isEditing && (
             <View className="border-t border-border dark:border-border-dark pt-4">
               <View className="flex-row items-center mb-3">
-                <Ionicons name="calendar-outline" size={18} color="#8D8680" />
+                <Ionicons name="calendar-outline" size={18} color={colors.textSecondary} />
                 <Text className="text-text-secondary dark:text-text-dark-secondary ml-2 flex-1">
                   {t('receipt.date')}
                 </Text>
@@ -420,7 +463,7 @@ export default function ReceiptDetailScreen() {
 
               {formattedTime && (
                 <View className="flex-row items-center mb-3">
-                  <Ionicons name="time-outline" size={18} color="#8D8680" />
+                  <Ionicons name="time-outline" size={18} color={colors.textSecondary} />
                   <Text className="text-text-secondary dark:text-text-dark-secondary ml-2 flex-1">
                     {t('scan.time')}
                   </Text>
@@ -439,7 +482,7 @@ export default function ReceiptDetailScreen() {
                           : 'cash-outline'
                     }
                     size={18}
-                    color="#8D8680"
+                    color={colors.textSecondary}
                   />
                   <Text className="text-text-secondary dark:text-text-dark-secondary ml-2 flex-1">
                     {t('receipt.paymentMethod')}
@@ -465,10 +508,16 @@ export default function ReceiptDetailScreen() {
             {isEditing && (
               <Pressable
                 onPress={() => openItemEditor(null, null)}
+                accessibilityRole="button"
+                accessibilityLabel={t('receipt.addItem')}
+                hitSlop={ICON_HIT_SLOP}
+                style={{ minHeight: MIN_TARGET, justifyContent: 'center' }}
                 className="flex-row items-center bg-primary/20 px-3 py-1.5 rounded-full"
               >
-                <Ionicons name="add" size={18} color="#93BD57" />
-                <Text className="text-primary text-sm ml-1">{t('receipt.addItem')}</Text>
+                <Ionicons name="add" size={18} color={colors.action} />
+                <Text className="text-action dark:text-action-dark text-sm ml-1">
+                  {t('receipt.addItem')}
+                </Text>
               </Pressable>
             )}
           </View>
@@ -482,12 +531,17 @@ export default function ReceiptDetailScreen() {
                     <Pressable
                       key={item.id || `new-${index}`}
                       onPress={() => openItemEditor(item, index)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${item.name || t('receipt.itemName')}, ${formatPrice(item.price / 100)}`}
+                      accessibilityHint={t('receipt.editItem')}
                       className="flex-row items-center py-3 border-b border-border/50 dark:border-border-dark/50"
                     >
                       <View
                         className="w-8 h-8 rounded-full items-center justify-center mr-3"
                         style={{
-                          backgroundColor: category?.color ? `${category.color}20` : '#8D868020',
+                          backgroundColor: category?.color
+                            ? `${category.color}20`
+                            : `${colors.textTertiary}20`,
                         }}
                       >
                         <Text className="text-sm">{category?.icon || '📦'}</Text>
@@ -502,14 +556,16 @@ export default function ReceiptDetailScreen() {
                           </Text>
                         )}
                       </View>
-                      <Text className="text-text dark:text-text-dark text-base font-medium mr-2">
+                      <Amount size="base" className="mr-2">
                         {formatPrice(item.price / 100)}
-                      </Text>
+                      </Amount>
                       <Pressable
                         onPress={() => deleteItemFromList(index)}
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        hitSlop={ICON_HIT_SLOP}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${t('common.delete')}: ${item.name || t('receipt.itemName')}`}
                       >
-                        <Ionicons name="close-circle" size={22} color="#980404" />
+                        <Ionicons name="close-circle" size={22} color={colors.error} />
                       </Pressable>
                     </Pressable>
                   );
@@ -523,36 +579,12 @@ export default function ReceiptDetailScreen() {
               )
             ) : items.length > 0 ? (
               items.map(({ item, category }, index) => (
-                <View
+                <ItemRow
                   key={item.id}
-                  className={`flex-row items-center py-3 ${
-                    index !== items.length - 1
-                      ? 'border-b border-border/50 dark:border-border-dark/50'
-                      : ''
-                  }`}
-                >
-                  <View
-                    className="w-8 h-8 rounded-full items-center justify-center mr-3"
-                    style={{
-                      backgroundColor: category?.color ? `${category.color}20` : '#8D868020',
-                    }}
-                  >
-                    <Text className="text-sm">{category?.icon || '📦'}</Text>
-                  </View>
-                  <View className="flex-1 mr-3">
-                    <Text className="text-text dark:text-text-dark text-base" numberOfLines={2}>
-                      {item.name}
-                    </Text>
-                    {(item.quantity || 1) > 1 && (
-                      <Text className="text-text-secondary dark:text-text-dark-secondary text-sm">
-                        {item.quantity}x @ {formatPrice((item.unitPrice || item.price) / 100)}
-                      </Text>
-                    )}
-                  </View>
-                  <Text className="text-text dark:text-text-dark text-base font-medium">
-                    {formatPrice(item.price / 100)}
-                  </Text>
-                </View>
+                  item={item}
+                  category={category}
+                  isLast={index === items.length - 1}
+                />
               ))
             ) : (
               <View className="py-8 items-center">
@@ -579,14 +611,17 @@ export default function ReceiptDetailScreen() {
         {isEditing && (
           <View className="mx-4 mt-4 bg-surface dark:bg-surface-dark rounded-2xl p-4">
             <View className="flex-row justify-between py-2">
-              <Text className="text-text dark:text-text-dark text-lg font-semibold">
+              <Text
+                className="text-text dark:text-text-dark text-lg"
+                style={{ fontFamily: fonts.semibold }}
+              >
                 {t('receipt.total')}
               </Text>
-              <Text className="text-text dark:text-text-dark text-xl font-bold">
+              <Amount size="xl">
                 {formatPrice(
                   editedItems.reduce((sum, item) => sum + item.price * item.quantity, 0) / 100
                 )}
-              </Text>
+              </Amount>
             </View>
           </View>
         )}
@@ -609,8 +644,8 @@ export default function ReceiptDetailScreen() {
         {/* Confidence indicator */}
         {receipt.confidence != null && receipt.confidence < 80 && !isEditing && (
           <View className="mx-4 mt-4 bg-accent/20 dark:bg-accent/30 rounded-2xl p-4 flex-row items-center">
-            <Ionicons name="warning-outline" size={20} color="#FBE580" />
-            <Text className="text-text-secondary dark:text-text-dark-secondary ml-2 flex-1">
+            <Ionicons name="warning-outline" size={20} color={colors.warning} />
+            <Text className="text-text dark:text-text-dark ml-2 flex-1">
               {t('scan.lowConfidence')}
             </Text>
           </View>
@@ -628,23 +663,14 @@ export default function ReceiptDetailScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           className="flex-1 bg-background dark:bg-background-dark"
         >
-          <View
-            className="flex-row items-center justify-between px-4 py-4 border-b border-border dark:border-border-dark"
-            style={{ paddingTop: insets.top + 16 }}
-          >
-            <Pressable onPress={() => setShowItemModal(false)}>
-              <Text className="text-error text-base">{t('common.cancel')}</Text>
-            </Pressable>
-            <Text
-              className="text-lg text-text dark:text-text-dark"
-              style={{ fontFamily: 'Inter_600SemiBold' }}
-            >
-              {editingItemIndex !== null ? t('receipt.editItem') : t('receipt.addItem')}
-            </Text>
-            <Pressable onPress={saveItemEdit}>
-              <Text className="text-primary text-base font-semibold">{t('common.save')}</Text>
-            </Pressable>
-          </View>
+          <ModalHeader
+            title={editingItemIndex !== null ? t('receipt.editItem') : t('receipt.addItem')}
+            onClose={() => setShowItemModal(false)}
+            closeLabel={t('common.cancel')}
+            confirmLabel={t('common.save')}
+            onConfirm={saveItemEdit}
+            confirmDisabled={!editingItem?.name.trim()}
+          />
 
           <ScrollView className="flex-1 px-6 py-4">
             {/* Item Name */}
@@ -658,7 +684,8 @@ export default function ReceiptDetailScreen() {
                 setEditingItem((prev) => (prev ? { ...prev, name: text } : null))
               }
               placeholder={t('receipt.itemName')}
-              placeholderTextColor="#8D8680"
+              placeholderTextColor={colors.textTertiary}
+              accessibilityLabel={t('receipt.itemName')}
             />
 
             {/* Price */}
@@ -673,7 +700,8 @@ export default function ReceiptDetailScreen() {
                 setEditingItem((prev) => (prev ? { ...prev, price: Math.round(num * 100) } : null));
               }}
               placeholder="0.00"
-              placeholderTextColor="#8D8680"
+              placeholderTextColor={colors.textTertiary}
+              accessibilityLabel={t('receipt.itemPrice')}
               keyboardType="decimal-pad"
             />
 
@@ -689,7 +717,8 @@ export default function ReceiptDetailScreen() {
                 setEditingItem((prev) => (prev ? { ...prev, quantity: num } : null));
               }}
               placeholder="1"
-              placeholderTextColor="#8D8680"
+              placeholderTextColor={colors.textTertiary}
+              accessibilityLabel={t('receipt.itemQuantity')}
               keyboardType="number-pad"
             />
 
@@ -704,9 +733,13 @@ export default function ReceiptDetailScreen() {
                   onPress={() =>
                     setEditingItem((prev) => (prev ? { ...prev, categoryId: cat.id } : null))
                   }
+                  accessibilityRole="button"
+                  accessibilityLabel={cat.name}
+                  accessibilityState={{ selected: editingItem?.categoryId === cat.id }}
+                  style={{ minHeight: MIN_TARGET }}
                   className={`flex-row items-center px-3 py-2 rounded-full border ${
                     editingItem?.categoryId === cat.id
-                      ? 'bg-primary border-primary'
+                      ? 'bg-primary-deep border-primary-deep'
                       : 'bg-surface dark:bg-surface-dark border-border dark:border-border-dark'
                   }`}
                 >

@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FlashList } from '@shopify/flash-list';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { ModalHeader } from '../../ui/ModalHeader';
 import type { Category, ReviewColors } from '../types';
 
 interface CategoryPickerModalProps {
@@ -44,18 +45,7 @@ export function CategoryPickerModal({
           paddingBottom: insets.bottom,
         }}
       >
-        <View
-          className="flex-row items-center justify-between px-4 py-4 border-b"
-          style={{ borderColor: colors.border }}
-        >
-          <Pressable onPress={onClose} hitSlop={8}>
-            <Ionicons name="close" size={24} color={colors.text} />
-          </Pressable>
-          <Text className="text-lg" style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}>
-            {t('item.category')}
-          </Text>
-          <View style={{ width: 24 }} />
-        </View>
+        <ModalHeader title={t('item.category')} onClose={onClose} />
 
         <FlashList
           data={categories}

@@ -27,6 +27,8 @@ import {
 import type { OcrBlock } from '@/src/services/ocr';
 import { useFormatPrice, usePreferencesStore } from '@/src/store/preferences';
 import { useAppColors } from '@/src/hooks/useAppColors';
+import { ICON_HIT_SLOP } from '@/src/theme/a11y';
+import { ScanItemRow } from '@/src/components/scan/ScanItemRow';
 import { useLlmRefinement } from '@/src/hooks/useLlmRefinement';
 import { RefinementBanner } from '@/src/components/scan/RefinementBanner';
 import { DuplicateBanner } from '@/src/components/scan/DuplicateBanner';
@@ -829,57 +831,36 @@ export default function ScanReviewScreen() {
     return category ? `${category.icon || ''} ${category.name}`.trim() : null;
   };
 
+  // Row identity and callbacks are memoised by React Compiler (enabled in
+  // app.json), so the memo() on ScanItemRow actually bites: editing one item
+  // no longer re-renders every row on the receipt.
   const renderItemRow = (item: ParsedItem & { categoryId?: number }, index: number) => (
-    <Pressable
+    <ScanItemRow
       key={index}
-      onPress={() => openItemEdit(index)}
-      className="flex-row items-center py-3 border-b"
-      style={{ borderColor: colors.border }}
-    >
-      <View className="flex-1 mr-2">
-        <Text
-          className="text-sm"
-          style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
-          numberOfLines={2}
-        >
-          {item.name}
-        </Text>
-        <View className="flex-row items-center mt-0.5">
-          {item.quantity !== 1 && (
-            <Text
-              className="text-xs mr-2"
-              style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-            >
-              {item.quantity} {item.unit || 'x'} @ {formatPrice(item.unitPrice)}
-            </Text>
-          )}
-          {item.categoryId && (
-            <Text
-              className="text-xs"
-              style={{ color: colors.primary, fontFamily: 'Inter_400Regular' }}
-            >
-              {getCategoryName(item.categoryId)}
-            </Text>
-          )}
-        </View>
-      </View>
-      <Text
-        className="text-sm mr-3"
-        style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
-      >
-        {formatPrice(item.totalPrice)}
-      </Text>
-      <Pressable onPress={() => handleRemoveItem(index)} hitSlop={8} className="p-1">
-        <Ionicons name="close-circle" size={20} color={colors.error} />
-      </Pressable>
-    </Pressable>
+      index={index}
+      name={item.name}
+      quantity={item.quantity}
+      unit={item.unit}
+      unitPriceLabel={item.unitPrice != null ? formatPrice(item.unitPrice) : null}
+      totalPriceLabel={formatPrice(item.totalPrice)}
+      categoryName={getCategoryName(item.categoryId)}
+      colors={colors}
+      onEdit={openItemEdit}
+      onRemove={handleRemoveItem}
+    />
   );
 
   return (
     <View className="flex-1" style={{ backgroundColor: colors.background, paddingTop: insets.top }}>
       {/* Header */}
       <View className="flex-row items-center justify-between px-4 py-3">
-        <Pressable onPress={handleBack} className="flex-row items-center" hitSlop={8}>
+        <Pressable
+          onPress={handleBack}
+          className="flex-row items-center"
+          hitSlop={ICON_HIT_SLOP}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.back')}
+        >
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
         <Text className="text-lg" style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}>
@@ -925,7 +906,7 @@ export default function ScanReviewScreen() {
                       className="rounded-full p-2 mr-3"
                       style={{ backgroundColor: colors.accent + '30' }}
                     >
-                      <Ionicons name="grid" size={20} color="#B8860B" />
+                      <Ionicons name="grid" size={20} color={colors.warning} />
                     </View>
                     <View className="flex-1">
                       <Text
@@ -1019,7 +1000,7 @@ export default function ScanReviewScreen() {
                       className="rounded-full p-2 mr-3"
                       style={{ backgroundColor: colors.accent + '30' }}
                     >
-                      <Ionicons name="grid-outline" size={20} color="#B8860B" />
+                      <Ionicons name="grid-outline" size={20} color={colors.warning} />
                     </View>
                     <View className="flex-1">
                       <Text
@@ -1066,7 +1047,7 @@ export default function ScanReviewScreen() {
                     className="rounded-full p-2 mr-3"
                     style={{ backgroundColor: colors.accent + '30' }}
                   >
-                    <Ionicons name="grid-outline" size={20} color="#B8860B" />
+                    <Ionicons name="grid-outline" size={20} color={colors.warning} />
                   </View>
                   <View className="flex-1">
                     <Text

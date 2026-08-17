@@ -47,6 +47,8 @@ export function Card({
       <Pressable
         onPress={onPress}
         disabled={disabled}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: !!disabled }}
         className={`${baseClasses} active:opacity-80`}
         style={style}
         {...(props as PressableProps)}

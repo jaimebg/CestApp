@@ -2,6 +2,8 @@ import { View, Text, Pressable, ScrollView, Modal } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { type ZoneType, ZONE_COLORS, ZONE_ICONS, ZONE_LABELS } from '../../types/zones';
+import { useAppColors } from '../../hooks/useAppColors';
+import { MIN_TARGET } from '../../theme/a11y';
 
 interface ZoneTypePickerProps {
   visible: boolean;
@@ -24,6 +26,7 @@ const ZONE_TYPES: ZoneType[] = [
 export function ZoneTypePicker({ visible, onClose, onSelect, currentType }: ZoneTypePickerProps) {
   const { i18n } = useTranslation();
   const lang = i18n.language === 'es' ? 'es' : 'en';
+  const colors = useAppColors();
 
   const handleSelect = (type: ZoneType) => {
     onSelect(type);
@@ -53,6 +56,10 @@ export function ZoneTypePicker({ visible, onClose, onSelect, currentType }: Zone
               <Pressable
                 key={type}
                 onPress={() => handleSelect(type)}
+                accessibilityRole="button"
+                accessibilityLabel={ZONE_LABELS[type][lang]}
+                accessibilityState={{ selected: currentType === type }}
+                style={{ minHeight: MIN_TARGET }}
                 className={`flex-row items-center p-4 mb-2 rounded-xl border ${
                   currentType === type
                     ? 'border-primary-deep bg-primary/10'
@@ -75,7 +82,7 @@ export function ZoneTypePicker({ visible, onClose, onSelect, currentType }: Zone
                   </Text>
                 </View>
 
-                {currentType === type && <Feather name="check" size={24} color="#3D6B23" />}
+                {currentType === type && <Feather name="check" size={24} color={colors.action} />}
               </Pressable>
             ))}
           </ScrollView>

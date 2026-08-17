@@ -1,15 +1,15 @@
 import { Stack } from 'expo-router';
-import { useIsDarkMode } from '@/src/hooks/useAppColors';
+import { useAppColors } from '@/src/hooks/useAppColors';
 
 export default function ScanLayout() {
-  const isDark = useIsDarkMode();
+  const colors = useAppColors();
 
   return (
     <Stack
       screenOptions={{
         headerShown: false,
         contentStyle: {
-          backgroundColor: isDark ? '#1A1918' : '#FFFDE1',
+          backgroundColor: colors.background,
         },
         animation: 'slide_from_right',
       }}

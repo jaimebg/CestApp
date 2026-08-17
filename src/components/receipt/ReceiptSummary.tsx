@@ -1,6 +1,8 @@
 import { View, Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useFormatPrice } from '../../store/preferences';
+import { Amount } from '../ui/Amount';
+import { fonts } from '../../theme/type';
 
 interface ReceiptSummaryProps {
   subtotal?: number | null;
@@ -24,9 +26,7 @@ export function ReceiptSummary({ subtotal, tax, discount, total }: ReceiptSummar
               <Text className="text-text-secondary dark:text-text-dark-secondary text-base">
                 {t('receipt.subtotal')}
               </Text>
-              <Text className="text-text dark:text-text-dark text-base">
-                {formatPrice(subtotal / 100)}
-              </Text>
+              <Amount size="base">{formatPrice(subtotal / 100)}</Amount>
             </View>
           )}
 
@@ -35,16 +35,18 @@ export function ReceiptSummary({ subtotal, tax, discount, total }: ReceiptSummar
               <Text className="text-text-secondary dark:text-text-dark-secondary text-base">
                 {t('receipt.tax')}
               </Text>
-              <Text className="text-text dark:text-text-dark text-base">
-                {formatPrice(tax / 100)}
-              </Text>
+              <Amount size="base">{formatPrice(tax / 100)}</Amount>
             </View>
           )}
 
           {discount != null && discount > 0 && (
             <View className="flex-row justify-between py-2">
-              <Text className="text-primary text-base">{t('receipt.discount')}</Text>
-              <Text className="text-primary text-base">-{formatPrice(discount / 100)}</Text>
+              <Text className="text-action dark:text-action-dark text-base">
+                {t('receipt.discount')}
+              </Text>
+              <Amount size="base" className="text-action dark:text-action-dark">
+                -{formatPrice(discount / 100)}
+              </Amount>
             </View>
           )}
 
@@ -54,12 +56,13 @@ export function ReceiptSummary({ subtotal, tax, discount, total }: ReceiptSummar
 
       {/* Total */}
       <View className="flex-row justify-between py-2">
-        <Text className="text-text dark:text-text-dark text-lg font-semibold">
+        <Text
+          className="text-text dark:text-text-dark text-lg"
+          style={{ fontFamily: fonts.semibold }}
+        >
           {t('receipt.total')}
         </Text>
-        <Text className="text-text dark:text-text-dark text-xl font-bold">
-          {formatPrice(total ? total / 100 : null)}
-        </Text>
+        <Amount size="xl">{formatPrice(total ? total / 100 : null)}</Amount>
       </View>
     </View>
   );
