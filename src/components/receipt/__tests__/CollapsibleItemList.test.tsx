@@ -27,6 +27,13 @@ describe('CollapsibleItemList', () => {
     expect(screen.queryByText(/Show .* more/)).toBeNull();
   });
 
+  it('shows every row and no control at exactly the threshold', () => {
+    render(<CollapsibleItemList items={makeItems(25)} />);
+
+    expect(screen.getByText('Artículo 25')).toBeTruthy();
+    expect(screen.queryByText(/Show .* more/)).toBeNull();
+  });
+
   it('renders the first 25 rows and offers the rest when the receipt is long', () => {
     render(<CollapsibleItemList items={makeItems(30)} />);
 
