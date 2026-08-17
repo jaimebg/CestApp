@@ -88,6 +88,17 @@ function bytesToString(bytes: Uint8Array): string {
 type UnicodeMap = Map<number, string>;
 
 /**
+ * A run of text together with the position it is painted at, in PDF user space
+ * (origin bottom-left, y grows upwards).
+ */
+interface PositionedRun {
+  text: string;
+  x: number;
+  y: number;
+  fontSize: number;
+}
+
+/**
  * Extract text from PDF bytes.
  */
 function extractTextFromPdfBytes(bytes: Uint8Array): string {
@@ -150,6 +161,34 @@ function extractTextFromPdfBytes(bytes: Uint8Array): string {
 
   return textParts.join('\n');
 }
+
+/**
+ * Content stream operators that matter for laying text out.
+ *
+ * Ordered so that string operands are consumed before the numeric operators,
+ * which keeps digits inside a literal string from being read as coordinates.
+ */
+const TEXT_OPERATOR_REGEX = new RegExp(
+  [
+    String.raw`(\[(?:[^\[\]\\]|\\[\s\S])*\])\s*TJ`,
+    String.raw`(\((?:[^()\\]|\\[\s\S])*\)|<[0-9A-Fa-f\s]*>)\s*(Tj|'|")`,
+    String.raw`(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+Tm`,
+    String.raw`(-?[\d.]+)\s+(-?[\d.]+)\s+(TD|Td)`,
+    String.raw`(-?[\d.]+)\s+TL`,
+    String.raw`\/[^\s\/\[\]<>()]+\s+(-?[\d.]+)\s+Tf`,
+    String.raw`(T\*)`,
+  ].join('|'),
+  'g'
+);
+
+const DEFAULT_FONT_SIZE = 10;
+
+/**
+ * Fraction of the font size within which two runs are treated as sharing a
+ * baseline. Cells of one table row are emitted with an identical y, so this
+ * only has to absorb rounding and the odd superscript.
+ */
+const ROW_TOLERANCE_RATIO = 0.3;
 
 /**
  * Find the start of stream content in bytes (after 'stream\n' or 'stream\r\n').
@@ -361,80 +400,168 @@ function hexToUnicodeString(hex: string): string {
 
 /**
  * Extract text from a PDF stream content.
+ *
+ * Receipt PDFs paint each cell of the item table as its own positioned text
+ * run, so reading the runs in stream order yields one field per line and the
+ * quantity/name/price association is lost. Collecting the runs with their
+ * coordinates and regrouping them by baseline restores the rows a human sees:
+ *   "1" + "HELADOS NARANJA" + "2,40" -> "1 HELADOS NARANJA 2,40"
  */
 function extractTextFromStream(content: string, unicodeMap: UnicodeMap): string {
-  const textParts: string[] = [];
+  const runs: PositionedRun[] = [];
 
   const textBlockRegex = /BT([\s\S]*?)ET/g;
   let match;
 
   while ((match = textBlockRegex.exec(content)) !== null) {
-    const textBlock = match[1];
-    const blockText = extractTextFromTextBlock(textBlock, unicodeMap);
-    if (blockText) {
-      textParts.push(blockText);
-    }
+    collectRunsFromTextBlock(match[1], unicodeMap, runs);
   }
 
-  return textParts.join('\n');
+  return groupRunsIntoLines(runs).join('\n');
 }
 
 /**
- * Extract text from a BT...ET text block.
+ * Walk a BT...ET block, tracking the text position operators, and emit one run
+ * per position. Text shown without an intervening move stays in the same run,
+ * so glyphs a font kerns apart never gain a stray space.
  */
-function extractTextFromTextBlock(block: string, unicodeMap: UnicodeMap): string {
-  const parts: string[] = [];
+function collectRunsFromTextBlock(
+  block: string,
+  unicodeMap: UnicodeMap,
+  runs: PositionedRun[]
+): void {
+  let lineX = 0;
+  let lineY = 0;
+  let leading = 0;
+  let fontSize = DEFAULT_FONT_SIZE;
+  let pending = '';
 
-  const tjRegex = /\(([^)]*)\)\s*Tj/g;
+  const flush = () => {
+    if (pending.length > 0) {
+      runs.push({ text: pending, x: lineX, y: lineY, fontSize });
+      pending = '';
+    }
+  };
+
+  TEXT_OPERATOR_REGEX.lastIndex = 0;
   let match;
-  while ((match = tjRegex.exec(block)) !== null) {
-    const decoded = decodePdfString(match[1], unicodeMap);
-    if (decoded) parts.push(decoded);
+
+  while ((match = TEXT_OPERATOR_REGEX.exec(block)) !== null) {
+    if (match[1] !== undefined) {
+      pending += decodeTjArray(match[1], unicodeMap);
+    } else if (match[2] !== undefined) {
+      // ' and " move to the next line before showing their string
+      if (match[3] === "'" || match[3] === '"') {
+        flush();
+        lineY -= leading;
+      }
+      pending += decodeStringOperand(match[2], unicodeMap);
+    } else if (match[4] !== undefined) {
+      flush();
+      lineX = parseFloat(match[8]);
+      lineY = parseFloat(match[9]);
+    } else if (match[10] !== undefined) {
+      flush();
+      const tx = parseFloat(match[10]);
+      const ty = parseFloat(match[11]);
+      if (match[12] === 'TD') leading = -ty;
+      lineX += tx;
+      lineY += ty;
+    } else if (match[13] !== undefined) {
+      leading = parseFloat(match[13]);
+    } else if (match[14] !== undefined) {
+      const size = Math.abs(parseFloat(match[14]));
+      if (size > 0) fontSize = size;
+    } else if (match[15] !== undefined) {
+      flush();
+      lineY -= leading;
+    }
   }
 
-  const tjArrayRegex = /\[((?:[^[\]]*|\[[^\]]*\])*)\]\s*TJ/gi;
-  while ((match = tjArrayRegex.exec(block)) !== null) {
-    const arrayContent = match[1];
-    let lineText = '';
+  flush();
+}
 
-    const elementRegex = /\(([^)]*)\)|<([0-9A-Fa-f]+)>|(-?\d+\.?\d*)/g;
-    let elemMatch;
-    let lastWasSpace = false;
+/**
+ * Regroup positioned runs into printed lines: top to bottom, left to right.
+ */
+function groupRunsIntoLines(runs: PositionedRun[]): string[] {
+  if (runs.length === 0) return [];
 
-    while ((elemMatch = elementRegex.exec(arrayContent)) !== null) {
-      if (elemMatch[1] !== undefined) {
-        const decoded = decodePdfString(elemMatch[1], unicodeMap);
-        if (decoded) {
-          lineText += decoded;
-          lastWasSpace = false;
-        }
-      } else if (elemMatch[2] !== undefined) {
-        const decoded = decodeHexStringWithMap(elemMatch[2], unicodeMap);
-        if (decoded) {
-          lineText += decoded;
-          lastWasSpace = false;
-        }
-      } else if (elemMatch[3] !== undefined) {
-        const kerning = parseFloat(elemMatch[3]);
-        if (kerning < -100 && !lastWasSpace && lineText.length > 0) {
-          lineText += ' ';
-          lastWasSpace = true;
-        }
+  const sorted = [...runs].sort((a, b) => b.y - a.y || a.x - b.x);
+
+  const sizes = sorted.map((run) => run.fontSize).sort((a, b) => a - b);
+  const medianSize = sizes[Math.floor(sizes.length / 2)] || DEFAULT_FONT_SIZE;
+  const tolerance = Math.max(medianSize * ROW_TOLERANCE_RATIO, 0.5);
+
+  const rows: PositionedRun[][] = [];
+  let current: PositionedRun[] = [];
+  let currentY = 0;
+
+  for (const run of sorted) {
+    if (current.length === 0 || Math.abs(run.y - currentY) <= tolerance) {
+      current.push(run);
+      currentY = current.reduce((sum, r) => sum + r.y, 0) / current.length;
+    } else {
+      rows.push(current);
+      current = [run];
+      currentY = run.y;
+    }
+  }
+
+  if (current.length > 0) rows.push(current);
+
+  return rows
+    .map((row) =>
+      [...row]
+        .sort((a, b) => a.x - b.x)
+        .map((run) => run.text)
+        .join(' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+    )
+    .filter((line) => line.length > 0);
+}
+
+/**
+ * Decode a `(literal)` or `<hex>` string operand.
+ */
+function decodeStringOperand(operand: string, unicodeMap: UnicodeMap): string {
+  if (operand.startsWith('<')) {
+    return decodeHexStringWithMap(operand.slice(1, -1).replace(/\s+/g, ''), unicodeMap);
+  }
+  return decodePdfString(operand.slice(1, -1), unicodeMap);
+}
+
+/**
+ * Decode a `[...] TJ` array, turning large negative kerning into a space.
+ */
+function decodeTjArray(operand: string, unicodeMap: UnicodeMap): string {
+  const arrayContent = operand.slice(1, -1);
+  let text = '';
+  let lastWasSpace = false;
+
+  const elementRegex = /\((?:[^()\\]|\\[\s\S])*\)|<[0-9A-Fa-f\s]*>|-?\d+\.?\d*/g;
+  let match;
+
+  while ((match = elementRegex.exec(arrayContent)) !== null) {
+    const element = match[0];
+
+    if (element.startsWith('(') || element.startsWith('<')) {
+      const decoded = decodeStringOperand(element, unicodeMap);
+      if (decoded) {
+        text += decoded;
+        lastWasSpace = false;
+      }
+    } else {
+      const kerning = parseFloat(element);
+      if (kerning < -100 && !lastWasSpace && text.length > 0) {
+        text += ' ';
+        lastWasSpace = true;
       }
     }
-
-    if (lineText.length > 0) {
-      parts.push(lineText);
-    }
   }
 
-  const hexTjRegex = /<([0-9A-Fa-f]+)>\s*Tj/g;
-  while ((match = hexTjRegex.exec(block)) !== null) {
-    const decoded = decodeHexStringWithMap(match[1], unicodeMap);
-    if (decoded) parts.push(decoded);
-  }
-
-  return parts.join('');
+  return text;
 }
 
 /**
