@@ -68,9 +68,9 @@ CestApp is a **Spain-focused** supermarket receipt scanner app built with React 
   Inter — receipts are printed in mono, and every digit sharing an advance
   width keeps a column of prices aligned. Mono is for currency only: not dates,
   quantities, percentages or chart axes.
-- Fonts are declared once in `src/theme/type.ts`. `fontModules` is what
-  `useFonts` loads and `fonts`/`mono` are what styles reference, derived from
-  the same object so they cannot drift into a silent system-font fallback.
+- Fonts are declared once in `src/theme/type.ts`. `fontModules` is computed
+  from `fonts` and `mono`, so what `useFonts` loads cannot drift from what
+  styles reference.
 - Route entering animations through `useEntering()` (`src/hooks/useEntering.ts`)
   so they respect the OS "Reduce Motion" setting. Avoid `.springify()` — spring
   overshoot on arriving content is a vestibular trigger.
@@ -192,6 +192,16 @@ src/
       index.ts                 # Camera/Gallery/PDF picker
     storage/
       index.ts                 # File system management
+    llm/
+      index.ts                 # On-device LLM receipt structuring
+      types.ts                 # LLM and backend message types
+      merge.ts                 # Combines OCR and LLM readings with voting
+      prompt.ts                # Spanish-language system and user prompts
+      trigger.ts               # Refine/propose/discard decision logic
+      guards.ts                # Anchors LLM items to OCR; filters hallucinations
+      reconcile.ts             # Validates item prices sum to total
+      schema.ts                # JSON schema constrained to Spanish units
+      appleBackend.ts          # Lazy access to Apple Foundation Models
 
   store/
     preferences.ts             # Zustand preferences store
