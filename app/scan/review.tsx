@@ -453,9 +453,9 @@ export default function ScanReviewScreen() {
   const totalsDiffer = Math.abs(itemsSum - currentTotal) > 0.01;
   const canSave = !totalsDiffer && parsedData && parsedData.items.length > 0;
 
-  const handleDone = () => {
-    // Close all modals first to prevent SafeAreaProvider crash on Android
-    // The crash occurs when SafeAreaView is unmounted during the native render cycle
+  // Closing modals first prevents a SafeAreaProvider crash on Android, which
+  // happens when SafeAreaView is unmounted during the native render cycle.
+  const closeAllModals = () => {
     setShowStoreModal(false);
     setShowDateModal(false);
     setShowItemModal(false);
@@ -463,6 +463,10 @@ export default function ScanReviewScreen() {
     setShowTotalModal(false);
     setShowZonesPreview(false);
     setShowDiffModal(false);
+  };
+
+  const handleDone = () => {
+    closeAllModals();
 
     // Wait for modals to close before dismissing navigation
     setTimeout(() => {
@@ -471,18 +475,25 @@ export default function ScanReviewScreen() {
   };
 
   const handleBack = () => {
-    // Close all modals first to prevent SafeAreaProvider crash on Android
-    setShowStoreModal(false);
-    setShowDateModal(false);
-    setShowItemModal(false);
-    setShowCategoryModal(false);
-    setShowTotalModal(false);
-    setShowZonesPreview(false);
-    setShowDiffModal(false);
+    closeAllModals();
 
     setTimeout(() => {
       router.back();
     }, 100);
+  };
+
+  /**
+   * Leaves the scan flow for the receipt that was just saved. The scan stack is
+   * dropped first so the detail screen sits directly on the tabs and Back
+   * returns there instead of re-entering the review flow.
+   */
+  const openSavedReceipt = (receiptId: number) => {
+    closeAllModals();
+
+    setTimeout(() => {
+      router.dismissAll();
+      router.push(`/receipt/${receiptId}`);
+    }, 150);
   };
 
   const handleSave = async () => {
@@ -551,7 +562,7 @@ export default function ScanReviewScreen() {
       }
 
       showSuccessToast(t('common.success'), t('scan.receiptSaved'));
-      handleDone();
+      openSavedReceipt(receipt.id);
     } catch (error) {
       logger.error('Save error:', error);
       showErrorToast(t('common.error'), t('errors.saveFailed'));
