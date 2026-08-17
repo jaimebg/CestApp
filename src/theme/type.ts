@@ -29,9 +29,11 @@ export type FontWeight = keyof typeof fonts;
 /**
  * The binaries `useFonts` loads, keyed by the family name styles reference.
  *
- * Declared here rather than in the layout so there is exactly one list. When
- * the loaded set and the named set were separate, a typo in either produced a
- * silent fallback to the system font rather than an error.
+ * Declared here rather than in the layout so there is exactly one list. Computed
+ * keys make a name typo harmless (propagates to both sides, stays self-consistent).
+ * Tests guard the declare/register asymmetry: a weight in `fonts` but missing here,
+ * or vice versa. Swapped pairings (right name, wrong binary) are invisible — jest-expo
+ * stubs all assets to the same value — so they must be caught by reading the map.
  */
 export const fontModules = {
   [fonts.light]: Inter_300Light,
