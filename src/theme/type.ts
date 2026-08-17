@@ -8,6 +8,13 @@
  */
 
 import type { TextStyle } from 'react-native';
+import {
+  Inter_300Light,
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+} from '@expo-google-fonts/inter';
 
 export const fonts = {
   light: 'Inter_300Light',
@@ -18,6 +25,21 @@ export const fonts = {
 } as const;
 
 export type FontWeight = keyof typeof fonts;
+
+/**
+ * The binaries `useFonts` loads, keyed by the family name styles reference.
+ *
+ * Declared here rather than in the layout so there is exactly one list. When
+ * the loaded set and the named set were separate, a typo in either produced a
+ * silent fallback to the system font rather than an error.
+ */
+export const fontModules = {
+  [fonts.light]: Inter_300Light,
+  [fonts.regular]: Inter_400Regular,
+  [fonts.medium]: Inter_500Medium,
+  [fonts.semibold]: Inter_600SemiBold,
+  [fonts.bold]: Inter_700Bold,
+};
 
 /**
  * Monetary values.

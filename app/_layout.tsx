@@ -10,17 +10,11 @@ import { colorScheme as nativewindColorScheme } from 'nativewind';
 import { Toaster } from 'sonner-native';
 import { ErrorBoundary } from '@/src/components/ErrorBoundary';
 import * as SplashScreen from 'expo-splash-screen';
-import {
-  useFonts,
-  Inter_300Light,
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
-} from '@expo-google-fonts/inter';
+import { useFonts } from '@expo-google-fonts/inter';
 import { DatabaseProvider } from '@/src/db/provider';
 import { usePreferencesStore, type ColorScheme } from '@/src/store/preferences';
 import { lightColors, darkColors } from '@/src/theme/colors';
+import { fontModules } from '@/src/theme/type';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -60,13 +54,7 @@ export default function RootLayout() {
 
   useSyncedColorScheme(colorScheme);
 
-  const [fontsLoaded, fontError] = useFonts({
-    Inter_300Light,
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
-  });
+  const [fontsLoaded, fontError] = useFonts(fontModules);
 
   const appReady = (fontsLoaded || fontError) && storeHydrated;
   const isNavigationReady = !!navigationState?.key;
