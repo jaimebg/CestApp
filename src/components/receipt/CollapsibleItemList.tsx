@@ -19,7 +19,7 @@ import type { Item } from '../../db/schema/items';
 import type { Category } from '../../db/schema/categories';
 
 /** Chosen so a typical 5–20 item receipt never sees the control. */
-const COLLAPSE_THRESHOLD = 25;
+export const COLLAPSE_THRESHOLD = 25;
 
 interface CollapsibleItemListProps {
   items: { item: Item; category: Category | null }[];

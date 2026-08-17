@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
-import { CollapsibleItemList } from '../CollapsibleItemList';
+import { CollapsibleItemList, COLLAPSE_THRESHOLD } from '../CollapsibleItemList';
 import type { Item } from '../../../db/schema/items';
 
 jest.mock('@expo/vector-icons', () => ({ Ionicons: 'Ionicons' }));
@@ -27,10 +27,12 @@ describe('CollapsibleItemList', () => {
     expect(screen.queryByText(/Show .* more/)).toBeNull();
   });
 
+  // The fixture tracks COLLAPSE_THRESHOLD rather than a literal count so this
+  // test keeps probing the true edge if the threshold ever changes.
   it('shows every row and no control at exactly the threshold', () => {
-    render(<CollapsibleItemList items={makeItems(25)} />);
+    render(<CollapsibleItemList items={makeItems(COLLAPSE_THRESHOLD)} />);
 
-    expect(screen.getByText('Artículo 25')).toBeTruthy();
+    expect(screen.getByText(`Artículo ${COLLAPSE_THRESHOLD}`)).toBeTruthy();
     expect(screen.queryByText(/Show .* more/)).toBeNull();
   });
 
