@@ -139,7 +139,10 @@
     "refinementCurrent": "Actual",
     "refinementProposedReading": "Propuesta",
     "refinementItemsCount_one": "{{count}} producto",
-    "refinementItemsCount_other": "{{count}} productos"
+    "refinementItemsCount_other": "{{count}} productos",
+    "duplicateTitle": "Ya escaneado",
+    "duplicateDetail": "Guardado el {{date}}, {{total}}",
+    "duplicateView": "Ver"
   },
   "history": {
     "title": "Historial",

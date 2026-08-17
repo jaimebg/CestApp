@@ -29,9 +29,15 @@ import { useFormatPrice, usePreferencesStore } from '@/src/store/preferences';
 import { useAppColors } from '@/src/hooks/useAppColors';
 import { useLlmRefinement } from '@/src/hooks/useLlmRefinement';
 import { RefinementBanner } from '@/src/components/scan/RefinementBanner';
+import { DuplicateBanner } from '@/src/components/scan/DuplicateBanner';
 import { ProposalDiffModal } from '@/src/components/scan/modals/ProposalDiffModal';
-import { findOrCreateStore, getStoreByNormalizedName } from '@/src/db/queries/stores';
-import { createReceipt } from '@/src/db/queries/receipts';
+import {
+  findOrCreateStore,
+  getStoreByNormalizedName,
+  normalizeStoreName,
+} from '@/src/db/queries/stores';
+import { createReceipt, findDuplicateReceipt } from '@/src/db/queries/receipts';
+import type { Receipt } from '@/src/db/schema';
 import { createItems } from '@/src/db/queries/items';
 import { getCategories } from '@/src/db/queries/categories';
 import { getTemplateByStoreId, deleteTemplate } from '@/src/db/queries/storeParsingTemplates';
@@ -42,6 +48,23 @@ import {
 } from '@/src/db/queries/categorization';
 
 const logger = createScopedLogger('Review');
+
+/**
+ * The timestamp a receipt is stored under. Falls back to now when the receipt
+ * carries no readable date, and keeps the date when it carries no time.
+ */
+function resolveReceiptDateTime(date: Date | null, time: string | null): Date {
+  const resolved = date ? new Date(date) : new Date();
+
+  if (time) {
+    const [hours, minutes] = time.split(':').map(Number);
+    if (!isNaN(hours) && !isNaN(minutes)) {
+      resolved.setHours(hours, minutes, 0, 0);
+    }
+  }
+
+  return resolved;
+}
 
 export default function ScanReviewScreen() {
   const {
@@ -279,6 +302,49 @@ export default function ScanReviewScreen() {
   const [parsedData, setParsedData] = useState<ParsedReceipt | null>(initialParsedData);
   const [showRawText, setShowRawText] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [duplicateReceipt, setDuplicateReceipt] = useState<Receipt | null>(null);
+
+  const storeName = parsedData?.storeName ?? null;
+  const receiptDate = parsedData?.date ?? null;
+  const receiptTime = parsedData?.time ?? null;
+  const receiptTotal = parsedData?.total ?? null;
+
+  // Re-runs when the store, date or total is corrected, so fixing a misparsed
+  // field surfaces (or clears) the warning straight away.
+  useEffect(() => {
+    let cancelled = false;
+
+    async function checkForDuplicate() {
+      if (!storeName || receiptTotal === null || receiptTotal <= 0) {
+        setDuplicateReceipt(null);
+        return;
+      }
+
+      // Looked up rather than created: the receipt may still be discarded.
+      const store = await getStoreByNormalizedName(normalizeStoreName(storeName));
+      if (cancelled) return;
+
+      if (!store) {
+        setDuplicateReceipt(null);
+        return;
+      }
+
+      const existing = await findDuplicateReceipt(
+        store.id,
+        resolveReceiptDateTime(receiptDate, receiptTime),
+        Math.round(receiptTotal * 100)
+      );
+      if (cancelled) return;
+
+      setDuplicateReceipt(existing);
+    }
+
+    checkForDuplicate().catch((error) => logger.error('Duplicate check failed:', error));
+
+    return () => {
+      cancelled = true;
+    };
+  }, [storeName, receiptDate, receiptTime, receiptTotal]);
 
   // Mirrors `parsedData` synchronously (writes happen alongside every
   // `setParsedData` call, never via a passive effect) so the LLM refinement
@@ -499,14 +565,7 @@ export default function ScanReviewScreen() {
       const storeName = parsedData.storeName || t('scan.unknownStore');
       const storeId = await findOrCreateStore(storeName);
 
-      let receiptDateTime = parsedData.date || new Date();
-      if (parsedData.time) {
-        const [hours, minutes] = parsedData.time.split(':').map(Number);
-        if (!isNaN(hours) && !isNaN(minutes)) {
-          receiptDateTime = new Date(receiptDateTime);
-          receiptDateTime.setHours(hours, minutes, 0, 0);
-        }
-      }
+      const receiptDateTime = resolveReceiptDateTime(parsedData.date, parsedData.time);
 
       const receipt = await createReceipt({
         storeId,
@@ -1144,6 +1203,14 @@ export default function ScanReviewScreen() {
               onCompare={() => setShowDiffModal(true)}
               onDismiss={refinement.dismissProposal}
             />
+
+            {duplicateReceipt && (
+              <DuplicateBanner
+                dateLabel={new Date(duplicateReceipt.dateTime).toLocaleDateString()}
+                totalLabel={formatPrice(duplicateReceipt.totalAmount / 100)}
+                onView={() => router.push(`/receipt/${duplicateReceipt.id}`)}
+              />
+            )}
 
             {/* Items */}
             <Card variant="outlined" padding="md" className="mb-4">

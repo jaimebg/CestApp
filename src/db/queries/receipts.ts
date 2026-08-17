@@ -1,6 +1,7 @@
 import { db } from '../client';
 import { receipts, items, stores, type NewReceipt } from '../schema';
 import { eq, desc, and, gte, lte, sql } from 'drizzle-orm';
+import { dayRange } from './dayRange';
 
 export async function getReceipts(limit = 50, offset = 0) {
   return db
@@ -54,6 +55,33 @@ export async function getReceiptsByStore(storeId: number) {
     .from(receipts)
     .where(eq(receipts.storeId, storeId))
     .orderBy(desc(receipts.dateTime));
+}
+
+/**
+ * Finds an already saved receipt that looks like the one being reviewed.
+ *
+ * Same store, same calendar day and same total to the cent. Two separate trips
+ * to one shop on one day for the identical amount will match, which is why the
+ * review screen only warns rather than blocking the save.
+ */
+export async function findDuplicateReceipt(storeId: number, dateTime: Date, totalAmount: number) {
+  const { start, end } = dayRange(dateTime);
+
+  const result = await db
+    .select()
+    .from(receipts)
+    .where(
+      and(
+        eq(receipts.storeId, storeId),
+        eq(receipts.totalAmount, totalAmount),
+        gte(receipts.dateTime, start),
+        lte(receipts.dateTime, end)
+      )
+    )
+    .orderBy(receipts.dateTime)
+    .limit(1);
+
+  return result[0] || null;
 }
 
 export async function createReceipt(data: NewReceipt) {

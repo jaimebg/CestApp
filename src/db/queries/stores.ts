@@ -33,11 +33,20 @@ export async function createStore(data: NewStore) {
   return result[0];
 }
 
-export async function findOrCreateStore(name: string): Promise<number> {
-  const normalizedName = name
+/**
+ * The key stores are matched on. Exported so a lookup can be done without
+ * creating a row, which duplicate detection needs while a receipt is still
+ * only being reviewed.
+ */
+export function normalizeStoreName(name: string): string {
+  return name
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9]/g, '');
+}
+
+export async function findOrCreateStore(name: string): Promise<number> {
+  const normalizedName = normalizeStoreName(name);
 
   const existing = await getStoreByNormalizedName(normalizedName);
   if (existing) return existing.id;

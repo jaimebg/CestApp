@@ -139,7 +139,10 @@
     "refinementCurrent": "Current",
     "refinementProposedReading": "Proposed",
     "refinementItemsCount_one": "{{count}} item",
-    "refinementItemsCount_other": "{{count}} items"
+    "refinementItemsCount_other": "{{count}} items",
+    "duplicateTitle": "Already scanned",
+    "duplicateDetail": "Saved {{date}}, {{total}}",
+    "duplicateView": "View"
   },
   "history": {
     "title": "History",
