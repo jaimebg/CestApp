@@ -84,6 +84,10 @@ export default function ScanPreviewScreen() {
   // Store detected total from auto zone detection (bypasses zone transformation issues)
   const [detectedTotal, setDetectedTotal] = useState<number | null>(null);
 
+  // Measured size of the PDF viewport, needed to place the zone overlay over
+  // the letterboxed page rather than over the whole view.
+  const [pdfViewport, setPdfViewport] = useState<{ width: number; height: number } | null>(null);
+
   const hasAutoDetected = useRef(false);
   const isPdf = uri ? isPdfFile(uri) : false;
 
@@ -111,11 +115,11 @@ export default function ScanPreviewScreen() {
     }
   }, [uri, isPdf, dimensions]);
 
-  // Auto-detect zones when image loads (if no zones defined)
+  // Auto-detect zones when the receipt loads (if no zones defined)
   useEffect(() => {
     async function runAutoDetection() {
       // Skip if already detecting, already have zones, or no URI
-      if (hasAutoDetected.current || zones.length > 0 || !uri || isPdf || isDetectingZones) {
+      if (hasAutoDetected.current || zones.length > 0 || !uri || isDetectingZones) {
         return;
       }
 
@@ -124,6 +128,24 @@ export default function ScanPreviewScreen() {
       logger.log('Starting auto zone detection...');
 
       try {
+        if (isPdf) {
+          // A PDF carries the geometry of its own text, so it goes through the
+          // same zone detection as a photograph rather than a blind second path.
+          const pdf = await extractTextFromPdf(uri);
+          logger.log('PDF rows:', pdf.blocks.length, 'page:', pdf.dimensions);
+
+          if (pdf.success && pdf.dimensions && pdf.blocks.length > 0) {
+            setDimensions(pdf.dimensions);
+
+            const detected = autoDetectZones(pdf.blocks, pdf.dimensions);
+            logger.log('Auto-detected zones:', detected.zones.length);
+
+            if (detected.zones.length > 0) setZones(detected.zones);
+            if (detected.detectedTotal !== null) setDetectedTotal(detected.detectedTotal);
+          }
+          return;
+        }
+
         // Get actual image dimensions first, then pass to OCR for accurate zone alignment
         const imageDims = dimensions || (await getImageDimensions(uri));
         if (!dimensions) setDimensions(imageDims);
@@ -322,13 +344,19 @@ export default function ScanPreviewScreen() {
           <View
             className="flex-1 rounded-2xl overflow-hidden"
             style={{ backgroundColor: colors.surface }}
+            onLayout={(event) => {
+              const { width, height } = event.nativeEvent.layout;
+              setPdfViewport({ width, height });
+            }}
           >
             <Pdf
               source={{ uri }}
               style={{ flex: 1, backgroundColor: colors.surface }}
               enablePaging={true}
               horizontal={false}
-              fitPolicy={0}
+              // Fit the whole page: the zone overlay is only meaningful over a
+              // page the reader can see end to end.
+              fitPolicy={2}
               spacing={0}
               onLoadComplete={(numberOfPages) => {
                 logger.log(`PDF loaded with ${numberOfPages} pages`);
@@ -350,6 +378,45 @@ export default function ScanPreviewScreen() {
                 </View>
               )}
             />
+            {/* Zones overlay, laid over the page rect rather than the viewport:
+                fitPolicy 2 letterboxes the page inside the view. */}
+            {zones.length > 0 &&
+              pdfViewport &&
+              dimensions &&
+              (() => {
+                const scale = Math.min(
+                  pdfViewport.width / dimensions.width,
+                  pdfViewport.height / dimensions.height
+                );
+                const pageWidth = dimensions.width * scale;
+                const pageHeight = dimensions.height * scale;
+
+                return (
+                  <Svg
+                    pointerEvents="none"
+                    style={{
+                      position: 'absolute',
+                      left: (pdfViewport.width - pageWidth) / 2,
+                      top: (pdfViewport.height - pageHeight) / 2,
+                      width: pageWidth,
+                      height: pageHeight,
+                    }}
+                  >
+                    {zones.map((zone) => (
+                      <Rect
+                        key={zone.id}
+                        x={zone.boundingBox.x * pageWidth}
+                        y={zone.boundingBox.y * pageHeight}
+                        width={zone.boundingBox.width * pageWidth}
+                        height={zone.boundingBox.height * pageHeight}
+                        fill={`${ZONE_COLORS[zone.type]}40`}
+                        stroke={ZONE_COLORS[zone.type]}
+                        strokeWidth={2}
+                      />
+                    ))}
+                  </Svg>
+                );
+              })()}
           </View>
         ) : (
           <View className="flex-1 rounded-2xl overflow-hidden items-center justify-center">
@@ -400,7 +467,7 @@ export default function ScanPreviewScreen() {
       </View>
 
       {/* Zones indicator and button */}
-      {!isPdf && (
+      {(!isPdf || isDetectingZones || zones.length > 0) && (
         <View className="px-4 py-2">
           {isDetectingZones ? (
             <View
@@ -416,6 +483,21 @@ export default function ScanPreviewScreen() {
                 }}
               >
                 {t('scan.detectingZones')}
+              </Text>
+            </View>
+          ) : isPdf ? (
+            // Read-only: the zone editor draws over an image, not a PDF page.
+            <View
+              className="flex-row items-center justify-center py-3 rounded-xl"
+              style={{ backgroundColor: colors.primary + '20' }}
+              accessibilityRole="text"
+            >
+              <Ionicons name="checkmark-circle" size={20} color={colors.action} />
+              <Text
+                className="text-sm ml-2"
+                style={{ color: colors.action, fontFamily: 'Inter_500Medium' }}
+              >
+                {`${zones.length} ${t('scan.zonesDetected')}`}
               </Text>
             </View>
           ) : (
