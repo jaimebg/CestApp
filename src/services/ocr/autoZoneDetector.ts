@@ -16,6 +16,8 @@ interface NormalizedBlock {
   normalizedBoundingBox: NormalizedBoundingBox;
   lines: {
     text: string;
+    normalizedX: number;
+    normalizedWidth: number;
     normalizedY: number;
     normalizedHeight: number;
   }[];
@@ -172,6 +174,8 @@ function normalizeBlocks(
     },
     lines: block.lines.map((line) => ({
       text: line.text,
+      normalizedX: line.boundingBox.left / effectiveWidth,
+      normalizedWidth: line.boundingBox.width / effectiveWidth,
       normalizedY: line.boundingBox.top / effectiveHeight,
       normalizedHeight: line.boundingBox.height / effectiveHeight,
     })),
@@ -405,6 +409,37 @@ function mergeBoundingBoxes(boxes: NormalizedBoundingBox[]): NormalizedBoundingB
     width: maxX - minX,
     height: maxY - minY,
   };
+}
+
+function median(values: number[]): number {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.floor(sorted.length / 2)];
+}
+
+/**
+ * Whether prices sit in a column of their own, to the right of the names.
+ *
+ * Counting lines cannot answer this. A receipt whose weighed products print
+ * "0,596 kg x 2,85 EUR/kg" under the item has plenty of lines that look inline
+ * without being a two-column layout any less, and the ratios this used to
+ * compare -- more than three names per inline line, at least half as many
+ * prices as names -- flipped on exactly those receipts, costing them their
+ * price zone.
+ *
+ * Geometry is the thing being asked about, so ask it directly: prices form a
+ * column when there are several of them and they start to the right of where
+ * the product names end.
+ */
+function looksColumnar(products: NormalizedBlock[], prices: NormalizedBlock[]): boolean {
+  if (prices.length < 3 || products.length === 0) return false;
+
+  const priceLeft = median(prices.map((block) => block.normalizedBoundingBox.x));
+  const nameRight = median(
+    products.map((block) => block.normalizedBoundingBox.x + block.normalizedBoundingBox.width)
+  );
+
+  return priceLeft > nameRight;
 }
 
 export interface AutoDetectedZones {
@@ -642,26 +677,50 @@ export function autoDetectZones(
   // Only consider lines that have BOTH a total keyword AND a price, and are in the bottom half
   let totalsStartY = 0.85; // Default: bottom 15% is totals
 
-  for (let i = sortedBlocks.length - 1; i >= 0; i--) {
-    const block = sortedBlocks[i];
-    const blockY = block.normalizedBoundingBox.y;
+  // Search line by line, not block by block. A recognizer segments a columnar
+  // receipt into one block per column, so a single block runs from the first
+  // product to the footer and its top Y says nothing about where the totals
+  // begin.
+  const allLines = sortedBlocks.flatMap((block) => block.lines);
 
-    // Only consider total lines in the bottom 60% of the receipt
-    // This avoids "TOTAL ARTICULOS: 5" type lines near the header
-    if (blockY < 0.4) continue;
+  // A total always comes after the first item, so that is the boundary worth
+  // guarding with -- not a fixed fraction of the page. Receipts whose footer
+  // runs long put their items in the top third, and a fixed "bottom 60%" cut
+  // let the product zone swallow the totals block on every one of them.
+  const pricedYs = allLines
+    .filter((line) => containsPrice(line.text))
+    .map((line) => line.normalizedY);
+  const firstPricedY = pricedYs.length > 0 ? Math.min(...pricedYs) : 0.1;
 
-    // Must have both "total" keyword AND a price to be the totals section
-    // Use preset keywords if available
-    const upper = block.text.toUpperCase();
-    const lower = block.text.toLowerCase();
+  for (const line of allLines) {
+    // Skip anything at or above the first priced line: that is the header,
+    // where "TOTAL ARTICULOS: 5" lives.
+    if (line.normalizedY <= firstPricedY) continue;
+
+    const upper = line.text.toUpperCase();
+    const lower = line.text.toLowerCase();
     const hasTotalKeyword =
       totalKeywords.some((kw) => containsKeyword(upper, kw.toUpperCase())) &&
       !lower.includes('articul');
-    const hasPrice = containsPrice(block.text);
+    if (!hasTotalKeyword) continue;
 
-    if (hasTotalKeyword && hasPrice) {
-      totalsStartY = Math.min(totalsStartY, blockY - 0.02);
-      logger.log(`Found totals line at Y=${blockY.toFixed(3)}: "${block.text.substring(0, 40)}"`);
+    // On a columnar receipt the word and the amount are separate observations
+    // on the same printed row, so the price may sit on a neighbouring line.
+    const rowTolerance = Math.max(line.normalizedHeight * 0.6, 0.002);
+    const hasPrice =
+      containsPrice(line.text) ||
+      allLines.some(
+        (other) =>
+          other !== line &&
+          Math.abs(other.normalizedY - line.normalizedY) <= rowTolerance &&
+          containsPrice(other.text)
+      );
+
+    if (hasPrice) {
+      totalsStartY = Math.min(totalsStartY, line.normalizedY - 0.02);
+      logger.log(
+        `Found totals line at Y=${line.normalizedY.toFixed(3)}: "${line.text.substring(0, 40)}"`
+      );
     }
   }
 
@@ -680,47 +739,36 @@ export function autoDetectZones(
 
   // Analyze all blocks for products and prices
   for (const block of sortedBlocks) {
-    const y = block.normalizedBoundingBox.y;
-
-    // Skip totals section
-    if (y > totalsStartY) continue;
-
     // Check each line in the block
     for (const line of block.lines) {
       // Skip lines too high (likely header)
       if (line.normalizedY < headerEndY) continue;
 
+      // Skip the totals section. This has to be judged per line: a column
+      // block starts among the products and ends below the footer, so its own
+      // top Y would let every line under the total through.
+      if (line.normalizedY > totalsStartY) continue;
+
+      // Take the line's own box, not the block's. A recognizer puts a whole
+      // column in one block, so the block spans from the widest header line to
+      // the price column and says nothing about where this row sits.
+      const lineBox = {
+        x: line.normalizedX,
+        y: line.normalizedY,
+        width: line.normalizedWidth,
+        height: line.normalizedHeight,
+      };
+
       if (isItemLine(line.text)) {
         // This line has both product name and price inline
         inlineItemCount++;
-        productBlocks.push({
-          ...block,
-          normalizedBoundingBox: {
-            ...block.normalizedBoundingBox,
-            y: line.normalizedY,
-            height: line.normalizedHeight,
-          },
-        });
+        productBlocks.push({ ...block, normalizedBoundingBox: lineBox });
         debug.productsFound++;
       } else if (isStandalonePrice(line.text)) {
-        priceOnlyBlocks.push({
-          ...block,
-          normalizedBoundingBox: {
-            ...block.normalizedBoundingBox,
-            y: line.normalizedY,
-            height: line.normalizedHeight,
-          },
-        });
+        priceOnlyBlocks.push({ ...block, normalizedBoundingBox: lineBox });
         debug.pricesFound++;
       } else if (isProductName(line.text) && !isHeaderLine(line.text)) {
-        productBlocks.push({
-          ...block,
-          normalizedBoundingBox: {
-            ...block.normalizedBoundingBox,
-            y: line.normalizedY,
-            height: line.normalizedHeight,
-          },
-        });
+        productBlocks.push({ ...block, normalizedBoundingBox: lineBox });
         debug.productsFound++;
       }
     }
@@ -731,19 +779,16 @@ export function autoDetectZones(
   logger.log('Price-only blocks found:', priceOnlyBlocks.length);
 
   // 5. Create product_names zone
-  // Determine if this is a columnar layout (many product blocks + price blocks)
-  // vs inline layout (product names and prices on same line)
-  const isLikelyColumnar =
-    productBlocks.length >= 5 && priceOnlyBlocks.length >= productBlocks.length * 0.5;
+  const isLikelyColumnar = looksColumnar(productBlocks, priceOnlyBlocks);
 
-  // Prefer columnar detection when we have many product/price blocks
-  // Even if we found some inline items, columnar is more accurate for receipts with separated columns
-  if (isLikelyColumnar && productBlocks.length > inlineItemCount * 3) {
+  // A separated price column is the more accurate reading whenever the layout
+  // has one, even if some rows also parse as inline.
+  if (isLikelyColumnar) {
     logger.log(
       'Using columnar detection (product blocks:',
       productBlocks.length,
-      'vs inline:',
-      inlineItemCount,
+      'price blocks:',
+      priceOnlyBlocks.length,
       ')'
     );
     // Fall through to columnar handling below
@@ -766,10 +811,7 @@ export function autoDetectZones(
   // Use columnar detection if we didn't create a zone yet
   if (zones.filter((z) => z.type === 'product_names').length === 0 && productBlocks.length > 0) {
     // Fall back to traditional detection
-    // Check if receipt is columnar (prices in separate column)
-    const isColumnar = priceOnlyBlocks.length >= productBlocks.length * 0.5;
-
-    if (isColumnar && priceOnlyBlocks.length > 0) {
+    if (isLikelyColumnar) {
       // Columnar layout: create separate zones for products and prices
 
       // Products zone: left side
@@ -812,14 +854,16 @@ export function autoDetectZones(
       zones.push(createZone('product_names', itemsMerged, 0.02));
       logger.log('Detected inline layout (fallback)');
     }
-  } else {
-    // No products found - create a default items zone in the middle section
+  } else if (zones.filter((z) => z.type === 'product_names').length === 0) {
+    // Nothing recognizable as a product anywhere: fall back to the middle
+    // section. This used to run whenever a zone HAD been found, stacking a
+    // full-height default on top of an accurate one.
     logger.log('No products detected, creating default items zone');
     const defaultItemsZone: NormalizedBoundingBox = {
       x: 0.02,
       y: headerEndY,
       width: 0.96,
-      height: totalsStartY - headerEndY - 0.02,
+      height: Math.max(totalsStartY - headerEndY - 0.02, 0.1),
     };
     zones.push(createZone('product_names', defaultItemsZone, 0.02));
   }
