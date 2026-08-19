@@ -553,7 +553,6 @@ CI (`.github/workflows/ci.yml`) runs type check, lint, format check, and tests o
 
 ## Commit Guidelines
 
-- **Never commit unless explicitly told**: Do not create commits automatically. Wait for the user to explicitly request a commit.
 - Use conventional commits: `feat:`, `fix:`, `refactor:`, `docs:`, `chore:`
 
 ## Common Pitfalls
