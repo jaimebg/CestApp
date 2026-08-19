@@ -1,5 +1,14 @@
 import { readAsStringAsync } from 'expo-file-system/legacy';
 import { inflate, inflateRaw } from 'pako';
+import {
+  extractRowsFromStream,
+  type FontInfo,
+  type FontTable,
+  type PositionedRow,
+  type UnicodeMap,
+} from './contentStream';
+import type { OcrBlock } from '../ocr/index';
+import { encodingTable } from './encodings';
 import { createScopedLogger } from '../../utils/debug';
 
 const logger = createScopedLogger('PDF');
@@ -9,6 +18,14 @@ export interface PdfExtractionResult {
   text: string;
   lines: string[];
   pageCount: number;
+  /**
+   * The first page's rows, positioned the way a text recognizer reports a
+   * photograph. A PDF receipt can then go through the same zone detection as a
+   * photographed one instead of being a second, geometry-blind path.
+   */
+  blocks: OcrBlock[];
+  /** Size of the first page in PDF points, or null when it has no text. */
+  dimensions: { width: number; height: number } | null;
   error?: string;
 }
 
@@ -29,12 +46,9 @@ export async function extractTextFromPdf(uri: string): Promise<PdfExtractionResu
       bytes[i] = binaryString.charCodeAt(i);
     }
 
-    const extractedText = extractTextFromPdfBytes(bytes);
+    const extracted = extractTextFromPdfBytes(bytes);
 
-    const cleanedText = extractedText
-      .replace(/\x00/g, '')
-      .replace(/[ \t]+/g, ' ')
-      .replace(/ ?\n ?/g, '\n');
+    const cleanedText = clean(extracted.text);
 
     const lines = cleanedText
       .split('\n')
@@ -51,15 +65,21 @@ export async function extractTextFromPdf(uri: string): Promise<PdfExtractionResu
         text: '',
         lines: [],
         pageCount,
+        blocks: [],
+        dimensions: null,
         error: 'no_text_content',
       };
     }
+
+    const pageSize = findPageSize(pdfString);
 
     return {
       success: true,
       text: lines.join('\n'),
       lines,
       pageCount,
+      blocks: pageSize ? rowsToBlocks(extracted.firstPageRows, pageSize.height) : [],
+      dimensions: pageSize,
     };
   } catch (error) {
     logger.error('PDF extraction error:', error);
@@ -68,9 +88,19 @@ export async function extractTextFromPdf(uri: string): Promise<PdfExtractionResu
       text: '',
       lines: [],
       pageCount: 0,
+      blocks: [],
+      dimensions: null,
       error: error instanceof Error ? error.message : 'Unknown error',
     };
   }
+}
+
+/** Strip the NUL bytes CID encoding leaves behind and collapse runs of space. */
+function clean(text: string): string {
+  return text
+    .replace(/\x00/g, '')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/ ?\n ?/g, '\n');
 }
 
 /**
@@ -85,31 +115,29 @@ function bytesToString(bytes: Uint8Array): string {
   return result;
 }
 
-type UnicodeMap = Map<number, string>;
-
-/**
- * A run of text together with the position it is painted at, in PDF user space
- * (origin bottom-left, y grows upwards).
- */
-interface PositionedRun {
-  text: string;
-  x: number;
-  y: number;
-  fontSize: number;
-}
-
 /**
  * Extract text from PDF bytes.
  */
-function extractTextFromPdfBytes(bytes: Uint8Array): string {
+interface ExtractedPdf {
+  text: string;
+  /** Rows of the first page that carried any text. */
+  firstPageRows: PositionedRow[];
+}
+
+function extractTextFromPdfBytes(bytes: Uint8Array): ExtractedPdf {
   const pdfString = bytesToString(bytes);
   const textParts: string[] = [];
+  let firstPageRows: PositionedRow[] = [];
 
   const unicodeMaps = extractToUnicodeMaps(pdfString, bytes);
+  const fonts = resolveFonts(pdfString, unicodeMaps);
 
-  const combinedMap: UnicodeMap = new Map();
+  // Only reached for a font resource the document never let us resolve. Merging
+  // every CMap is what this extractor did for all text, which is why the box
+  // drawing font's six glyphs rewrote the receipt's per-cent signs.
+  const fallbackMap: UnicodeMap = new Map();
   unicodeMaps.forEach((map) => {
-    map.forEach((value, key) => combinedMap.set(key, value));
+    map.forEach((value, key) => fallbackMap.set(key, value));
   });
 
   const streamRegex = /stream\r?\n([\s\S]*?)\r?\nendstream/g;
@@ -153,42 +181,124 @@ function extractTextFromPdfBytes(bytes: Uint8Array): string {
       }
     }
 
-    const text = extractTextFromStream(streamContent, combinedMap);
-    if (text) {
-      textParts.push(text);
+    const rows = extractRowsFromStream(streamContent, fonts, fallbackMap);
+    if (rows.length > 0) {
+      if (firstPageRows.length === 0) firstPageRows = rows;
+      textParts.push(rows.map((row) => row.text).join('\n'));
     }
   }
 
-  return textParts.join('\n');
+  return { text: textParts.join('\n'), firstPageRows };
 }
 
 /**
- * Content stream operators that matter for laying text out.
- *
- * Ordered so that string operands are consumed before the numeric operators,
- * which keeps digits inside a literal string from being read as coordinates.
+ * The first /MediaBox in the document, which is the page size in points.
  */
-const TEXT_OPERATOR_REGEX = new RegExp(
-  [
-    String.raw`(\[(?:[^\[\]\\]|\\[\s\S])*\])\s*TJ`,
-    String.raw`(\((?:[^()\\]|\\[\s\S])*\)|<[0-9A-Fa-f\s]*>)\s*(Tj|'|")`,
-    String.raw`(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+Tm`,
-    String.raw`(-?[\d.]+)\s+(-?[\d.]+)\s+(TD|Td)`,
-    String.raw`(-?[\d.]+)\s+TL`,
-    String.raw`\/[^\s\/\[\]<>()]+\s+(-?[\d.]+)\s+Tf`,
-    String.raw`(T\*)`,
-  ].join('|'),
-  'g'
-);
+function findPageSize(pdfString: string): { width: number; height: number } | null {
+  const match = /\/MediaBox\s*\[\s*([\d.-]+)\s+([\d.-]+)\s+([\d.-]+)\s+([\d.-]+)\s*\]/.exec(
+    pdfString
+  );
+  if (!match) return null;
 
-const DEFAULT_FONT_SIZE = 10;
+  const width = parseFloat(match[3]) - parseFloat(match[1]);
+  const height = parseFloat(match[4]) - parseFloat(match[2]);
+  if (!(width > 0) || !(height > 0)) return null;
+
+  return { width, height };
+}
 
 /**
- * Fraction of the font size within which two runs are treated as sharing a
- * baseline. Cells of one table row are emitted with an identical y, so this
- * only has to absorb rounding and the odd superscript.
+ * Turn positioned PDF rows into the block shape the OCR path emits.
+ *
+ * PDF space measures y upwards from the bottom of the page and reports a
+ * baseline; the block shape measures it downwards from the top and reports the
+ * top edge, so the rows are flipped here rather than in every consumer.
  */
-const ROW_TOLERANCE_RATIO = 0.3;
+function rowsToBlocks(rows: PositionedRow[], pageHeight: number): OcrBlock[] {
+  const topOf = (baseline: number, height: number) => pageHeight - baseline - height * 0.8;
+
+  return rows.map((row) => ({
+    text: clean(row.text).trim(),
+    boundingBox: {
+      left: row.x,
+      top: topOf(row.y, row.height),
+      width: row.width,
+      height: row.height,
+    },
+    lines: row.runs.map((run) => ({
+      text: clean(run.text).trim(),
+      boundingBox: {
+        left: run.x,
+        top: topOf(run.y, run.height),
+        width: run.width,
+        height: run.height,
+      },
+    })),
+  }));
+}
+
+/**
+ * Body of the object with the given id, or undefined when it is absent or
+ * lives in a compressed object stream.
+ */
+function findObjectBody(pdfString: string, objId: string): string | undefined {
+  const regex = new RegExp(`(^|[^0-9])${objId}\\s+\\d+\\s+obj([\\s\\S]*?)(?:stream|endobj)`);
+  const match = regex.exec(pdfString);
+  return match ? match[2] : undefined;
+}
+
+/**
+ * Map each font resource name a content stream can select with Tf to the way
+ * its bytes have to be read.
+ *
+ * A PDF names its fonts per page: `/Resources << /Font << /TT1 6 0 R >> >>`,
+ * either inline or behind one more indirect reference. Each font object then
+ * points at its own /ToUnicode CMap, or names a single-byte /Encoding when it
+ * has none. Applying one font's CMap to another's bytes corrupts text that was
+ * never broken: Carrefour's box drawing font defines six codes, and one of them
+ * is the per-cent sign the tax table prints.
+ */
+function resolveFonts(pdfString: string, maps: Map<string, UnicodeMap>): FontTable {
+  const fonts: FontTable = new Map();
+
+  const fontDicts: string[] = [];
+
+  const inlineRegex = /\/Font\s*<<([\s\S]*?)>>/g;
+  let match;
+  while ((match = inlineRegex.exec(pdfString)) !== null) {
+    fontDicts.push(match[1]);
+  }
+
+  const indirectRegex = /\/Font\s+(\d+)\s+\d+\s+R/g;
+  while ((match = indirectRegex.exec(pdfString)) !== null) {
+    const body = findObjectBody(pdfString, match[1]);
+    if (body) fontDicts.push(body);
+  }
+
+  const entryRegex = /\/([^\s/<>[\]()]+)\s+(\d+)\s+\d+\s+R/g;
+
+  for (const dict of fontDicts) {
+    entryRegex.lastIndex = 0;
+    let entry;
+    while ((entry = entryRegex.exec(dict)) !== null) {
+      const [, resourceName, fontObjId] = entry;
+      const fontBody = findObjectBody(pdfString, fontObjId);
+      if (!fontBody || !/\/Type\s*\/Font/.test(fontBody)) continue;
+
+      const info: FontInfo = {};
+
+      const toUnicode = /\/ToUnicode\s+(\d+)\s+\d+\s+R/.exec(fontBody);
+      if (toUnicode) info.unicodeMap = maps.get(toUnicode[1]);
+
+      const encoding = /\/Encoding\s*\/([A-Za-z0-9]+)/.exec(fontBody);
+      if (encoding) info.encoding = encodingTable(encoding[1]);
+
+      fonts.set(resourceName, info);
+    }
+  }
+
+  return fonts;
+}
 
 /**
  * Find the start of stream content in bytes (after 'stream\n' or 'stream\r\n').
@@ -392,300 +502,6 @@ function hexToUnicodeString(hex: string): string {
       result += String.fromCharCode(charCode);
     } else if (i + 2 <= hex.length) {
       const charCode = parseInt(hex.substr(i, 2), 16);
-      result += String.fromCharCode(charCode);
-    }
-  }
-  return result;
-}
-
-/**
- * Extract text from a PDF stream content.
- *
- * Receipt PDFs paint each cell of the item table as its own positioned text
- * run, so reading the runs in stream order yields one field per line and the
- * quantity/name/price association is lost. Collecting the runs with their
- * coordinates and regrouping them by baseline restores the rows a human sees:
- *   "1" + "HELADOS NARANJA" + "2,40" -> "1 HELADOS NARANJA 2,40"
- */
-function extractTextFromStream(content: string, unicodeMap: UnicodeMap): string {
-  const runs: PositionedRun[] = [];
-
-  const textBlockRegex = /BT([\s\S]*?)ET/g;
-  let match;
-
-  while ((match = textBlockRegex.exec(content)) !== null) {
-    collectRunsFromTextBlock(match[1], unicodeMap, runs);
-  }
-
-  return groupRunsIntoLines(runs).join('\n');
-}
-
-/**
- * Walk a BT...ET block, tracking the text position operators, and emit one run
- * per position. Text shown without an intervening move stays in the same run,
- * so glyphs a font kerns apart never gain a stray space.
- */
-function collectRunsFromTextBlock(
-  block: string,
-  unicodeMap: UnicodeMap,
-  runs: PositionedRun[]
-): void {
-  let lineX = 0;
-  let lineY = 0;
-  let leading = 0;
-  let fontSize = DEFAULT_FONT_SIZE;
-  let pending = '';
-
-  const flush = () => {
-    if (pending.length > 0) {
-      runs.push({ text: pending, x: lineX, y: lineY, fontSize });
-      pending = '';
-    }
-  };
-
-  TEXT_OPERATOR_REGEX.lastIndex = 0;
-  let match;
-
-  while ((match = TEXT_OPERATOR_REGEX.exec(block)) !== null) {
-    if (match[1] !== undefined) {
-      pending += decodeTjArray(match[1], unicodeMap);
-    } else if (match[2] !== undefined) {
-      // ' and " move to the next line before showing their string
-      if (match[3] === "'" || match[3] === '"') {
-        flush();
-        lineY -= leading;
-      }
-      pending += decodeStringOperand(match[2], unicodeMap);
-    } else if (match[4] !== undefined) {
-      flush();
-      lineX = parseFloat(match[8]);
-      lineY = parseFloat(match[9]);
-    } else if (match[10] !== undefined) {
-      flush();
-      const tx = parseFloat(match[10]);
-      const ty = parseFloat(match[11]);
-      if (match[12] === 'TD') leading = -ty;
-      lineX += tx;
-      lineY += ty;
-    } else if (match[13] !== undefined) {
-      leading = parseFloat(match[13]);
-    } else if (match[14] !== undefined) {
-      const size = Math.abs(parseFloat(match[14]));
-      if (size > 0) fontSize = size;
-    } else if (match[15] !== undefined) {
-      flush();
-      lineY -= leading;
-    }
-  }
-
-  flush();
-}
-
-/**
- * Regroup positioned runs into printed lines: top to bottom, left to right.
- */
-function groupRunsIntoLines(runs: PositionedRun[]): string[] {
-  if (runs.length === 0) return [];
-
-  const sorted = [...runs].sort((a, b) => b.y - a.y || a.x - b.x);
-
-  const sizes = sorted.map((run) => run.fontSize).sort((a, b) => a - b);
-  const medianSize = sizes[Math.floor(sizes.length / 2)] || DEFAULT_FONT_SIZE;
-  const tolerance = Math.max(medianSize * ROW_TOLERANCE_RATIO, 0.5);
-
-  const rows: PositionedRun[][] = [];
-  let current: PositionedRun[] = [];
-  let currentY = 0;
-
-  for (const run of sorted) {
-    if (current.length === 0 || Math.abs(run.y - currentY) <= tolerance) {
-      current.push(run);
-      currentY = current.reduce((sum, r) => sum + r.y, 0) / current.length;
-    } else {
-      rows.push(current);
-      current = [run];
-      currentY = run.y;
-    }
-  }
-
-  if (current.length > 0) rows.push(current);
-
-  return rows
-    .map((row) =>
-      [...row]
-        .sort((a, b) => a.x - b.x)
-        .map((run) => run.text)
-        .join(' ')
-        .replace(/\s+/g, ' ')
-        .trim()
-    )
-    .filter((line) => line.length > 0);
-}
-
-/**
- * Decode a `(literal)` or `<hex>` string operand.
- */
-function decodeStringOperand(operand: string, unicodeMap: UnicodeMap): string {
-  if (operand.startsWith('<')) {
-    return decodeHexStringWithMap(operand.slice(1, -1).replace(/\s+/g, ''), unicodeMap);
-  }
-  return decodePdfString(operand.slice(1, -1), unicodeMap);
-}
-
-/**
- * Decode a `[...] TJ` array, turning large negative kerning into a space.
- */
-function decodeTjArray(operand: string, unicodeMap: UnicodeMap): string {
-  const arrayContent = operand.slice(1, -1);
-  let text = '';
-  let lastWasSpace = false;
-
-  const elementRegex = /\((?:[^()\\]|\\[\s\S])*\)|<[0-9A-Fa-f\s]*>|-?\d+\.?\d*/g;
-  let match;
-
-  while ((match = elementRegex.exec(arrayContent)) !== null) {
-    const element = match[0];
-
-    if (element.startsWith('(') || element.startsWith('<')) {
-      const decoded = decodeStringOperand(element, unicodeMap);
-      if (decoded) {
-        text += decoded;
-        lastWasSpace = false;
-      }
-    } else {
-      const kerning = parseFloat(element);
-      if (kerning < -100 && !lastWasSpace && text.length > 0) {
-        text += ' ';
-        lastWasSpace = true;
-      }
-    }
-  }
-
-  return text;
-}
-
-/**
- * Decode a PDF string with escape sequences, applying unicode map if available.
- */
-function decodePdfString(str: string, unicodeMap: UnicodeMap): string {
-  if (!str) return '';
-
-  let result = str
-    .replace(/\\n/g, '\n')
-    .replace(/\\r/g, '\r')
-    .replace(/\\t/g, '\t')
-    .replace(/\\\(/g, '(')
-    .replace(/\\\)/g, ')')
-    .replace(/\\\\/g, '\\');
-
-  result = result.replace(/\\([0-7]{1,3})/g, (_, octal) => {
-    return String.fromCharCode(parseInt(octal, 8));
-  });
-
-  if (unicodeMap.size > 0) {
-    let mapped = '';
-    for (let i = 0; i < result.length; i++) {
-      const charCode = result.charCodeAt(i);
-      const mappedChar = unicodeMap.get(charCode);
-      mapped += mappedChar !== undefined ? mappedChar : result[i];
-    }
-    return mapped;
-  }
-
-  return result;
-}
-
-/**
- * Decode a hex string using the unicode map if available.
- */
-function decodeHexStringWithMap(hex: string, unicodeMap: UnicodeMap): string {
-  if (!hex) return '';
-
-  if (hex.length % 2 !== 0) {
-    hex = hex + '0';
-  }
-
-  if (unicodeMap.size > 0) {
-    let result = '';
-
-    if (hex.length % 4 === 0) {
-      for (let i = 0; i < hex.length; i += 4) {
-        const code = parseInt(hex.substr(i, 4), 16);
-        const mapped = unicodeMap.get(code);
-        if (mapped !== undefined) {
-          result += mapped;
-        } else {
-          if (code >= 32 && code < 65535) {
-            result += String.fromCharCode(code);
-          }
-        }
-      }
-      if (result.length > 0) {
-        return result;
-      }
-    }
-
-    for (let i = 0; i < hex.length; i += 2) {
-      const code = parseInt(hex.substr(i, 2), 16);
-      const mapped = unicodeMap.get(code);
-      if (mapped !== undefined) {
-        result += mapped;
-      } else if (code >= 32 && code <= 126) {
-        result += String.fromCharCode(code);
-      }
-    }
-
-    if (result.length > 0) {
-      return result;
-    }
-  }
-
-  return decodeHexString(hex);
-}
-
-/**
- * Decode a hex string (supports both single-byte and UTF-16BE encoding).
- */
-function decodeHexString(hex: string): string {
-  if (!hex) return '';
-
-  if (hex.length % 2 !== 0) {
-    hex = hex + '0';
-  }
-
-  if (hex.length >= 4 && hex.length % 4 === 0) {
-    let utf16Result = '';
-    let isValidUtf16 = true;
-
-    for (let i = 0; i < hex.length; i += 4) {
-      const highByte = parseInt(hex.substr(i, 2), 16);
-      const lowByte = parseInt(hex.substr(i + 2, 2), 16);
-      const charCode = (highByte << 8) | lowByte;
-
-      if (
-        charCode === 0 ||
-        (charCode > 0 && charCode < 32 && charCode !== 9 && charCode !== 10 && charCode !== 13)
-      ) {
-        isValidUtf16 = false;
-        break;
-      }
-
-      if (charCode >= 32 || charCode === 9 || charCode === 10 || charCode === 13) {
-        utf16Result += String.fromCharCode(charCode);
-      }
-    }
-
-    if (isValidUtf16 && utf16Result.length > 0) {
-      return utf16Result;
-    }
-  }
-
-  let result = '';
-  for (let i = 0; i < hex.length; i += 2) {
-    const charCode = parseInt(hex.substr(i, 2), 16);
-    if (charCode >= 32 && charCode <= 255) {
-      result += String.fromCharCode(charCode);
-    } else if (charCode === 9 || charCode === 10 || charCode === 13) {
       result += String.fromCharCode(charCode);
     }
   }
