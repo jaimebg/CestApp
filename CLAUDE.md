@@ -115,9 +115,8 @@ app/                           # Screens (Expo Router)
     [id].tsx                   # Receipt detail screen
   scan/
     _layout.tsx                # Scan flow layout (modal stack)
-    preview.tsx                # Image/PDF preview
     zones.tsx                  # Manual zone definition
-    review.tsx                 # OCR review & save
+    review.tsx                 # Parsed receipt, editing & save
 
 src/
   components/
@@ -147,9 +146,9 @@ src/
         DateEditModal.tsx      # Date & time editing
         ItemEditModal.tsx      # Line item add/edit
         ProposalDiffModal.tsx  # LLM proposal comparison
+        ReadingModal.tsx       # Zones over the receipt, OCR text, edit zones
         StoreEditModal.tsx     # Store name editing
         TotalEditModal.tsx     # Total editing
-        ZonesPreviewModal.tsx  # Zones preview
     zones/                     # Zone selection components
       ZoneSelectionCanvas.tsx  # Interactive zone drawing
       ZoneSelectionToolbar.tsx # Zone editing controls
@@ -181,6 +180,8 @@ src/
   services/
     ocr/
       index.ts                 # ML Kit OCR wrapper
+      processCapture.ts        # Capture -> text, geometry and detected zones
+      parseCapture.ts          # Processed capture -> parsed receipt
       parser.ts                # Receipt parsing with chain detection
       parseUtils.ts            # Shared price/time parsing helpers
       chainDetector.ts         # Detects chain by NIF/name/fingerprints
@@ -206,6 +207,7 @@ src/
   store/
     preferences.ts             # Zustand preferences store
     receipts.ts                # Receipts store with caching
+    scanDraft.ts               # The receipt being scanned, between tab and review
 
   navigation/
     receiptFlow.ts             # Leaves the scan flow for the receipt just saved
@@ -371,6 +373,35 @@ Pre-trained templates for major Spanish supermarkets:
 | HiperDino | 2.1%         | A35032517 | Canarias (uses IGIC tax)         |
 
 Each template includes: `namePatterns`, `nifPatterns`, `layout`, `parsing.itemPatterns`, `ocrCorrections`, `fingerprints`
+
+### Scan Flow (`app/(tabs)/scan.tsx` → `app/scan/review.tsx`)
+
+Capturing a receipt reads it on the spot: the scan tab calls `processCapture()`
+(OCR or PDF text extraction, then `autoDetectZones`), puts the result in the
+`scanDraft` store, and pushes straight to review. There is no preview screen —
+there is nothing to decide over a raw capture, so the flow goes to what was read
+out of it.
+
+```typescript
+processCapture({ uri, isPdf, knownDimensions? }): Promise<CaptureProcessResult>
+parseCapture({ lines, blocks, ocrText, dimensions, zones, detectedTotal, options? }): ParsedReceipt | null
+```
+
+`parseCapture` picks the most informed route the capture supports: its zones,
+else the geometry of its blocks, else its lines alone. Review calls it once on
+mount and again whenever zones are redrawn.
+
+Zones live in one space only — the geometry the recognizer reported — and every
+surface that draws them (the reading modal, the zone editor canvas) renders the
+receipt at that aspect ratio with `contentFit="fill"`. That is what lets a zone
+round-trip through the editor without coordinate transforms.
+
+The **ReadingModal**, reached from the "how it was read" row in review, shows
+the zones over the receipt plus the recognized text, and is where zones are
+redrawn. Redrawn zones go back into the draft; review reads the receipt again
+through them, asking first when the user has already corrected fields by hand.
+Zone editing is offered for images only: the editor draws over an image, not a
+PDF page.
 
 ### Receipt Parser (`src/services/ocr/parser.ts`)
 

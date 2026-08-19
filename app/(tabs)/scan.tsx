@@ -8,32 +8,71 @@ import { useState } from 'react';
 import { Card } from '@/src/components/ui/Card';
 import { useAppColors } from '@/src/hooks/useAppColors';
 import { selectFromGallery, selectPdf, scanDocument, CaptureResult } from '@/src/services/capture';
+import { deleteReceiptFile, isPdfFile } from '@/src/services/storage';
+import { processCapture } from '@/src/services/ocr/processCapture';
+import { useScanDraftStore } from '@/src/store/scanDraft';
 
 export default function ScanScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState<'scanner' | 'gallery' | 'pdf' | null>(null);
+  const [isReading, setIsReading] = useState(false);
   const colors = useAppColors();
+  const setDraft = useScanDraftStore((state) => state.setDraft);
 
-  const handleCaptureResult = (result: CaptureResult) => {
-    if (result.success && result.localUri) {
-      router.push({
-        pathname: '/scan/preview',
-        params: {
-          uri: result.localUri,
-          source: result.source,
-          ...(result.width &&
-            result.height && {
-              imageDimensions: JSON.stringify({ width: result.width, height: result.height }),
-            }),
-        },
+  // The receipt is read here rather than on a screen of its own: there is
+  // nothing to decide over the raw capture, so the flow goes straight to what
+  // was read out of it.
+  const handleCaptureResult = async (result: CaptureResult) => {
+    if (!result.success || !result.localUri) {
+      if (result.error && result.error !== 'cancelled') {
+        const errorKey =
+          result.error === 'galleryPermission' ? 'errors.galleryPermission' : 'errors.unknownError';
+
+        showErrorToast(t('common.error'), t(errorKey));
+      }
+      return;
+    }
+
+    const uri = result.localUri;
+    setIsReading(true);
+
+    try {
+      const processed = await processCapture({
+        uri,
+        isPdf: isPdfFile(uri),
+        knownDimensions:
+          result.width && result.height
+            ? { width: result.width, height: result.height }
+            : undefined,
       });
-    } else if (result.error && result.error !== 'cancelled') {
-      const errorKey =
-        result.error === 'galleryPermission' ? 'errors.galleryPermission' : 'errors.unknownError';
 
-      showErrorToast(t('common.error'), t(errorKey));
+      if (!processed.success) {
+        await deleteReceiptFile(uri);
+        if (processed.error === 'no_text_content') {
+          showErrorToast(t('scan.pdfOcrPending'), t('scan.pdfOcrPendingDesc'));
+        } else {
+          showErrorToast(t('common.error'), t('errors.ocrFailed'));
+        }
+        return;
+      }
+
+      setDraft({
+        uri,
+        source: result.source,
+        isPdf: processed.isPdf,
+        ocrText: processed.ocrText,
+        lines: processed.lines,
+        blocks: processed.blocks,
+        dimensions: processed.dimensions,
+        zones: processed.zones,
+        detectedTotal: processed.detectedTotal,
+      });
+
+      router.push('/scan/review');
+    } finally {
+      setIsReading(false);
     }
   };
 
@@ -41,7 +80,7 @@ export default function ScanScreen() {
     setIsLoading('scanner');
     try {
       const result = await scanDocument();
-      handleCaptureResult(result);
+      await handleCaptureResult(result);
     } finally {
       setIsLoading(null);
     }
@@ -51,7 +90,7 @@ export default function ScanScreen() {
     setIsLoading('gallery');
     try {
       const result = await selectFromGallery();
-      handleCaptureResult(result);
+      await handleCaptureResult(result);
     } finally {
       setIsLoading(null);
     }
@@ -61,7 +100,7 @@ export default function ScanScreen() {
     setIsLoading('pdf');
     try {
       const result = await selectPdf();
-      handleCaptureResult(result);
+      await handleCaptureResult(result);
     } finally {
       setIsLoading(null);
     }
@@ -112,7 +151,9 @@ export default function ScanScreen() {
                 className="text-white/80 text-sm mt-1"
                 style={{ fontFamily: 'Inter_400Regular' }}
               >
-                {t('scan.scanDocumentDesc')}
+                {isReading && isLoading === 'scanner'
+                  ? t('scan.analyzing')
+                  : t('scan.scanDocumentDesc')}
               </Text>
             </View>
           </Pressable>
@@ -145,7 +186,9 @@ export default function ScanScreen() {
                   className="text-text-secondary dark:text-text-dark-secondary text-sm mt-1"
                   style={{ fontFamily: 'Inter_400Regular' }}
                 >
-                  {t('scan.fromGalleryDesc')}
+                  {isReading && isLoading === 'gallery'
+                    ? t('scan.analyzing')
+                    : t('scan.fromGalleryDesc')}
                 </Text>
               </View>
             </View>
@@ -179,7 +222,7 @@ export default function ScanScreen() {
                   className="text-text-secondary dark:text-text-dark-secondary text-sm mt-1"
                   style={{ fontFamily: 'Inter_400Regular' }}
                 >
-                  {t('scan.importPdfDesc')}
+                  {isReading && isLoading === 'pdf' ? t('scan.analyzing') : t('scan.importPdfDesc')}
                 </Text>
               </View>
             </View>

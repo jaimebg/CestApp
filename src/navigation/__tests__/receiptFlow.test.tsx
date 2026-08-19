@@ -17,10 +17,6 @@ function ScanTabScreen() {
   return <Text>scan tab</Text>;
 }
 
-function PreviewScreen() {
-  return <Text>preview</Text>;
-}
-
 function ReviewScreen() {
   return <Text>review</Text>;
 }
@@ -40,7 +36,6 @@ const ROUTES = {
   '(tabs)/index': DashboardScreen,
   '(tabs)/scan': ScanTabScreen,
   'scan/_layout': StackLayout,
-  'scan/preview': PreviewScreen,
   'scan/review': ReviewScreen,
   'receipt/_layout': StackLayout,
   'receipt/[id]': ReceiptDetailScreen,
@@ -53,11 +48,10 @@ function rootStackRoutes(rendered: ReturnType<typeof renderRouter>): string[] {
   return (root?.state?.routes ?? []).map((r) => r.name);
 }
 
-/** Walks the same path a user takes: scan tab -> preview -> review. */
+/** Walks the same path a user takes: scan tab -> review. */
 function enterScanFlow() {
   const rendered = renderRouter(ROUTES, { initialUrl: '/(tabs)/scan' });
 
-  act(() => router.push('/scan/preview'));
   act(() => router.push('/scan/review'));
 
   return rendered;
@@ -97,6 +91,5 @@ describe('openSavedReceipt', () => {
     expect(rendered.getPathname()).toBe('/scan');
     expect(screen.getByText('scan tab')).toBeTruthy();
     expect(screen.queryByText('review')).toBeNull();
-    expect(screen.queryByText('preview')).toBeNull();
   });
 });

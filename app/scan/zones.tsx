@@ -12,6 +12,7 @@ import { ZoneSelectionToolbar } from '@/src/components/zones/ZoneSelectionToolba
 import { type ZoneDefinition, type ZoneType, type ParsingHints } from '@/src/types/zones';
 import { upsertStoreTemplate, getTemplateByStoreId } from '@/src/db/queries/storeParsingTemplates';
 import { useAppColors } from '@/src/hooks/useAppColors';
+import { useScanDraftStore } from '@/src/store/scanDraft';
 
 const logger = createScopedLogger('Zones');
 
@@ -23,14 +24,12 @@ export default function ZoneSelectionScreen() {
     storeId,
     imageDimensions,
     mode: screenMode,
-    source,
     existingZones,
   } = useLocalSearchParams<{
     uri: string;
     storeId?: string;
     imageDimensions?: string;
-    mode?: 'template' | 'preview'; // 'template' saves to DB, 'preview' returns zones for one-time use
-    source?: string;
+    mode?: 'template' | 'preview'; // 'template' saves to DB, 'preview' hands zones back to the review screen
     existingZones?: string; // Auto-detected or previously defined zones (for preview mode)
   }>();
   const isPreviewMode = screenMode === 'preview';
@@ -108,21 +107,12 @@ export default function ZoneSelectionScreen() {
       return;
     }
 
-    // In preview mode, return zones to preview screen via params
+    // In preview mode the zones belong to the receipt being reviewed, not to a
+    // store: they go back into the draft the review screen reads.
     if (isPreviewMode) {
-      logger.log('Returning zones to preview:', zones.length);
-      zones.forEach((z, i) => {
-        logger.log(`Zone ${i}: type=${z.type}, bbox=${JSON.stringify(z.boundingBox)}`);
-      });
-      router.navigate({
-        pathname: '/scan/preview',
-        params: {
-          uri,
-          source,
-          definedZones: JSON.stringify(zones),
-          imageDimensions: imageDimensions,
-        },
-      });
+      logger.log('Handing', zones.length, 'zones back to the review screen');
+      useScanDraftStore.getState().setZones(zones);
+      router.back();
       return;
     }
 
@@ -150,7 +140,7 @@ export default function ZoneSelectionScreen() {
       logger.error('Error saving template:', error);
       showErrorToast(t('common.error'), t('errors.saveFailed'));
     }
-  }, [storeId, zones, uri, source, router, t, isPreviewMode, imageDimensions, parsedDimensions]);
+  }, [storeId, zones, uri, router, t, isPreviewMode, parsedDimensions]);
 
   const handleCancel = useCallback(() => {
     router.back();

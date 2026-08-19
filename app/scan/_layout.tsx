@@ -14,7 +14,6 @@ export default function ScanLayout() {
         animation: 'slide_from_right',
       }}
     >
-      <Stack.Screen name="preview" />
       <Stack.Screen name="review" />
       <Stack.Screen
         name="zones"

@@ -1,9 +1,9 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { View, Text, ScrollView, Pressable, useWindowDimensions } from 'react-native';
+import { View, Text, ScrollView, Pressable } from 'react-native';
 import { type ZoneDefinition } from '@/src/types/zones';
 import { showSuccessToast, showErrorToast } from '@/src/utils/toast';
 import { createScopedLogger } from '@/src/utils/debug';
-import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,15 +15,15 @@ import { DateEditModal } from '@/src/components/scan/modals/DateEditModal';
 import { ItemEditModal } from '@/src/components/scan/modals/ItemEditModal';
 import { CategoryPickerModal } from '@/src/components/scan/modals/CategoryPickerModal';
 import { TotalEditModal } from '@/src/components/scan/modals/TotalEditModal';
-import { ZonesPreviewModal } from '@/src/components/scan/modals/ZonesPreviewModal';
+import { ReadingModal } from '@/src/components/scan/modals/ReadingModal';
+import { ConfirmationModal } from '@/src/components/ui/ConfirmationModal';
 import type { Category } from '@/src/components/scan/types';
-import { parseReceipt, ParsedReceipt, ParsedItem, ParserOptions } from '@/src/services/ocr/parser';
+import type { ParsedReceipt, ParsedItem, ParserOptions } from '@/src/services/ocr/parser';
+import { parseCapture } from '@/src/services/ocr/parseCapture';
+import { useScanDraftStore } from '@/src/store/scanDraft';
+import { deleteReceiptFile } from '@/src/services/storage';
 import { openSavedReceipt } from '@/src/navigation/receiptFlow';
-import {
-  parseWithTemplate,
-  shouldUseTemplate,
-  parseWithSpatialCorrelation,
-} from '@/src/services/ocr/templateParser';
+import { parseWithTemplate, shouldUseTemplate } from '@/src/services/ocr/templateParser';
 import type { OcrBlock } from '@/src/services/ocr';
 import { useFormatPrice, usePreferencesStore } from '@/src/store/preferences';
 import { parseAmountInput } from '@/src/config/currency';
@@ -52,6 +52,13 @@ import {
 
 const logger = createScopedLogger('Review');
 
+// Stable empty values, so a screen opened without a draft does not hand its
+// hooks a new array on every render.
+const NO_LINES: string[] = [];
+const NO_BLOCKS: OcrBlock[] = [];
+const NO_ZONES: ZoneDefinition[] = [];
+const FALLBACK_DIMENSIONS = { width: 1000, height: 1500 };
+
 /**
  * The timestamp a receipt is stored under. Falls back to now when the receipt
  * carries no readable date, and keeps the date when it carries no time.
@@ -70,27 +77,8 @@ function resolveReceiptDateTime(date: Date | null, time: string | null): Date {
 }
 
 export default function ScanReviewScreen() {
-  const {
-    uri,
-    ocrText,
-    ocrLines,
-    ocrBlocks,
-    imageDimensions,
-    originalImageDimensions,
-    isPdf,
-    manualZones,
-    detectedTotal: detectedTotalParam,
-  } = useLocalSearchParams<{
-    uri: string;
-    ocrText?: string;
-    ocrLines?: string;
-    ocrBlocks?: string;
-    imageDimensions?: string;
-    originalImageDimensions?: string; // Original dimensions used for zone drawing
-    isPdf?: string;
-    manualZones?: string; // Zones defined manually in preview screen
-    detectedTotal?: string; // Total detected from auto zone detection (bypasses zone issues)
-  }>();
+  const draft = useScanDraftStore((state) => state.draft);
+  const resetDraft = useScanDraftStore((state) => state.reset);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
@@ -99,89 +87,40 @@ export default function ScanReviewScreen() {
   const dateFormat = usePreferencesStore((state) => state.dateFormat);
   const decimalSeparator = usePreferencesStore((state) => state.decimalSeparator);
 
-  // Memoize parsed JSON to avoid creating new references on every render
-  const lines = useMemo<string[]>(() => (ocrLines ? JSON.parse(ocrLines) : []), [ocrLines]);
-  const blocks = useMemo<OcrBlock[]>(() => (ocrBlocks ? JSON.parse(ocrBlocks) : []), [ocrBlocks]);
-  const dimensions = useMemo(
-    () => (imageDimensions ? JSON.parse(imageDimensions) : { width: 1000, height: 1500 }),
-    [imageDimensions]
+  const uri = draft?.uri ?? null;
+  const isPdf = draft?.isPdf ?? false;
+  const ocrText = draft?.ocrText ?? '';
+  const lines = draft?.lines ?? NO_LINES;
+  const blocks = draft?.blocks ?? NO_BLOCKS;
+  const dimensions = draft?.dimensions ?? FALLBACK_DIMENSIONS;
+  const detectedTotal = draft?.detectedTotal ?? null;
+  const hasOcrResult = ocrText.length > 0;
+
+  // A receipt that was never saved keeps no copy of its file, whichever way the
+  // screen was left: the discard button, Back, or the system gesture. The draft
+  // goes with it, so a later scan cannot open onto the last receipt's text.
+  const wasSaved = useRef(false);
+  useEffect(
+    () => () => {
+      resetDraft();
+      if (!wasSaved.current && uri) {
+        deleteReceiptFile(uri).catch((error) => logger.error('Could not delete the file:', error));
+      }
+    },
+    [resetDraft, uri]
   );
-  const origDimensions = useMemo(
-    () => (originalImageDimensions ? JSON.parse(originalImageDimensions) : dimensions),
-    [originalImageDimensions, dimensions]
-  );
-  const hasOcrResult = ocrText && ocrText.length > 0;
 
   const hasLoggedDebugInfo = useRef(false);
   useEffect(() => {
     if (hasLoggedDebugInfo.current) return;
     hasLoggedDebugInfo.current = true;
 
-    logger.log('Dimensions received:', {
-      effective: dimensions,
-      original: origDimensions,
-      rawParam: imageDimensions,
+    logger.log('Capture received:', {
+      dimensions,
+      blocks: blocks.length,
       firstBlockBbox: blocks[0]?.boundingBox ?? null,
     });
-  }, [dimensions, origDimensions, imageDimensions, blocks]);
-
-  // Parse manual zones from preview screen and transform if aspect ratios differ
-  const previewZones: ZoneDefinition[] = useMemo(() => {
-    if (manualZones) {
-      try {
-        const rawZones: ZoneDefinition[] = JSON.parse(manualZones);
-
-        // Check if we need to transform zones due to aspect ratio difference
-        const origAspect = origDimensions.width / origDimensions.height;
-        const ocrAspect = dimensions.width / dimensions.height;
-        const aspectDiff = Math.abs(origAspect - ocrAspect) / origAspect;
-
-        logger.log('Zone transformation check:');
-        logger.log('- Original aspect:', origAspect.toFixed(3));
-        logger.log('- OCR aspect:', ocrAspect.toFixed(3));
-        logger.log('- Difference:', (aspectDiff * 100).toFixed(1), '%');
-
-        // If aspect ratios are very different (>10%), zones need transformation
-        if (aspectDiff > 0.1) {
-          logger.log('Transforming zones due to aspect ratio mismatch');
-
-          // Check if it looks like a 90-degree rotation
-          const isRotated = (origAspect > 1 && ocrAspect < 1) || (origAspect < 1 && ocrAspect > 1);
-
-          if (isRotated) {
-            logger.log('Image appears rotated 90 degrees - transforming zone coordinates');
-            // Transform zones for 90-degree rotation: (x, y) -> (y, 1-x-width)
-            return rawZones.map((zone) => ({
-              ...zone,
-              boundingBox: {
-                x: zone.boundingBox.y,
-                y: 1 - zone.boundingBox.x - zone.boundingBox.width,
-                width: zone.boundingBox.height,
-                height: zone.boundingBox.width,
-              },
-            }));
-          } else {
-            // Just scale proportionally
-            const scaleX = ocrAspect / origAspect;
-            return rawZones.map((zone) => ({
-              ...zone,
-              boundingBox: {
-                ...zone.boundingBox,
-                x: zone.boundingBox.x * scaleX,
-                width: zone.boundingBox.width * scaleX,
-              },
-            }));
-          }
-        }
-
-        return rawZones;
-      } catch (e) {
-        logger.error('Error parsing zones:', e);
-        return [];
-      }
-    }
-    return [];
-  }, [manualZones, dimensions, origDimensions]);
+  }, [dimensions, blocks]);
 
   const parserOptions: ParserOptions = useMemo(
     () => ({
@@ -191,110 +130,23 @@ export default function ScanReviewScreen() {
     [dateFormat, decimalSeparator]
   );
 
-  const detectedTotal = useMemo((): number | null => {
-    if (!detectedTotalParam) return null;
-    const value = parseFloat(detectedTotalParam);
-    return isNaN(value) ? null : value;
-  }, [detectedTotalParam]);
+  const [appliedZones, setAppliedZones] = useState<ZoneDefinition[]>(draft?.zones ?? NO_ZONES);
 
-  const initialParsedData = useMemo(() => {
-    if (lines.length === 0) return null;
+  const readReceipt = useCallback(
+    (zones: ZoneDefinition[]) =>
+      parseCapture({
+        lines,
+        blocks,
+        ocrText,
+        dimensions,
+        zones,
+        detectedTotal,
+        options: parserOptions,
+      }),
+    [lines, blocks, ocrText, dimensions, detectedTotal, parserOptions]
+  );
 
-    let result: ParsedReceipt | null = null;
-
-    // If manual zones were defined in preview, use them for parsing
-    if (previewZones.length > 0 && blocks.length > 0) {
-      logger.log('Using manual zones for parsing');
-      logger.log('Preview zones:', previewZones.length);
-      logger.log('Blocks available:', blocks.length);
-      logger.log('Dimensions:', dimensions);
-      logger.log(
-        'First block sample:',
-        blocks[0]
-          ? {
-              text: blocks[0].lines
-                ?.map((l: { text: string }) => l.text)
-                .join(' ')
-                .substring(0, 50),
-              bbox: blocks[0].boundingBox,
-            }
-          : 'none'
-      );
-
-      // Create a fake template object to use with parseWithTemplate
-      const manualTemplate = {
-        id: 0,
-        storeId: 0,
-        zones: previewZones,
-        parsingHints: null,
-        sampleImagePath: null,
-        templateImageDimensions: dimensions,
-        fingerprint: null,
-        confidence: 70,
-        useCount: 0,
-        successCount: 0,
-        failureCount: 0,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      result = parseWithTemplate(blocks, manualTemplate, ocrText || lines.join('\n'), dimensions);
-      logger.log('Parse result:', {
-        storeName: result.storeName,
-        itemsCount: result.items.length,
-        total: result.total,
-        confidence: result.confidence,
-      });
-    } else if (blocks.length > 0 && dimensions.width > 0 && dimensions.height > 0) {
-      // Use spatial correlation if blocks with position data are available
-      logger.log('Blocks available for spatial parsing:', blocks.length);
-      logger.log('Using spatial correlation parsing');
-      result = parseWithSpatialCorrelation(blocks, ocrText || lines.join('\n'), dimensions);
-      logger.log('Spatial parse result:', {
-        storeName: result.storeName,
-        itemsCount: result.items.length,
-        total: result.total,
-        confidence: result.confidence,
-      });
-    } else {
-      // Fallback to standard text-based parsing
-      result = parseReceipt(lines, parserOptions);
-    }
-
-    // Apply detected total from auto zone detection if zone-based extraction failed
-    // This bypasses coordinate transformation issues between OCR and display coordinates
-    if (result && detectedTotal !== null) {
-      const parsedTotal = result.total || 0;
-      const itemsSum = result.items.reduce((sum, item) => sum + item.totalPrice, 0);
-
-      // Use detected total if:
-      // 1. Parsed total is null/0 (extraction failed)
-      // 2. Parsed total is suspiciously small (likely wrong value from item line)
-      // 3. Detected total is closer to items sum than parsed total
-      const shouldUseDetectedTotal =
-        parsedTotal === 0 ||
-        parsedTotal === null ||
-        (parsedTotal < 10 && detectedTotal > 10) || // Small parsed total, larger detected
-        (itemsSum > 0 && Math.abs(detectedTotal - itemsSum) < Math.abs(parsedTotal - itemsSum));
-
-      if (shouldUseDetectedTotal) {
-        logger.log('Overriding total with detected value:', {
-          parsedTotal,
-          detectedTotal,
-          itemsSum,
-          reason: parsedTotal === 0 ? 'parsed was 0' : 'detected closer to items sum',
-        });
-        result = { ...result, total: detectedTotal };
-      } else {
-        logger.log('Keeping parsed total:', {
-          parsedTotal,
-          detectedTotal,
-          itemsSum,
-        });
-      }
-    }
-
-    return result;
-  }, [lines, parserOptions, previewZones, blocks, ocrText, dimensions, detectedTotal]);
+  const [initialParsedData] = useState(() => readReceipt(draft?.zones ?? NO_ZONES));
 
   const [categoriesList, setCategoriesList] = useState<Category[]>([]);
 
@@ -303,7 +155,6 @@ export default function ScanReviewScreen() {
   }, []);
 
   const [parsedData, setParsedData] = useState<ParsedReceipt | null>(initialParsedData);
-  const [showRawText, setShowRawText] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [duplicateReceipt, setDuplicateReceipt] = useState<Receipt | null>(null);
 
@@ -385,17 +236,65 @@ export default function ScanReviewScreen() {
   const [currentStoreId, setCurrentStoreId] = useState<number | null>(null);
   const [hasExistingTemplate, setHasExistingTemplate] = useState(false);
   const [templateApplied, setTemplateApplied] = useState(false);
-  const [manualZonesApplied] = useState(previewZones.length > 0); // Set once based on initial zones
-  const [appliedZones, setAppliedZones] = useState<ZoneDefinition[]>(previewZones);
-  const [showZonesPreview, setShowZonesPreview] = useState(false);
+  const [showReading, setShowReading] = useState(false);
+  const [hasManualEdits, setHasManualEdits] = useState(false);
+  const [zonesAwaitingConfirmation, setZonesAwaitingConfirmation] = useState<
+    ZoneDefinition[] | null
+  >(null);
 
-  const { width: screenWidth } = useWindowDimensions();
+  // The draft zones this screen has already reacted to. Only the zone editor
+  // replaces that array, so a change of identity means zones were redrawn.
+  const seenZonesRef = useRef<ZoneDefinition[]>(draft?.zones ?? NO_ZONES);
+
+  const markEdited = useCallback(() => {
+    setHasManualEdits(true);
+    refinement.markEdited();
+  }, [refinement]);
+
+  const applyZones = useCallback(
+    (zones: ZoneDefinition[]) => {
+      setAppliedZones(zones);
+      setHasManualEdits(false);
+
+      const reread = readReceipt(zones);
+      if (reread) {
+        updateParsedData(reread);
+        showSuccessToast(t('common.success'), t('scan.zonesReapplied'));
+      }
+    },
+    [readReceipt, updateParsedData, t]
+  );
+
+  // Zones redrawn in the editor land in the draft; the receipt is read again
+  // through them when the editor closes.
+  useFocusEffect(
+    useCallback(() => {
+      const zones = useScanDraftStore.getState().draft?.zones;
+      if (!zones || zones === seenZonesRef.current) return;
+      seenZonesRef.current = zones;
+
+      if (hasManualEdits) {
+        setZonesAwaitingConfirmation(zones);
+        return;
+      }
+
+      applyZones(zones);
+    }, [hasManualEdits, applyZones])
+  );
+
+  const keepManualEdits = useCallback(() => {
+    // The draft holds zones the receipt was not read through; putting the
+    // applied ones back keeps what is drawn and what is shown in agreement.
+    useScanDraftStore.getState().setZones(appliedZones);
+    seenZonesRef.current = appliedZones;
+    setZonesAwaitingConfirmation(null);
+  }, [appliedZones]);
 
   // Re-check for template when returning from zones screen (PDF only)
   useFocusEffect(
     useCallback(() => {
       // Templates only apply to PDF imports - camera images vary too much
-      if (isPdf !== 'true') return;
+      if (!isPdf) return;
 
       // If we haven't applied a template yet and a store was identified,
       // re-check for templates (user might have just created one)
@@ -448,7 +347,7 @@ export default function ScanReviewScreen() {
         setCurrentStoreId(store.id);
 
         // Templates only apply to PDF imports - camera images vary too much
-        if (isPdf === 'true') {
+        if (isPdf) {
           const template = await getTemplateByStoreId(store.id);
           setHasExistingTemplate(!!template);
 
@@ -485,7 +384,7 @@ export default function ScanReviewScreen() {
         setCurrentStoreId(null);
         setHasExistingTemplate(false);
         // Only show zone prompt for PDFs with low confidence
-        setShowZonePrompt(isPdf === 'true' && parsedData.confidence < 90);
+        setShowZonePrompt(isPdf && parsedData.confidence < 90);
       }
     }
 
@@ -531,7 +430,7 @@ export default function ScanReviewScreen() {
     setShowItemModal(false);
     setShowCategoryModal(false);
     setShowTotalModal(false);
-    setShowZonesPreview(false);
+    setShowReading(false);
     setShowDiffModal(false);
   };
 
@@ -618,6 +517,10 @@ export default function ScanReviewScreen() {
         await createItems(itemsData);
       }
 
+      // The stored receipt points at the file, so leaving the screen must not
+      // take it away.
+      wasSaved.current = true;
+
       showSuccessToast(t('common.success'), t('scan.receiptSaved'));
       showSavedReceipt(receipt.id);
     } catch (error) {
@@ -634,7 +537,7 @@ export default function ScanReviewScreen() {
       ...parsedData,
       items: parsedData.items.filter((_, i) => i !== index),
     });
-    refinement.markEdited();
+    markEdited();
   };
 
   const openStoreEdit = () => {
@@ -645,7 +548,7 @@ export default function ScanReviewScreen() {
   const saveStoreEdit = () => {
     if (!parsedData) return;
     updateParsedData({ ...parsedData, storeName: editStoreName.trim() || null });
-    refinement.markEdited();
+    markEdited();
     setShowStoreModal(false);
   };
 
@@ -670,7 +573,7 @@ export default function ScanReviewScreen() {
       date: newDate,
       time: editTime || null,
     });
-    refinement.markEdited();
+    markEdited();
     setShowDateModal(false);
   };
 
@@ -686,7 +589,7 @@ export default function ScanReviewScreen() {
       ...parsedData,
       total: newTotal,
     });
-    refinement.markEdited();
+    markEdited();
     setShowTotalModal(false);
   };
 
@@ -696,7 +599,7 @@ export default function ScanReviewScreen() {
       ...parsedData,
       total: itemsSum,
     });
-    refinement.markEdited();
+    markEdited();
   };
 
   const openItemEdit = (index: number | null) => {
@@ -739,13 +642,13 @@ export default function ScanReviewScreen() {
         ...parsedData,
         items: parsedData.items.map((item, i) => (i === editingItemIndex ? newItem : item)),
       });
-      refinement.markEdited();
+      markEdited();
     } else {
       updateParsedData({
         ...parsedData,
         items: [...parsedData.items, newItem],
       });
-      refinement.markEdited();
+      markEdited();
     }
 
     setShowItemModal(false);
@@ -770,9 +673,25 @@ export default function ScanReviewScreen() {
       params: {
         uri,
         storeId: storeId.toString(),
-        imageDimensions: imageDimensions || JSON.stringify({ width: 1000, height: 1500 }),
+        imageDimensions: JSON.stringify(dimensions),
       },
     });
+  };
+
+  const handleEditZones = () => {
+    setShowReading(false);
+
+    setTimeout(() => {
+      router.push({
+        pathname: '/scan/zones',
+        params: {
+          uri,
+          mode: 'preview',
+          imageDimensions: JSON.stringify(dimensions),
+          ...(appliedZones.length > 0 && { existingZones: JSON.stringify(appliedZones) }),
+        },
+      });
+    }, 150);
   };
 
   const handleDeleteTemplate = async () => {
@@ -783,11 +702,15 @@ export default function ScanReviewScreen() {
       setHasExistingTemplate(false);
       setTemplateApplied(false);
 
-      // Re-parse with generic parser
-      if (lines.length > 0) {
-        const genericParsed = parseReceipt(lines, parserOptions);
-        updateParsedData(genericParsed);
-        refinement.markEdited();
+      // Back to the reading the receipt had before the template: its own
+      // detected zones, which is also what the reading view goes back to
+      // showing.
+      const detectedZones = useScanDraftStore.getState().draft?.zones ?? NO_ZONES;
+      const reread = readReceipt(detectedZones);
+      if (reread) {
+        setAppliedZones(detectedZones);
+        updateParsedData(reread);
+        markEdited();
       }
 
       showSuccessToast(t('common.success'), t('scan.templateDeleted'));
@@ -898,46 +821,8 @@ export default function ScanReviewScreen() {
               )}
             </View>
 
-            {/* Manual Zones Applied Indicator (from preview screen) */}
-            {manualZonesApplied && !templateApplied && (
-              <Card variant="outlined" padding="md" className="mb-4">
-                <View className="flex-row items-center justify-between">
-                  <View className="flex-row items-center flex-1">
-                    <View
-                      className="rounded-full p-2 mr-3"
-                      style={{ backgroundColor: colors.accent + '30' }}
-                    >
-                      <Ionicons name="grid" size={20} color={colors.warning} />
-                    </View>
-                    <View className="flex-1">
-                      <Text
-                        className="text-sm"
-                        style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
-                      >
-                        {t('scan.zonesApplied')}
-                      </Text>
-                      <Text
-                        className="text-xs mt-0.5"
-                        style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-                      >
-                        {t('scan.zoneCount', { count: appliedZones.length })}
-                      </Text>
-                    </View>
-                  </View>
-                  <Pressable
-                    onPress={() => setShowZonesPreview(true)}
-                    className="p-2 rounded-lg"
-                    style={{ backgroundColor: colors.surface }}
-                    hitSlop={ICON_HIT_SLOP}
-                  >
-                    <Ionicons name="eye-outline" size={18} color={colors.textSecondary} />
-                  </Pressable>
-                </View>
-              </Card>
-            )}
-
             {/* Template Applied Indicator (PDF only) */}
-            {templateApplied && isPdf === 'true' && (
+            {templateApplied && isPdf && (
               <Card variant="outlined" padding="md" className="mb-4">
                 <View className="flex-row items-center justify-between">
                   <View className="flex-row items-center flex-1">
@@ -964,7 +849,7 @@ export default function ScanReviewScreen() {
                   </View>
                   <View className="flex-row gap-2">
                     <Pressable
-                      onPress={() => setShowZonesPreview(true)}
+                      onPress={() => setShowReading(true)}
                       className="p-2 rounded-lg"
                       style={{ backgroundColor: colors.surface }}
                       hitSlop={ICON_HIT_SLOP}
@@ -993,7 +878,7 @@ export default function ScanReviewScreen() {
             )}
 
             {/* Existing Template (not yet applied) - Show edit/delete options (PDF only) */}
-            {hasExistingTemplate && !templateApplied && isPdf === 'true' && (
+            {hasExistingTemplate && !templateApplied && isPdf && (
               <Card variant="outlined" padding="md" className="mb-4">
                 <View className="flex-row items-center justify-between">
                   <View className="flex-row items-center flex-1">
@@ -1041,7 +926,7 @@ export default function ScanReviewScreen() {
             )}
 
             {/* Zone Configuration Prompt - No template exists (PDF only) */}
-            {showZonePrompt && !hasExistingTemplate && !templateApplied && isPdf === 'true' && (
+            {showZonePrompt && !hasExistingTemplate && !templateApplied && isPdf && (
               <Card variant="outlined" padding="md" className="mb-4">
                 <View className="flex-row items-center mb-2">
                   <View
@@ -1177,6 +1062,41 @@ export default function ScanReviewScreen() {
                   </Text>
                 </View>
               )}
+            </Card>
+
+            {/* What the scanner read, and where it read it */}
+            <Card variant="outlined" padding="md" className="mb-4">
+              <Pressable
+                onPress={() => setShowReading(true)}
+                className="flex-row items-center"
+                accessibilityRole="button"
+                accessibilityLabel={t('scan.readingTitle')}
+                accessibilityHint={t('scan.readingHint')}
+              >
+                <View
+                  className="rounded-full p-2 mr-3"
+                  style={{ backgroundColor: colors.primary + '20' }}
+                >
+                  <Ionicons name="scan-outline" size={20} color={colors.action} />
+                </View>
+                <View className="flex-1">
+                  <Text
+                    className="text-sm"
+                    style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
+                  >
+                    {t('scan.readingTitle')}
+                  </Text>
+                  <Text
+                    className="text-xs mt-0.5"
+                    style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
+                  >
+                    {appliedZones.length > 0
+                      ? t('scan.zoneCount', { count: appliedZones.length })
+                      : t('scan.noZonesDetected')}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+              </Pressable>
             </Card>
 
             <RefinementBanner
@@ -1370,51 +1290,6 @@ export default function ScanReviewScreen() {
                 </View>
               )}
             </Card>
-
-            {/* Raw Text Toggle */}
-            <Pressable
-              onPress={() => setShowRawText(!showRawText)}
-              className="flex-row items-center justify-center py-2 mb-2"
-            >
-              <Ionicons
-                name={showRawText ? 'chevron-up' : 'chevron-down'}
-                size={16}
-                color={colors.textSecondary}
-              />
-              <Text
-                className="text-sm ml-1"
-                style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-              >
-                {showRawText ? t('scan.hideRawText') : t('scan.showRawText')}
-              </Text>
-            </Pressable>
-
-            {/* Raw OCR text (collapsible) */}
-            {showRawText && (
-              <Card variant="outlined" padding="md">
-                <Text
-                  className="text-sm mb-2"
-                  style={{ color: colors.textSecondary, fontFamily: 'Inter_500Medium' }}
-                >
-                  {t('scan.extractedText')}
-                </Text>
-                <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
-                  {lines.map((line, index) => (
-                    <Text
-                      key={index}
-                      className="text-xs mb-0.5"
-                      style={{
-                        color: colors.text,
-                        fontFamily: 'Inter_400Regular',
-                        lineHeight: 16,
-                      }}
-                    >
-                      {line}
-                    </Text>
-                  ))}
-                </ScrollView>
-              </Card>
-            )}
           </>
         ) : (
           <Card variant="outlined" padding="lg">
@@ -1529,15 +1404,30 @@ export default function ScanReviewScreen() {
         colors={colors}
       />
 
-      <ZonesPreviewModal
-        visible={showZonesPreview}
-        onClose={() => setShowZonesPreview(false)}
+      <ReadingModal
+        visible={showReading}
+        onClose={() => setShowReading(false)}
         zones={appliedZones}
-        imageUri={uri || null}
-        isPdf={isPdf === 'true'}
+        imageUri={uri}
+        isPdf={isPdf}
         dimensions={dimensions}
-        screenWidth={screenWidth}
+        lines={lines}
+        onEditZones={isPdf ? null : handleEditZones}
         colors={colors}
+      />
+
+      <ConfirmationModal
+        visible={zonesAwaitingConfirmation !== null}
+        title={t('scan.rereadTitle')}
+        message={t('scan.rereadMessage')}
+        confirmText={t('scan.rereadConfirm')}
+        cancelText={t('common.cancel')}
+        isDestructive
+        onConfirm={() => {
+          if (zonesAwaitingConfirmation) applyZones(zonesAwaitingConfirmation);
+          setZonesAwaitingConfirmation(null);
+        }}
+        onCancel={keepManualEdits}
       />
 
       <ProposalDiffModal
