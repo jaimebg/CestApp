@@ -7,6 +7,7 @@ import type { ChainTemplate, ItemPattern } from '../../config/spanishChains';
 import type { ParsedItem, ParsedReceipt } from './parser';
 import { ChainDetectionResult, applyChainOcrCorrectionsToLines } from './chainDetector';
 import { containsKeyword, parsePrice, parseTime } from './parseUtils';
+import { itemLines } from './itemZone';
 
 /**
  * Chain parsing result with additional metadata
@@ -136,6 +137,49 @@ const MERCADONA_WEIGHT_PATTERN =
 // Product line without price (weighted product first line): "1 PLATANO"
 const PRODUCT_ONLY_PATTERN = /^(\d+)\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]+)$/;
 
+// Carrefour prints a multi-buy across two lines: the product on one, then
+// "2 x (     0,97 )                1,94" on the next.
+const CARREFOUR_MULTI_UNIT_PATTERN =
+  /^(\d+)\s*[xX\u00d7]\s*\(\s*(\d+[,.]\d{2})\s*\)\s*(\d+[,.]\d{2})$/;
+
+/** Trailing offer code that links a Carrefour product to its discount line. */
+const CARREFOUR_OFFER_CODE = /\s+[A-Z]{1,3}\d{1,4}$/;
+
+/**
+ * Discounts a chain prints beneath the product they come off.
+ *
+ * These are not basket-wide coupons: Lidl repeats "Dto. Lidl Plus" under each
+ * eligible row, and Carrefour prints the second-unit discount under the row it
+ * halves. Left out, a receipt's items overshoot its total by the whole saving --
+ * on the reference Lidl receipt, by the 5,39 EUR it says it saved.
+ */
+const LINE_DISCOUNT_PATTERNS: Record<string, RegExp[]> = {
+  lidl: [/^Dto\.?\s*Lidl\s*Plus\s+(-?\d+[,.]\d{2})$/i, /^Descuento\s*\d+\s*%\s+(-?\d+[,.]\d{2})$/i],
+  carrefour: [/^DESCUENTO\s+EN\s+\d+\s*[\u00aa\u00baaAoO]?\s*UNIDAD\b.*?(-?\d+[,.]\d{2})$/i],
+};
+
+function matchLineDiscount(line: string, chainId: string): number | null {
+  for (const pattern of LINE_DISCOUNT_PATTERNS[chainId] ?? []) {
+    const match = line.match(pattern);
+    if (!match) continue;
+    const value = parsePrice(match[1]);
+    if (value !== null) return Math.abs(value);
+  }
+  return null;
+}
+
+/** Take a per-line discount off the product it was printed under. */
+function applyLineDiscount(items: ParsedItem[], amount: number): void {
+  const target = items[items.length - 1];
+  if (!target) return;
+
+  const discounted = Math.round((target.totalPrice - amount) * 100) / 100;
+  if (discounted <= 0) return;
+
+  target.totalPrice = discounted;
+  target.unitPrice = Math.round((discounted / (target.quantity || 1)) * 100) / 100;
+}
+
 function parseItemsWithPatterns(
   lines: string[],
   itemPatterns: ItemPattern[],
@@ -149,9 +193,20 @@ function parseItemsWithPatterns(
   // Track pending weighted product name (for Mercadona where qty+name comes first)
   let pendingWeightedProduct: { name: string; quantity: number; lineIndex: number } | null = null;
 
+  // Track the product a Carrefour multi-buy continuation line belongs to
+  let pendingMultiUnitName: string | null = null;
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     if (line.length < 3) continue;
+
+    // A per-line discount comes off the product above it, so this has to run
+    // before the keyword skip that would otherwise drop the line.
+    const lineDiscount = matchLineDiscount(line, chain.chainId);
+    if (lineDiscount !== null) {
+      applyLineDiscount(items, lineDiscount);
+      continue;
+    }
 
     // Skip non-item lines
     const lowerLine = line.toLowerCase();
@@ -164,19 +219,33 @@ function parseItemsWithPatterns(
       continue;
     }
 
-    // Skip Lidl Plus discount lines - handled in totals
-    if (/^Dto\.?\s*Lidl\s*Plus/i.test(line) || /^Descuento\s*\d+%/i.test(line)) {
-      continue;
-    }
+    if (chain.chainId === 'carrefour') {
+      const multiUnit = line.match(CARREFOUR_MULTI_UNIT_PATTERN);
+      if (multiUnit) {
+        const quantity = parseInt(multiUnit[1], 10);
+        const unitPrice = parsePrice(multiUnit[2]);
+        const totalPrice = parsePrice(multiUnit[3]);
 
-    // Skip Carrefour discount lines - handled in totals
-    if (/^DESCUENTO\s+EN\s+2[ªaA]\s+UNIDAD/i.test(line)) {
-      continue;
-    }
+        if (pendingMultiUnitName && totalPrice !== null && totalPrice > 0 && quantity > 0) {
+          items.push({
+            name: pendingMultiUnitName,
+            quantity,
+            unitPrice: unitPrice ?? Math.round((totalPrice / quantity) * 100) / 100,
+            totalPrice,
+            unit: null,
+            confidence: 85,
+          });
+        }
+        pendingMultiUnitName = null;
+        continue;
+      }
 
-    // Skip Carrefour multi-unit continuation lines (e.g., "2 x ( 0,97 )")
-    if (/^\d+\s*[xX×]\s*\(\s*\d+[,\.]\d{2}\s*\)/.test(line)) {
-      continue;
+      // The line before a continuation carries the product name on its own.
+      const nextLine = i + 1 < lines.length ? lines[i + 1].trim() : '';
+      if (CARREFOUR_MULTI_UNIT_PATTERN.test(nextLine)) {
+        pendingMultiUnitName = line.replace(CARREFOUR_OFFER_CODE, '').trim();
+        continue;
+      }
     }
 
     // Skip card payment info lines
@@ -578,8 +647,14 @@ export function parseWithChainTemplate(
     if (dateResult.date && time) break;
   }
 
-  // Parse items using chain-specific patterns
-  const items = parseItemsWithPatterns(correctedLines, chain.parsing.itemPatterns, chain);
+  // Parse items using chain-specific patterns, over the lines that precede the
+  // totals block. Past that point every line is shaped like an item and is not
+  // one: tax rates, loyalty savings, the amount tendered.
+  const items = parseItemsWithPatterns(
+    itemLines(correctedLines),
+    chain.parsing.itemPatterns,
+    chain
+  );
 
   // Extract totals using chain-specific keywords
   const { subtotal, tax, discount, total } = extractTotalsWithChain(correctedLines, chain);
