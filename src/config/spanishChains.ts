@@ -392,6 +392,18 @@ export const LIDL_TEMPLATE: ChainTemplate = {
     { pattern: /LlDL/gi, replacement: 'LIDL', description: 'Fix l->I' },
     { pattern: /EUR\/KG/gi, replacement: 'EUR/kg', description: 'Normalize unit' },
     { pattern: /EUR\/G/gi, replacement: 'EUR/g', description: 'Normalize unit' },
+    {
+      // The receipt sets this line in a lighter blue than the products, and a
+      // recognizer reads its l's as ones: "Oto. L101 Plus", "Dto. L1d1 Plus".
+      pattern: /\b[DO]to\.?\s*L[i1l][d0][li1]\s*Plus\b/gi,
+      replacement: 'Dto. Lidl Plus',
+      description: 'Normalize the Lidl Plus discount label',
+    },
+    {
+      pattern: /\bwww\.l[i1l][d0][li1]-canarias\.es\b/gi,
+      replacement: 'www.lidl-canarias.es',
+      description: 'Normalize the Canarias domain used to place the tax region',
+    },
   ],
 
   taxType: 'IVA',
