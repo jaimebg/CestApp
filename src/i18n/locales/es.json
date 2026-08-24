@@ -163,7 +163,8 @@
     "custom": "Personalizado",
     "clearSearch": "Borrar búsqueda",
     "openReceipt": "Abre el recibo",
-    "filtersHideEverything": "Ningún recibo coincide con estos filtros. Bórralos para verlos todos."
+    "filtersHideEverything": "Ningún recibo coincide con estos filtros. Bórralos para verlos todos.",
+    "allReceiptsLoaded": "Has visto todos tus recibos"
   },
   "analytics": {
     "title": "Estadísticas",

@@ -163,7 +163,8 @@
     "custom": "Custom",
     "clearSearch": "Clear search",
     "openReceipt": "Opens the receipt",
-    "filtersHideEverything": "No receipts match these filters. Clear them to see everything."
+    "filtersHideEverything": "No receipts match these filters. Clear them to see everything.",
+    "allReceiptsLoaded": "You've seen all your receipts"
   },
   "analytics": {
     "title": "Analytics",

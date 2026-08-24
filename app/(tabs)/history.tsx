@@ -30,10 +30,13 @@ import { useAppColors } from '@/src/hooks/useAppColors';
 import { useEntering, staggerDelay } from '@/src/hooks/useEntering';
 import { ICON_HIT_SLOP, MIN_TARGET } from '@/src/theme/a11y';
 import { createScopedLogger } from '@/src/utils/debug';
+import { mergePages } from '@/src/utils/pagination';
 import type { Receipt } from '@/src/db/schema/receipts';
 import type { Store } from '@/src/db/schema/stores';
 
 const logger = createScopedLogger('History');
+
+const PAGE_SIZE = 50;
 
 type ReceiptWithStore = {
   receipt: Receipt;
@@ -91,6 +94,10 @@ export default function HistoryScreen() {
   const [selectedStoreId, setSelectedStoreId] = useState<number | null>(null);
   const [selectedDatePreset, setSelectedDatePreset] = useState<DatePreset>('all');
 
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
   const hasActiveFilters = selectedStoreId !== null || selectedDatePreset !== 'all';
 
   const loadStores = useCallback(async () => {
@@ -103,33 +110,40 @@ export default function HistoryScreen() {
     }
   }, [isReady]);
 
-  const loadReceipts = useCallback(async () => {
-    if (!isReady) return;
+  const loadReceipts = useCallback(
+    async (reset = true) => {
+      if (!isReady) return;
 
-    try {
-      const dateRange = getDateRange(selectedDatePreset);
-      const filters: ReceiptFilters = {
-        storeId: selectedStoreId,
-        startDate: dateRange.start,
-        endDate: dateRange.end,
-        searchTerm: searchQuery || null,
-      };
+      try {
+        const dateRange = getDateRange(selectedDatePreset);
+        const filters: ReceiptFilters = {
+          storeId: selectedStoreId,
+          startDate: dateRange.start,
+          endDate: dateRange.end,
+          searchTerm: searchQuery || null,
+        };
 
-      const hasFilters =
-        filters.storeId || filters.startDate || filters.endDate || filters.searchTerm;
+        const hasFilters =
+          filters.storeId || filters.startDate || filters.endDate || filters.searchTerm;
 
-      const data = hasFilters
-        ? await getFilteredReceipts(filters)
-        : await getReceiptsWithItemCount();
+        const pageOffset = reset ? 0 : offset;
+        const data = hasFilters
+          ? await getFilteredReceipts(filters, PAGE_SIZE, pageOffset)
+          : await getReceiptsWithItemCount(PAGE_SIZE, pageOffset);
 
-      setReceipts(data);
-    } catch (error) {
-      logger.error('Failed to load receipts:', error);
-    } finally {
-      setIsLoading(false);
-      setIsSearching(false);
-    }
-  }, [isReady, selectedStoreId, selectedDatePreset, searchQuery]);
+        setReceipts((prev) => mergePages(prev, data, reset, (r) => r.receipt.id));
+        setOffset(pageOffset + data.length);
+        setHasMore(data.length === PAGE_SIZE);
+      } catch (error) {
+        logger.error('Failed to load receipts:', error);
+      } finally {
+        setIsLoading(false);
+        setIsSearching(false);
+        setIsLoadingMore(false);
+      }
+    },
+    [isReady, selectedStoreId, selectedDatePreset, searchQuery, offset]
+  );
 
   const handleSearch = useCallback((query: string) => {
     setSearchQuery(query);
@@ -151,6 +165,12 @@ export default function HistoryScreen() {
     await Promise.all([loadReceipts(), loadStores()]);
     setIsRefreshing(false);
   }, [loadReceipts, loadStores]);
+
+  const handleLoadMore = useCallback(() => {
+    if (isLoading || isLoadingMore || !hasMore || !isReady) return;
+    setIsLoadingMore(true);
+    loadReceipts(false);
+  }, [isLoading, isLoadingMore, hasMore, isReady, loadReceipts]);
 
   const handleReceiptPress = useCallback(
     (receiptId: number) => {
@@ -210,6 +230,28 @@ export default function HistoryScreen() {
       onAction={hasActiveFilters || searchQuery ? handleClearFilters : undefined}
     />
   );
+
+  const renderListFooter = () => {
+    if (receipts.length === 0) return null;
+    if (isLoadingMore) {
+      return (
+        <View className="py-4 items-center">
+          <ActivityIndicator size="small" color={colors.action} />
+        </View>
+      );
+    }
+    if (!hasMore) {
+      return (
+        <Text
+          className="text-center text-sm py-4"
+          style={{ color: colors.textTertiary, fontFamily: 'Inter_400Regular' }}
+        >
+          {t('history.allReceiptsLoaded')}
+        </Text>
+      );
+    }
+    return null;
+  };
 
   // Defined with useCallback so FlashList keeps a stable component identity,
   // and the stagger is capped: index-based delays on a recycled list mean a
@@ -437,6 +479,9 @@ export default function HistoryScreen() {
           paddingBottom: insets.bottom + 20,
         }}
         ListEmptyComponent={renderEmptyState}
+        ListFooterComponent={renderListFooter}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.4}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
