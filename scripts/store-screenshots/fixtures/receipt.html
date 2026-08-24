@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Ticket — Supermercado La Despensa</title>
+    <style>
+      @font-face {
+        font-family: 'IBM Plex Mono';
+        src: url('../../../node_modules/@expo-google-fonts/ibm-plex-mono/400Regular/IBMPlexMono_400Regular.ttf') format('truetype');
+        font-weight: 400;
+      }
+      @font-face {
+        font-family: 'IBM Plex Mono';
+        src: url('../../../node_modules/@expo-google-fonts/ibm-plex-mono/700Bold/IBMPlexMono_700Bold.ttf') format('truetype');
+        font-weight: 700;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html,
+      body {
+        background: #ffffff;
+        color: #000000;
+      }
+      body {
+        width: 640px;
+        padding: 40px 36px 48px;
+        font-family: 'IBM Plex Mono', 'Menlo', monospace;
+        font-size: 19px;
+        line-height: 1.45;
+      }
+      .center {
+        text-align: center;
+      }
+      .chain {
+        font-size: 27px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+      }
+      .small {
+        font-size: 15px;
+      }
+      .gap-lg {
+        margin-top: 28px;
+      }
+      .gap-md {
+        margin-top: 18px;
+      }
+      .gap-sm {
+        margin-top: 10px;
+      }
+      .divider {
+        border-top: 2px dashed #000000;
+        margin: 18px 0;
+      }
+      .row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+      }
+      .row-sub {
+        font-size: 14px;
+        color: #000;
+        padding-left: 16px;
+      }
+      .totals {
+        font-size: 21px;
+        font-weight: 700;
+      }
+      table.iva {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 15px;
+      }
+      table.iva th,
+      table.iva td {
+        text-align: right;
+        padding: 2px 0;
+      }
+      table.iva th:first-child,
+      table.iva td:first-child {
+        text-align: left;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="center">
+      <div class="chain">SUPERMERCADO LA DESPENSA S.A.</div>
+      <div class="small gap-sm">NIF: B87654321</div>
+      <div class="small">AV. DE LA ALAMEDA 42 - 28004 MADRID</div>
+      <div class="small">TEL. 910 000 000 - www.ladespensa.example</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="row small">
+      <span>FACTURA SIMPLIFICADA A28-0048213</span>
+      <span>CAJA 03 - TICKET 001234</span>
+    </div>
+    <div class="row gap-sm">
+      <span>24/08/2026 13:42</span>
+      <span>TIPO: VENTA NORMAL</span>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="item">
+      <div class="row"><span>Pan de molde integral</span><span>1,15</span></div>
+      <div class="row row-sub"><span>1 UD x 1,15 &euro;/UD</span><span>A</span></div>
+    </div>
+    <div class="item gap-sm">
+      <div class="row"><span>Leche entera 1L</span><span>0,98</span></div>
+      <div class="row row-sub"><span>1 UD x 0,98 &euro;/UD</span><span>A</span></div>
+    </div>
+    <div class="item gap-sm">
+      <div class="row"><span>Pl&aacute;tanos Canarias kg</span><span>1,78</span></div>
+      <div class="row row-sub"><span>0,942 KG x 1,89 &euro;/KG</span><span>P</span></div>
+    </div>
+    <div class="item gap-sm">
+      <div class="row"><span>Tomate triturado</span><span>1,05</span></div>
+      <div class="row row-sub"><span>1 UD x 1,05 &euro;/UD</span><span>A</span></div>
+    </div>
+    <div class="item gap-sm">
+      <div class="row"><span>Aceite de oliva virgen extra 1L</span><span>8,49</span></div>
+      <div class="row row-sub"><span>1 UD x 8,49 &euro;/UD</span><span>B</span></div>
+    </div>
+    <div class="item gap-sm">
+      <div class="row"><span>Queso manchego curado</span><span>3,98</span></div>
+      <div class="row row-sub"><span>0,320 KG x 12,44 &euro;/KG</span><span>P</span></div>
+    </div>
+    <div class="item gap-sm">
+      <div class="row"><span>Detergente l&iacute;quido</span><span>3,25</span></div>
+      <div class="row row-sub"><span>1 UD x 3,25 &euro;/UD</span><span>B</span></div>
+    </div>
+    <div class="item gap-sm">
+      <div class="row"><span>Yogur natural pack</span><span>1,65</span></div>
+      <div class="row row-sub"><span>1 UD x 1,65 &euro;/UD</span><span>A</span></div>
+    </div>
+    <div class="item gap-sm">
+      <div class="row"><span>Cebolla malla</span><span>1,09</span></div>
+      <div class="row row-sub"><span>1 UD x 1,09 &euro;/UD</span><span>A</span></div>
+    </div>
+    <div class="item gap-sm">
+      <div class="row"><span>Agua mineral 6x1,5L</span><span>1,64</span></div>
+      <div class="row row-sub"><span>1 UD x 1,64 &euro;/UD</span><span>A</span></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="row"><span>TOTAL ART&Iacute;CULOS: 10</span><span>25,06</span></div>
+    <div class="row gap-sm"><span>CLUB DESPENSA DESCUENTO</span><span>-0,75</span></div>
+
+    <div class="divider"></div>
+
+    <div class="row totals"><span>TOTAL</span><span>24,31 &euro;</span></div>
+
+    <div class="row gap-md"><span>TARJETA ****4921</span><span>24,31 &euro;</span></div>
+    <div class="small">TPV: APROBADA - RESPUESTA 00 - REFE90241B</div>
+
+    <div class="gap-lg">
+      <table class="iva">
+        <tr>
+          <th>IVA</th>
+          <th>BASE IMPONIBLE</th>
+          <th>CUOTA IVA</th>
+          <th>TOTAL</th>
+        </tr>
+        <tr>
+          <td>4%</td>
+          <td>12,81</td>
+          <td>0,51</td>
+          <td>13,32</td>
+        </tr>
+        <tr>
+          <td>10%</td>
+          <td>10,67</td>
+          <td>1,07</td>
+          <td>11,74</td>
+        </tr>
+        <tr>
+          <th>TOTALES</th>
+          <th>23,48</th>
+          <th>1,58</th>
+          <th>25,06</th>
+        </tr>
+      </table>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="center small">
+      <div>GRACIAS POR SU VISITA</div>
+      <div class="gap-sm">PRECIOS CON IVA INCLUIDO</div>
+      <div>CONSERVE ESTE TICKET PARA CUALQUIER ACLARACI&Oacute;N</div>
+      <div class="gap-md">TICKET DE VALIDACI&Oacute;N: 8F31-0047-A28</div>
+    </div>
+  </body>
+</html>
