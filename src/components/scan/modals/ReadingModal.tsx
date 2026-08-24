@@ -201,9 +201,11 @@ export function ReadingModal({
 
         {onEditZones && (
           <View className="px-4 pb-2">
-            <Button variant="secondary" size="lg" onPress={onEditZones}>
-              {t('scan.editZones')}
-            </Button>
+            <View className="w-full max-w-[640px] mx-auto">
+              <Button variant="secondary" size="lg" onPress={onEditZones}>
+                {t('scan.editZones')}
+              </Button>
+            </View>
           </View>
         )}
       </View>

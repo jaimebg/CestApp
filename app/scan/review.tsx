@@ -1288,29 +1288,31 @@ export default function ScanReviewScreen() {
 
       {/* Action Buttons */}
       <View className="px-4 pb-4" style={{ paddingBottom: insets.bottom > 0 ? insets.bottom : 16 }}>
-        {parsedData ? (
-          <View className="flex-row gap-3">
-            <View className="flex-1">
-              <Button variant="secondary" size="lg" onPress={handleDone}>
-                {t('scan.discardReceipt')}
-              </Button>
+        <View className="w-full max-w-[640px] mx-auto">
+          {parsedData ? (
+            <View className="flex-row gap-3">
+              <View className="flex-1">
+                <Button variant="secondary" size="lg" onPress={handleDone}>
+                  {t('scan.discardReceipt')}
+                </Button>
+              </View>
+              <View className="flex-1">
+                <Button
+                  variant="primary"
+                  size="lg"
+                  onPress={handleSave}
+                  disabled={!canSave || isSaving}
+                >
+                  {isSaving ? t('scan.saving') : t('scan.saveReceipt')}
+                </Button>
+              </View>
             </View>
-            <View className="flex-1">
-              <Button
-                variant="primary"
-                size="lg"
-                onPress={handleSave}
-                disabled={!canSave || isSaving}
-              >
-                {isSaving ? t('scan.saving') : t('scan.saveReceipt')}
-              </Button>
-            </View>
-          </View>
-        ) : (
-          <Button variant="primary" size="lg" onPress={handleDone}>
-            {t('common.done')}
-          </Button>
-        )}
+          ) : (
+            <Button variant="primary" size="lg" onPress={handleDone}>
+              {t('common.done')}
+            </Button>
+          )}
+        </View>
       </View>
 
       <StoreEditModal

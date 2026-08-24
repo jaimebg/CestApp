@@ -353,19 +353,21 @@ export default function HistoryScreen() {
         style={{ paddingTop: insets.top }}
       >
         {/* Header */}
-        <View className="px-6 pt-4 pb-2">
-          <Text
-            className="text-3xl text-text dark:text-text-dark"
-            style={{ fontFamily: 'Inter_700Bold' }}
-          >
-            {t('history.title')}
-          </Text>
-          <Text
-            className="text-base text-text-secondary dark:text-text-dark-secondary mt-1"
-            style={{ fontFamily: 'Inter_400Regular' }}
-          >
-            {t('history.subtitle')}
-          </Text>
+        <View className="w-full max-w-[640px] mx-auto">
+          <View className="px-6 pt-4 pb-2">
+            <Text
+              className="text-3xl text-text dark:text-text-dark"
+              style={{ fontFamily: 'Inter_700Bold' }}
+            >
+              {t('history.title')}
+            </Text>
+            <Text
+              className="text-base text-text-secondary dark:text-text-dark-secondary mt-1"
+              style={{ fontFamily: 'Inter_400Regular' }}
+            >
+              {t('history.subtitle')}
+            </Text>
+          </View>
         </View>
         <View className="py-6">
           <ReceiptListSkeleton count={5} />
@@ -380,58 +382,60 @@ export default function HistoryScreen() {
       style={{ paddingTop: insets.top }}
     >
       {/* Header */}
-      <View className="px-6 pt-4 pb-2">
-        <Text
-          className="text-3xl text-text dark:text-text-dark"
-          style={{ fontFamily: 'Inter_700Bold' }}
-        >
-          {t('history.title')}
-        </Text>
-        <Text
-          className="text-base text-text-secondary dark:text-text-dark-secondary mt-1"
-          style={{ fontFamily: 'Inter_400Regular' }}
-        >
-          {t('history.subtitle')}
-        </Text>
+      <View className="w-full max-w-[640px] mx-auto">
+        <View className="px-6 pt-4 pb-2">
+          <Text
+            className="text-3xl text-text dark:text-text-dark"
+            style={{ fontFamily: 'Inter_700Bold' }}
+          >
+            {t('history.title')}
+          </Text>
+          <Text
+            className="text-base text-text-secondary dark:text-text-dark-secondary mt-1"
+            style={{ fontFamily: 'Inter_400Regular' }}
+          >
+            {t('history.subtitle')}
+          </Text>
+        </View>
       </View>
 
       {/* Search bar */}
-      <View className="px-6 py-3">
-        <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl px-4 py-3 border border-border dark:border-border-dark">
-          <Ionicons name="search-outline" size={20} color={colors.textTertiary} />
-          <TextInput
-            className="flex-1 ml-3 text-text dark:text-text-dark text-base"
-            style={{ fontFamily: 'Inter_400Regular' }}
-            placeholder={t('common.search')}
-            accessibilityLabel={t('common.search')}
-            placeholderTextColor={colors.textTertiary}
-            value={searchQuery}
-            onChangeText={handleSearch}
-            returnKeyType="search"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          {searchQuery.length > 0 && (
-            <Pressable
-              onPress={() => handleSearch('')}
-              hitSlop={ICON_HIT_SLOP}
-              accessibilityRole="button"
-              accessibilityLabel={t('history.clearSearch')}
-            >
-              <Ionicons name="close-circle" size={20} color={colors.textTertiary} />
-            </Pressable>
-          )}
-          {isSearching && <ActivityIndicator size="small" color={colors.action} className="ml-2" />}
+      <View className="w-full max-w-[640px] mx-auto">
+        <View className="px-6 py-3">
+          <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl px-4 py-3 border border-border dark:border-border-dark">
+            <Ionicons name="search-outline" size={20} color={colors.textTertiary} />
+            <TextInput
+              className="flex-1 ml-3 text-text dark:text-text-dark text-base"
+              style={{ fontFamily: 'Inter_400Regular' }}
+              placeholder={t('common.search')}
+              accessibilityLabel={t('common.search')}
+              placeholderTextColor={colors.textTertiary}
+              value={searchQuery}
+              onChangeText={handleSearch}
+              returnKeyType="search"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            {searchQuery.length > 0 && (
+              <Pressable
+                onPress={() => handleSearch('')}
+                hitSlop={ICON_HIT_SLOP}
+                accessibilityRole="button"
+                accessibilityLabel={t('history.clearSearch')}
+              >
+                <Ionicons name="close-circle" size={20} color={colors.textTertiary} />
+              </Pressable>
+            )}
+            {isSearching && (
+              <ActivityIndicator size="small" color={colors.action} className="ml-2" />
+            )}
+          </View>
         </View>
       </View>
 
       {/* Filter chips */}
       <View className="px-6 pb-2">
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 8 }}
-        >
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View className="flex-row gap-2 max-w-[640px] mx-auto">
             {/* Filter button */}
             <Pressable
