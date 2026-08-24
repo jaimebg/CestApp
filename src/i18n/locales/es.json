@@ -281,6 +281,7 @@
     "ocrFailed": "No se pudo leer este recibo. Prueba con una foto más plana y con mejor luz.",
     "saveFailed": "No se pudo guardar el recibo. Libera espacio e inténtalo de nuevo.",
     "deleteFailed": "No se pudo eliminar el recibo. Inténtalo de nuevo.",
+    "invalidDate": "Esa fecha no existe. Revisa el día y el mes e inténtalo de nuevo.",
     "loadFailed": "No se pudieron cargar tus recibos. Desliza hacia abajo para reintentar.",
     "networkError": "Sin conexión. Vuelve a conectarte e inténtalo de nuevo.",
     "unknownError": "Ha ocurrido algo inesperado. Inténtalo de nuevo.",

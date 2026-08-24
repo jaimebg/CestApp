@@ -25,6 +25,9 @@ import {
 } from '../../src/db/queries/items';
 import { getCategories } from '../../src/db/queries/categories';
 import { findOrCreateStore } from '../../src/db/queries/stores';
+import { recordUserCorrection } from '../../src/db/queries/categorization';
+import { DateEditModal } from '../../src/components/scan/modals/DateEditModal';
+import { buildValidatedDateTime } from '../../src/utils/dateTime';
 import { deleteReceiptFile } from '../../src/services/storage';
 import { ReceiptSummary } from '../../src/components/receipt/ReceiptSummary';
 import { CollapsibleItemList } from '../../src/components/receipt/CollapsibleItemList';
@@ -35,7 +38,7 @@ import { Button } from '../../src/components/ui/Button';
 import { useAppColors } from '../../src/hooks/useAppColors';
 import { ICON_HIT_SLOP, MIN_TARGET } from '../../src/theme/a11y';
 import { fonts } from '../../src/theme/type';
-import { useFormatPrice } from '../../src/store/preferences';
+import { useFormatPrice, usePreferencesStore } from '../../src/store/preferences';
 import { parseAmountInput } from '../../src/config/currency';
 import { createScopedLogger } from '../../src/utils/debug';
 import { showSuccessToast, showErrorToast } from '../../src/utils/toast';
@@ -80,6 +83,13 @@ export default function ReceiptDetailScreen() {
   const [editedStoreName, setEditedStoreName] = useState('');
   const [editedItems, setEditedItems] = useState<EditableItem[]>([]);
 
+  const dateFormat = usePreferencesStore((state) => state.dateFormat);
+  const [showDateModal, setShowDateModal] = useState(false);
+  const [editDay, setEditDay] = useState('');
+  const [editMonth, setEditMonth] = useState('');
+  const [editYear, setEditYear] = useState('');
+  const [editTime, setEditTime] = useState('');
+
   const [showItemModal, setShowItemModal] = useState(false);
   const [editingItem, setEditingItem] = useState<EditableItem | null>(null);
   const [editingItemPrice, setEditingItemPrice] = useState('');
@@ -120,6 +130,17 @@ export default function ReceiptDetailScreen() {
   const startEditing = useCallback(() => {
     if (!receipt) return;
 
+    const dateTime = new Date(receipt.dateTime);
+    setEditDay(dateTime.getDate().toString());
+    setEditMonth((dateTime.getMonth() + 1).toString());
+    setEditYear(dateTime.getFullYear().toString());
+    setEditTime(
+      `${dateTime.getHours().toString().padStart(2, '0')}:${dateTime
+        .getMinutes()
+        .toString()
+        .padStart(2, '0')}`
+    );
+
     setEditedStoreName(store?.name || '');
     setEditedItems(
       items.map(({ item }) => ({
@@ -154,15 +175,31 @@ export default function ReceiptDetailScreen() {
         newStoreId = await findOrCreateStore(editedStoreName.trim());
       }
 
+      const newDateTime = buildValidatedDateTime(
+        parseInt(editDay, 10) || 1,
+        parseInt(editMonth, 10) || 1,
+        parseInt(editYear, 10) || new Date().getFullYear(),
+        editTime || null
+      );
+      if (!newDateTime) {
+        showErrorToast(t('common.error'), t('errors.invalidDate'));
+        return;
+      }
+
       const itemsTotal = editedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
       await updateReceipt(receiptId, {
         storeId: newStoreId,
+        dateTime: newDateTime,
         totalAmount: itemsTotal,
+        subtotal: itemsTotal,
+        taxAmount: null,
+        discountAmount: null,
       });
 
       const existingItemIds = new Set(items.map(({ item }) => item.id));
       const editedItemIds = new Set(editedItems.filter((i) => i.id).map((i) => i.id));
+      const originalById = new Map(items.map(({ item }) => [item.id, item]));
 
       for (const { item } of items) {
         if (!editedItemIds.has(item.id)) {
@@ -172,12 +209,24 @@ export default function ReceiptDetailScreen() {
 
       for (const editedItem of editedItems) {
         if (editedItem.id && existingItemIds.has(editedItem.id)) {
+          const original = originalById.get(editedItem.id);
           await updateItem(editedItem.id, {
             name: editedItem.name,
             price: editedItem.price,
             quantity: editedItem.quantity,
             categoryId: editedItem.categoryId,
           });
+          if (
+            original &&
+            editedItem.categoryId != null &&
+            original.categoryId !== editedItem.categoryId
+          ) {
+            await recordUserCorrection(
+              editedItem.name,
+              editedItem.categoryId,
+              newStoreId ?? undefined
+            );
+          }
         } else {
           await createItem({
             receiptId,
@@ -198,7 +247,20 @@ export default function ReceiptDetailScreen() {
     } finally {
       setIsSaving(false);
     }
-  }, [receipt, id, editedStoreName, store, editedItems, items, loadReceipt, t]);
+  }, [
+    receipt,
+    id,
+    editedStoreName,
+    store,
+    editedItems,
+    items,
+    loadReceipt,
+    t,
+    editDay,
+    editMonth,
+    editYear,
+    editTime,
+  ]);
 
   const handleDelete = useCallback(() => {
     setShowDeleteModal(true);
@@ -258,7 +320,7 @@ export default function ReceiptDetailScreen() {
     const editedItem: EditableItem = {
       ...editingItem,
       price: Math.round((parseAmountInput(editingItemPrice) ?? 0) * 100),
-      quantity: parseInt(editingItemQuantity, 10) || 1,
+      quantity: parseAmountInput(editingItemQuantity) ?? 1,
     };
 
     const newItems = [...editedItems];
@@ -521,6 +583,29 @@ export default function ReceiptDetailScreen() {
               )}
             </View>
           )}
+
+          {isEditing && (
+            <View className="border-t border-border dark:border-border-dark pt-4">
+              <Pressable
+                onPress={() => setShowDateModal(true)}
+                accessibilityRole="button"
+                accessibilityLabel={t('receipt.editDate')}
+                style={{ minHeight: MIN_TARGET }}
+                className="flex-row items-center justify-between"
+              >
+                <View className="flex-row items-center">
+                  <Ionicons name="calendar-outline" size={18} color={colors.textSecondary} />
+                  <Text className="text-text dark:text-text-dark ml-2">{formattedDate}</Text>
+                  {formattedTime && (
+                    <Text className="text-text-secondary dark:text-text-dark-secondary ml-2">
+                      {formattedTime}
+                    </Text>
+                  )}
+                </View>
+                <Ionicons name="pencil" size={16} color={colors.textSecondary} />
+              </Pressable>
+            </View>
+          )}
         </View>
 
         {/* Items */}
@@ -734,7 +819,7 @@ export default function ReceiptDetailScreen() {
               placeholder="1"
               placeholderTextColor={colors.textTertiary}
               accessibilityLabel={t('receipt.itemQuantity')}
-              keyboardType="number-pad"
+              keyboardType="decimal-pad"
             />
 
             {/* Category */}
@@ -774,6 +859,22 @@ export default function ReceiptDetailScreen() {
           </ScrollView>
         </KeyboardAvoidingView>
       </Modal>
+
+      <DateEditModal
+        visible={showDateModal}
+        onClose={() => setShowDateModal(false)}
+        onSave={() => setShowDateModal(false)}
+        day={editDay}
+        month={editMonth}
+        year={editYear}
+        time={editTime}
+        onChangeDay={setEditDay}
+        onChangeMonth={setEditMonth}
+        onChangeYear={setEditYear}
+        onChangeTime={setEditTime}
+        dateFormat={dateFormat}
+        colors={colors}
+      />
 
       {/* Delete Confirmation Modal */}
       <ConfirmationModal

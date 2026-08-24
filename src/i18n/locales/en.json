@@ -281,6 +281,7 @@
     "ocrFailed": "Couldn't read this receipt. Try a flatter shot in better light.",
     "saveFailed": "Couldn't save this receipt. Free up some storage and try again.",
     "deleteFailed": "Couldn't delete this receipt. Try again.",
+    "invalidDate": "That date doesn't exist. Check the day and month and try again.",
     "loadFailed": "Couldn't load your receipts. Pull down to retry.",
     "networkError": "No connection. Reconnect and try again.",
     "unknownError": "Something unexpected happened. Try again.",
