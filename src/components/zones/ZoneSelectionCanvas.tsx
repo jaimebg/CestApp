@@ -285,6 +285,7 @@ export function ZoneSelectionCanvas({
     <GestureHandlerRootView style={{ flex: 1 }}>
       <View
         className="items-center"
+        accessible={true}
         accessibilityLabel={`${t('scan.zonesTitleDefine')} - ${t('scan.zonesInstructionsDefine')}`}
         accessibilityHint={t('scan.zonesInstructionsDefine')}
       >

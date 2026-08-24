@@ -1073,7 +1073,7 @@ export default function ScanReviewScreen() {
 
             {duplicateReceipt && (
               <DuplicateBanner
-                dateLabel={new Date(duplicateReceipt.dateTime).toLocaleDateString()}
+                dateLabel={formatLocalizedDate(new Date(duplicateReceipt.dateTime), language)}
                 totalLabel={formatPrice(duplicateReceipt.totalAmount / 100)}
                 onView={() => router.push(`/receipt/${duplicateReceipt.id}`)}
               />

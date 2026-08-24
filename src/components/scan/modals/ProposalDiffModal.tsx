@@ -189,17 +189,10 @@ export function ProposalDiffModal({ visible, current, proposed, onAccept, onDism
           </View>
         </ScrollView>
 
-        <View className="flex-row gap-3 px-4 py-4 border-t" style={{ borderColor: colors.border }}>
-          <View className="flex-1">
-            <Button variant="ghost" onPress={onDismiss}>
-              {t('scan.refinementDismiss')}
-            </Button>
-          </View>
-          <View className="flex-1">
-            <Button variant="primary" onPress={onAccept}>
-              {t('scan.refinementAccept')}
-            </Button>
-          </View>
+        <View className="px-4 py-4 border-t" style={{ borderColor: colors.border }}>
+          <Button variant="primary" onPress={onAccept}>
+            {t('scan.refinementAccept')}
+          </Button>
         </View>
       </View>
     </Modal>
