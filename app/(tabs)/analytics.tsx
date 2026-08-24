@@ -60,7 +60,7 @@ export default function AnalyticsScreen() {
 
       if (refresh) {
         setIsRefreshing(true);
-      } else {
+      } else if (data === null) {
         setIsLoading(true);
       }
       try {
@@ -89,7 +89,7 @@ export default function AnalyticsScreen() {
   ];
 
   const barChartData =
-    data?.spendingByDay.map((item, index) => {
+    data?.spendingByDay.map((item) => {
       const dayLabel = new Date(item.date).toLocaleDateString(undefined, {
         weekday: 'short',
         day: 'numeric',
