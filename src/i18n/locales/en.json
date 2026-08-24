@@ -18,7 +18,9 @@
     "no": "No",
     "ok": "OK",
     "close": "Close",
-    "back": "Back"
+    "back": "Back",
+    "share": "Share",
+    "clear": "Clear"
   },
   "tabs": {
     "dashboard": "Dashboard",
@@ -290,7 +292,9 @@
     "demoDataAdded": "Added {{receipts}} receipts with {{items}} items",
     "backup": "Back up data",
     "backupDesc": "Share a copy of all your receipts, items and categories as a JSON file",
-    "backupDone": "Backup shared"
+    "backupDone": "Backup shared",
+    "diagnostics": "Diagnostics",
+    "diagnosticsEmpty": "No errors recorded. The log captures unexpected problems so you can share them when something breaks."
   },
   "errors": {
     "galleryPermission": "Photo access is off. Turn it on in Settings to pick a receipt.",

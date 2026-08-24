@@ -18,6 +18,9 @@ import { lightColors, darkColors } from '@/src/theme/colors';
 import { fontModules } from '@/src/theme/type';
 import { ErrorState } from '@/src/components/ui/EmptyState';
 import { useAppColors } from '@/src/hooks/useAppColors';
+import { installGlobalErrorHandlers } from '@/src/utils/errorLog';
+
+installGlobalErrorHandlers();
 
 SplashScreen.preventAutoHideAsync();
 

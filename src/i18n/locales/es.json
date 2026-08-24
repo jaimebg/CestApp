@@ -18,7 +18,9 @@
     "no": "No",
     "ok": "OK",
     "close": "Cerrar",
-    "back": "Atrás"
+    "back": "Atrás",
+    "share": "Compartir",
+    "clear": "Borrar"
   },
   "tabs": {
     "dashboard": "Inicio",
@@ -290,7 +292,9 @@
     "demoDataAdded": "Se agregaron {{receipts}} recibos con {{items}} artículos",
     "backup": "Copia de seguridad",
     "backupDesc": "Comparte una copia de todos tus recibos, artículos y categorías como archivo JSON",
-    "backupDone": "Copia compartida"
+    "backupDone": "Copia compartida",
+    "diagnostics": "Diagnósticos",
+    "diagnosticsEmpty": "No hay errores registrados. El registro guarda los problemas inesperados para que puedas compartirlos cuando algo falle."
   },
   "errors": {
     "galleryPermission": "El acceso a las fotos está desactivado. Actívalo en Ajustes para elegir un recibo.",

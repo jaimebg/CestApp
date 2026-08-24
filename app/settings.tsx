@@ -4,7 +4,7 @@
  * Spanish defaults for currency, date format, and number format
  */
 
-import { View, Text, Pressable, ScrollView, Modal, Platform, Switch } from 'react-native';
+import { View, Text, Pressable, ScrollView, Modal, Platform, Switch, Share } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,6 +24,7 @@ import { isLlmAvailable } from '@/src/services/llm';
 import { getBackupData } from '@/src/db/queries/backup';
 import { exportBackup } from '@/src/utils/backup';
 import { createScopedLogger } from '@/src/utils/debug';
+import { getErrorLog, clearErrorLog, type ErrorLogEntry } from '@/src/utils/errorLog';
 
 const logger = createScopedLogger('Settings');
 
@@ -52,6 +53,8 @@ export default function SettingsScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const [errorLog, setErrorLog] = useState<ErrorLogEntry[]>([]);
   const tapCountRef = useRef(0);
   const lastTapRef = useRef(0);
 
@@ -106,6 +109,26 @@ export default function SettingsScreen() {
     } finally {
       setIsBackingUp(false);
     }
+  };
+
+  const openDiagnostics = async () => {
+    setErrorLog(await getErrorLog());
+    setShowDiagnostics(true);
+  };
+
+  const copyDiagnostics = () => {
+    const text = errorLog
+      .map(
+        (entry) =>
+          `[${entry.timestamp}] ${entry.scope}: ${entry.message}${entry.stack ? `\n${entry.stack}` : ''}`
+      )
+      .join('\n\n');
+    Share.share({ message: text || t('settings.diagnosticsEmpty') });
+  };
+
+  const clearDiagnostics = async () => {
+    await clearErrorLog();
+    setErrorLog([]);
   };
 
   const handleClearAllData = async () => {
@@ -430,6 +453,27 @@ export default function SettingsScreen() {
             </Text>
           </View>
         </Pressable>
+
+        <Pressable
+          onPress={openDiagnostics}
+          accessibilityRole="button"
+          accessibilityLabel={t('settings.diagnostics')}
+          className="p-4 rounded-xl mt-3 flex-row items-center"
+          style={{
+            backgroundColor: colors.surface,
+            borderWidth: 1,
+            borderColor: colors.border,
+          }}
+        >
+          <Ionicons name="bug-outline" size={22} color={colors.textSecondary} />
+          <Text
+            className="text-base flex-1 ml-3"
+            style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
+          >
+            {t('settings.diagnostics')}
+          </Text>
+          <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+        </Pressable>
       </ScrollView>
 
       {/* Dev Menu Modal */}
@@ -503,6 +547,80 @@ export default function SettingsScreen() {
         onConfirm={handleClearAllData}
         onCancel={() => setShowClearConfirm(false)}
       />
+
+      <Modal
+        visible={showDiagnostics}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowDiagnostics(false)}
+      >
+        <View
+          className="flex-1"
+          style={{
+            backgroundColor: colors.background,
+            paddingTop: Platform.OS === 'ios' ? 0 : insets.top,
+          }}
+        >
+          <ModalHeader
+            title={t('settings.diagnostics')}
+            onClose={() => setShowDiagnostics(false)}
+            closeLabel={t('common.cancel')}
+            confirmLabel={t('common.share')}
+            onConfirm={copyDiagnostics}
+          />
+          {errorLog.length === 0 ? (
+            <View className="py-16 items-center px-6">
+              <Text
+                className="text-sm text-center"
+                style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
+              >
+                {t('settings.diagnosticsEmpty')}
+              </Text>
+            </View>
+          ) : (
+            <ScrollView className="flex-1 px-4 py-4" contentContainerStyle={{ paddingBottom: 40 }}>
+              {errorLog.map((entry, index) => (
+                <View
+                  key={`${entry.timestamp}-${index}`}
+                  className="p-3 mb-3 rounded-xl"
+                  style={{
+                    backgroundColor: colors.surface,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                  }}
+                >
+                  <Text
+                    className="text-xs"
+                    style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
+                  >
+                    {entry.timestamp} · {entry.scope}
+                  </Text>
+                  <Text
+                    className="text-sm mt-1"
+                    style={{ color: colors.text, fontFamily: 'Inter_400Regular' }}
+                  >
+                    {entry.message}
+                  </Text>
+                </View>
+              ))}
+              <Pressable
+                onPress={clearDiagnostics}
+                accessibilityRole="button"
+                accessibilityLabel={t('common.delete')}
+                style={{ minHeight: MIN_TARGET, justifyContent: 'center' }}
+                className="items-center py-3"
+              >
+                <Text
+                  className="text-error dark:text-error-light text-sm"
+                  style={{ fontFamily: 'Inter_500Medium' }}
+                >
+                  {t('common.clear')}
+                </Text>
+              </Pressable>
+            </ScrollView>
+          )}
+        </View>
+      </Modal>
     </View>
   );
 }

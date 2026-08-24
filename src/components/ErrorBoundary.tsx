@@ -7,6 +7,7 @@ import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { createScopedLogger } from '../utils/debug';
+import { logError } from '../utils/errorLog';
 import { useAppColors } from '../hooks/useAppColors';
 import { Button } from './ui/Button';
 
@@ -37,6 +38,7 @@ class ErrorBoundaryClass extends Component<ErrorBoundaryProps, ErrorBoundaryStat
     logger.error('ErrorBoundary caught an error:', error);
     logger.error('Error info:', errorInfo);
     this.props.onError?.(error, errorInfo);
+    logError('ErrorBoundary', error);
   }
 
   handleRetry = (): void => {

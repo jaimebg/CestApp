@@ -163,7 +163,9 @@ export default function ScanReviewScreen() {
   const [categoriesList, setCategoriesList] = useState<Category[]>([]);
 
   useEffect(() => {
-    getCategories().then(setCategoriesList);
+    getCategories()
+      .then(setCategoriesList)
+      .catch((error) => logger.error('Failed to load categories:', error));
   }, []);
 
   const [parsedData, setParsedData] = useState<ParsedReceipt | null>(initialParsedData);
@@ -418,7 +420,7 @@ export default function ScanReviewScreen() {
       }
     }
 
-    checkStoreTemplate();
+    checkStoreTemplate().catch((error) => logger.error('Template check failed:', error));
   }, [
     parsedData?.storeName,
     parsedData?.confidence,
