@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -94,7 +94,7 @@ export default function HistoryScreen() {
   const [selectedStoreId, setSelectedStoreId] = useState<number | null>(null);
   const [selectedDatePreset, setSelectedDatePreset] = useState<DatePreset>('all');
 
-  const [offset, setOffset] = useState(0);
+  const offsetRef = useRef(0);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
@@ -126,13 +126,13 @@ export default function HistoryScreen() {
         const hasFilters =
           filters.storeId || filters.startDate || filters.endDate || filters.searchTerm;
 
-        const pageOffset = reset ? 0 : offset;
+        const pageOffset = reset ? 0 : offsetRef.current;
         const data = hasFilters
           ? await getFilteredReceipts(filters, PAGE_SIZE, pageOffset)
           : await getReceiptsWithItemCount(PAGE_SIZE, pageOffset);
 
         setReceipts((prev) => mergePages(prev, data, reset, (r) => r.receipt.id));
-        setOffset(pageOffset + data.length);
+        offsetRef.current = pageOffset + data.length;
         setHasMore(data.length === PAGE_SIZE);
       } catch (error) {
         logger.error('Failed to load receipts:', error);
@@ -142,7 +142,7 @@ export default function HistoryScreen() {
         setIsLoadingMore(false);
       }
     },
-    [isReady, selectedStoreId, selectedDatePreset, searchQuery, offset]
+    [isReady, selectedStoreId, selectedDatePreset, searchQuery]
   );
 
   const handleSearch = useCallback((query: string) => {
