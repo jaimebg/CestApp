@@ -90,17 +90,21 @@ export default function AnalyticsScreen() {
 
   const barChartData =
     data?.spendingByDay.map((item, index) => {
+      const dayLabel = new Date(item.date).toLocaleDateString(undefined, {
+        weekday: 'short',
+        day: 'numeric',
+      });
+
       const label =
         period === 'year'
           ? monthLabel(language, item.date)
-          : new Date(item.date).toLocaleDateString(undefined, {
-              weekday: 'short',
-              day: 'numeric',
-            });
+          : period === 'week'
+            ? dayLabel.split(' ')[0]
+            : new Date(item.date).getDate().toString();
 
       return {
         value: item.amount,
-        label: period === 'year' ? label : label.split(' ')[0],
+        label,
         frontColor: colors.primary,
         topLabelComponent: () => null,
       };
