@@ -25,6 +25,7 @@ import {
 } from '../../src/db/queries/items';
 import { getCategories } from '../../src/db/queries/categories';
 import { findOrCreateStore } from '../../src/db/queries/stores';
+import { deleteReceiptFile } from '../../src/services/storage';
 import { ReceiptSummary } from '../../src/components/receipt/ReceiptSummary';
 import { CollapsibleItemList } from '../../src/components/receipt/CollapsibleItemList';
 import { ConfirmationModal } from '../../src/components/ui/ConfirmationModal';
@@ -209,6 +210,10 @@ export default function ReceiptDetailScreen() {
     setShowDeleteModal(false);
     setIsDeleting(true);
     try {
+      const filePaths = [receipt.imagePath, receipt.pdfPath].filter((path): path is string =>
+        Boolean(path)
+      );
+      await Promise.allSettled(filePaths.map((path) => deleteReceiptFile(path)));
       await deleteReceipt(receipt.id);
       router.back();
     } catch (error) {

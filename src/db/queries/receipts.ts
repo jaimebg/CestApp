@@ -112,6 +112,7 @@ export async function updateReceipt(id: number, data: Partial<NewReceipt>) {
 }
 
 export async function deleteReceipt(id: number) {
+  await db.delete(items).where(eq(items.receiptId, id));
   await db.delete(receipts).where(eq(receipts.id, id));
 }
 

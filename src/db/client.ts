@@ -7,6 +7,7 @@ import migrations from './migrations/migrations';
 const DATABASE_NAME = 'cestapp.db';
 
 const expoDb = openDatabaseSync(DATABASE_NAME);
+expoDb.execSync('PRAGMA foreign_keys = ON');
 
 export const db = drizzle(expoDb, { schema });
 
