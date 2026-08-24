@@ -80,7 +80,7 @@ export async function getSpendingByDay(
 export async function getSpendingByCategory(period: TimePeriod): Promise<
   {
     categoryId: number;
-    categoryName: string;
+    categoryName: string | null;
     categoryIcon: string | null;
     categoryColor: string | null;
     amount: number;
@@ -108,7 +108,7 @@ export async function getSpendingByCategory(period: TimePeriod): Promise<
 
   return result.map((r) => ({
     categoryId: r.categoryId || 0,
-    categoryName: r.categoryName || 'Uncategorized',
+    categoryName: r.categoryName,
     categoryIcon: r.categoryIcon,
     categoryColor: r.categoryColor,
     amount: (r.amount || 0) / 100,
@@ -119,7 +119,7 @@ export async function getSpendingByCategory(period: TimePeriod): Promise<
 export async function getSpendingByStore(period: TimePeriod): Promise<
   {
     storeId: number;
-    storeName: string;
+    storeName: string | null;
     amount: number;
     receiptCount: number;
     percentage: number;
@@ -144,7 +144,7 @@ export async function getSpendingByStore(period: TimePeriod): Promise<
 
   return result.map((r) => ({
     storeId: r.storeId || 0,
-    storeName: r.storeName || 'Unknown Store',
+    storeName: r.storeName,
     amount: (r.amount || 0) / 100,
     receiptCount: r.receiptCount || 0,
     percentage: total > 0 ? ((r.amount || 0) / total) * 100 : 0,

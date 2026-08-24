@@ -186,7 +186,9 @@ export default function ReceiptDetailScreen() {
         return;
       }
 
-      const itemsTotal = editedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      const itemsTotal = Math.round(
+        editedItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
+      );
 
       await updateReceipt(receiptId, {
         storeId: newStoreId,

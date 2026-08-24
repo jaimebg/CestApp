@@ -334,7 +334,7 @@ export default function AnalyticsScreen() {
                           style={{ fontFamily: 'Inter_400Regular' }}
                           numberOfLines={1}
                         >
-                          {category.categoryIcon} {category.categoryName}
+                          {category.categoryIcon} {category.categoryName || t('item.uncategorized')}
                         </Text>
                         <Text
                           className="text-xs text-text-secondary dark:text-text-dark-secondary ml-1"
@@ -366,7 +366,7 @@ export default function AnalyticsScreen() {
                         style={{ fontFamily: 'Inter_500Medium' }}
                         numberOfLines={1}
                       >
-                        {store.storeName}
+                        {store.storeName || t('scan.unknownStore')}
                       </Text>
                       <Amount size="sm" weight="semibold">
                         {formatPrice(store.amount)}

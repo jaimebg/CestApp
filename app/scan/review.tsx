@@ -188,6 +188,11 @@ export default function ScanReviewScreen() {
         : null;
       if (cancelled) return;
 
+      if (storeName && !foundStore) {
+        setDuplicateReceipt(null);
+        return;
+      }
+
       const existing = await findDuplicateReceipt(
         foundStore?.id ?? null,
         resolveReceiptDateTime(receiptDate, receiptTime),
