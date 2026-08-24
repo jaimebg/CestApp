@@ -145,6 +145,15 @@ function featureGraphicHtml(wordmarkDataUri) {
 </html>`;
 }
 
+const missingRaws = LOCALES.flatMap((locale) =>
+  SLOTS.flatMap((slot) =>
+    SCREEN_ORDER.map((screenId) => path.join(RAW_ROOT, locale.raw, slot.device, `${screenId}.png`))
+  )
+).filter((rawPath) => !fs.existsSync(rawPath));
+if (missingRaws.length > 0) {
+  throw new Error(`Missing ${missingRaws.length} raw capture(s):\n${missingRaws.join('\n')}`);
+}
+
 const browser = await chromium.launch();
 const written = [];
 try {
@@ -153,7 +162,6 @@ try {
     for (const slot of SLOTS) {
       for (const screenId of SCREEN_ORDER) {
         const rawPath = path.join(RAW_ROOT, locale.raw, slot.device, `${screenId}.png`);
-        if (!fs.existsSync(rawPath)) throw new Error(`Missing raw capture: ${rawPath}`);
         const shotKey = `${slot.device}/${screenId}`;
         if (!shots[shotKey]) shots[shotKey] = dataUri(rawPath, 'image/png');
         const html = slotHtml({
