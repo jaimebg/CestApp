@@ -52,6 +52,7 @@ import { toNewItems } from '@/src/db/queries/items';
 import { getCategories } from '@/src/db/queries/categories';
 import { getTemplateByStoreId, deleteTemplate } from '@/src/db/queries/storeParsingTemplates';
 import { getCategoryForItem, recordUserCorrection } from '@/src/db/queries/categorization';
+import { Amount } from '@/src/components/ui/Amount';
 
 const logger = createScopedLogger('Review');
 
@@ -1136,12 +1137,7 @@ export default function ScanReviewScreen() {
                 >
                   {t('scan.itemsSum')}
                 </Text>
-                <Text
-                  className="text-sm"
-                  style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
-                >
-                  {formatPrice(itemsSum)}
-                </Text>
+                <Amount size="sm">{formatPrice(itemsSum)}</Amount>
               </View>
 
               {parsedData.subtotal !== null && (
@@ -1152,12 +1148,7 @@ export default function ScanReviewScreen() {
                   >
                     {t('receipt.subtotal')}
                   </Text>
-                  <Text
-                    className="text-sm"
-                    style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
-                  >
-                    {formatPrice(parsedData.subtotal)}
-                  </Text>
+                  <Amount size="sm">{formatPrice(parsedData.subtotal)}</Amount>
                 </View>
               )}
 
@@ -1169,12 +1160,7 @@ export default function ScanReviewScreen() {
                   >
                     {t('receipt.discount')}
                   </Text>
-                  <Text
-                    className="text-sm"
-                    style={{ color: colors.action, fontFamily: 'Inter_500Medium' }}
-                  >
-                    -{formatPrice(parsedData.discount)}
-                  </Text>
+                  <Amount size="sm">-{formatPrice(parsedData.discount)}</Amount>
                 </View>
               )}
 
@@ -1186,12 +1172,7 @@ export default function ScanReviewScreen() {
                   >
                     {t('receipt.tax')}
                   </Text>
-                  <Text
-                    className="text-sm"
-                    style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
-                  >
-                    {formatPrice(parsedData.tax)}
-                  </Text>
+                  <Amount size="sm">{formatPrice(parsedData.tax)}</Amount>
                 </View>
               )}
 
@@ -1210,15 +1191,13 @@ export default function ScanReviewScreen() {
                   {t('receipt.total')}
                 </Text>
                 <View className="flex-row items-center">
-                  <Text
-                    className="text-base mr-2"
-                    style={{
-                      color: totalsDiffer ? colors.error : colors.text,
-                      fontFamily: 'Inter_600SemiBold',
-                    }}
+                  <Amount
+                    size="base"
+                    className="mr-2"
+                    style={{ color: totalsDiffer ? colors.error : colors.text }}
                   >
                     {formatPrice(parsedData.total)}
-                  </Text>
+                  </Amount>
                   <Ionicons name="pencil" size={14} color={colors.textSecondary} />
                 </View>
               </Pressable>

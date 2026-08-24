@@ -461,7 +461,7 @@ export default function HistoryScreen() {
             </Text>
             {hasActiveFilters && (
               <View className="ml-1 w-5 h-5 rounded-full bg-primary-deep items-center justify-center">
-                <Text className="text-white text-xs font-bold">
+                <Text className="text-white text-xs" style={{ fontFamily: 'Inter_700Bold' }}>
                   {(selectedStoreId ? 1 : 0) +
                     (selectedDatePreset !== 'all' ? 1 : 0) +
                     (selectedCategoryId ? 1 : 0)}
@@ -728,9 +728,12 @@ export default function HistoryScreen() {
                 <Text
                   className={
                     selectedStoreId === null
-                      ? 'text-white font-medium'
+                      ? 'text-white'
                       : 'text-text-secondary dark:text-text-dark-secondary'
                   }
+                  style={{
+                    fontFamily: selectedStoreId === null ? 'Inter_600SemiBold' : 'Inter_400Regular',
+                  }}
                 >
                   {t('history.allStores')}
                 </Text>
@@ -752,9 +755,13 @@ export default function HistoryScreen() {
                   <Text
                     className={
                       selectedStoreId === store.id
-                        ? 'text-white font-medium'
+                        ? 'text-white'
                         : 'text-text-secondary dark:text-text-dark-secondary'
                     }
+                    style={{
+                      fontFamily:
+                        selectedStoreId === store.id ? 'Inter_600SemiBold' : 'Inter_400Regular',
+                    }}
                   >
                     {store.name}
                   </Text>
@@ -833,7 +840,10 @@ export default function HistoryScreen() {
                 style={{ minHeight: MIN_TARGET }}
                 className="bg-error/10 border border-error/30 rounded-xl py-3 items-center justify-center mt-4"
               >
-                <Text className="text-error dark:text-error-light font-medium">
+                <Text
+                  className="text-error dark:text-error-light"
+                  style={{ fontFamily: 'Inter_500Medium' }}
+                >
                   {t('history.clearFilters')}
                 </Text>
               </Pressable>
