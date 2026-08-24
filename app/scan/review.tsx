@@ -490,7 +490,7 @@ export default function ScanReviewScreen() {
         imagePath: uri || null,
         rawText: parsedData.rawText || lines.join('\n'),
         processingStatus: 'completed',
-        confidence: parsedData.confidence,
+        confidence: isManualEntry ? 100 : parsedData.confidence,
       };
 
       const categorizedItems = await Promise.all(
