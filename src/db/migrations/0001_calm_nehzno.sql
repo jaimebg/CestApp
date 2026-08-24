@@ -1,4 +1,5 @@
 PRAGMA foreign_keys=OFF;--> statement-breakpoint
+DELETE FROM items WHERE receipt_id NOT IN (SELECT id FROM receipts);--> statement-breakpoint
 CREATE TABLE `__new_items` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`receipt_id` integer NOT NULL,
