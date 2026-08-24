@@ -432,124 +432,126 @@ export default function HistoryScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ gap: 8 }}
         >
-          {/* Filter button */}
-          <Pressable
-            onPress={() => setShowFilters(true)}
-            accessibilityRole="button"
-            accessibilityLabel={t('history.filters')}
-            accessibilityState={{ selected: hasActiveFilters }}
-            style={{ minHeight: MIN_TARGET }}
-            className={`flex-row items-center px-3 py-2 rounded-full border ${
-              hasActiveFilters
-                ? 'bg-primary/20 border-primary'
-                : 'bg-surface dark:bg-surface-dark border-border dark:border-border-dark'
-            }`}
-          >
-            <Ionicons
-              name="options-outline"
-              size={16}
-              color={hasActiveFilters ? colors.action : colors.textTertiary}
-            />
-            <Text
-              className={`ml-2 text-sm ${
-                hasActiveFilters
-                  ? 'text-action dark:text-action-dark'
-                  : 'text-text-secondary dark:text-text-dark-secondary'
-              }`}
-              style={{ fontFamily: 'Inter_400Regular' }}
-            >
-              {t('history.filters')}
-            </Text>
-            {hasActiveFilters && (
-              <View className="ml-1 w-5 h-5 rounded-full bg-primary-deep items-center justify-center">
-                <Text className="text-white text-xs" style={{ fontFamily: 'Inter_700Bold' }}>
-                  {(selectedStoreId ? 1 : 0) +
-                    (selectedDatePreset !== 'all' ? 1 : 0) +
-                    (selectedCategoryId ? 1 : 0)}
-                </Text>
-              </View>
-            )}
-          </Pressable>
-
-          {/* Date filter chip */}
-          <Pressable
-            onPress={() => setShowFilters(true)}
-            accessibilityRole="button"
-            accessibilityLabel={`${t('history.dateRange')}: ${datePresetLabel}`}
-            accessibilityState={{ selected: selectedDatePreset !== 'all' }}
-            style={{ minHeight: MIN_TARGET }}
-            className={`flex-row items-center px-3 py-2 rounded-full border ${
-              selectedDatePreset !== 'all'
-                ? 'bg-primary/20 border-primary'
-                : 'bg-surface dark:bg-surface-dark border-border dark:border-border-dark'
-            }`}
-          >
-            <Ionicons
-              name="calendar-outline"
-              size={16}
-              color={selectedDatePreset !== 'all' ? colors.action : colors.textTertiary}
-            />
-            <Text
-              className={`ml-2 text-sm ${
-                selectedDatePreset !== 'all'
-                  ? 'text-action dark:text-action-dark'
-                  : 'text-text-secondary dark:text-text-dark-secondary'
-              }`}
-              style={{ fontFamily: 'Inter_400Regular' }}
-            >
-              {datePresetLabel}
-            </Text>
-          </Pressable>
-
-          {/* Store filter chip */}
-          <Pressable
-            onPress={() => setShowFilters(true)}
-            accessibilityRole="button"
-            accessibilityLabel={`${t('history.store')}: ${selectedStoreName}`}
-            accessibilityState={{ selected: selectedStoreId !== null }}
-            style={{ minHeight: MIN_TARGET }}
-            className={`flex-row items-center px-3 py-2 rounded-full border ${
-              selectedStoreId
-                ? 'bg-primary/20 border-primary'
-                : 'bg-surface dark:bg-surface-dark border-border dark:border-border-dark'
-            }`}
-          >
-            <Ionicons
-              name="storefront-outline"
-              size={16}
-              color={selectedStoreId ? colors.action : colors.textTertiary}
-            />
-            <Text
-              className={`ml-2 text-sm ${
-                selectedStoreId
-                  ? 'text-action dark:text-action-dark'
-                  : 'text-text-secondary dark:text-text-dark-secondary'
-              }`}
-              numberOfLines={1}
-              style={{ fontFamily: 'Inter_400Regular' }}
-            >
-              {selectedStoreName}
-            </Text>
-          </Pressable>
-
-          {/* Clear filters */}
-          {hasActiveFilters && (
+          <View className="flex-row gap-2 max-w-[640px] mx-auto">
+            {/* Filter button */}
             <Pressable
-              onPress={handleClearFilters}
+              onPress={() => setShowFilters(true)}
               accessibilityRole="button"
-              accessibilityLabel={t('history.clearFilters')}
+              accessibilityLabel={t('history.filters')}
+              accessibilityState={{ selected: hasActiveFilters }}
               style={{ minHeight: MIN_TARGET }}
-              className="flex-row items-center px-3 py-2 rounded-full bg-error/10 border border-error/30"
+              className={`flex-row items-center px-3 py-2 rounded-full border ${
+                hasActiveFilters
+                  ? 'bg-primary/20 border-primary'
+                  : 'bg-surface dark:bg-surface-dark border-border dark:border-border-dark'
+              }`}
             >
-              <Ionicons name="close" size={16} color={colors.error} />
+              <Ionicons
+                name="options-outline"
+                size={16}
+                color={hasActiveFilters ? colors.action : colors.textTertiary}
+              />
               <Text
-                className="ml-1 text-sm text-error dark:text-error-light"
+                className={`ml-2 text-sm ${
+                  hasActiveFilters
+                    ? 'text-action dark:text-action-dark'
+                    : 'text-text-secondary dark:text-text-dark-secondary'
+                }`}
                 style={{ fontFamily: 'Inter_400Regular' }}
               >
-                {t('history.clearFilters')}
+                {t('history.filters')}
+              </Text>
+              {hasActiveFilters && (
+                <View className="ml-1 w-5 h-5 rounded-full bg-primary-deep items-center justify-center">
+                  <Text className="text-white text-xs" style={{ fontFamily: 'Inter_700Bold' }}>
+                    {(selectedStoreId ? 1 : 0) +
+                      (selectedDatePreset !== 'all' ? 1 : 0) +
+                      (selectedCategoryId ? 1 : 0)}
+                  </Text>
+                </View>
+              )}
+            </Pressable>
+
+            {/* Date filter chip */}
+            <Pressable
+              onPress={() => setShowFilters(true)}
+              accessibilityRole="button"
+              accessibilityLabel={`${t('history.dateRange')}: ${datePresetLabel}`}
+              accessibilityState={{ selected: selectedDatePreset !== 'all' }}
+              style={{ minHeight: MIN_TARGET }}
+              className={`flex-row items-center px-3 py-2 rounded-full border ${
+                selectedDatePreset !== 'all'
+                  ? 'bg-primary/20 border-primary'
+                  : 'bg-surface dark:bg-surface-dark border-border dark:border-border-dark'
+              }`}
+            >
+              <Ionicons
+                name="calendar-outline"
+                size={16}
+                color={selectedDatePreset !== 'all' ? colors.action : colors.textTertiary}
+              />
+              <Text
+                className={`ml-2 text-sm ${
+                  selectedDatePreset !== 'all'
+                    ? 'text-action dark:text-action-dark'
+                    : 'text-text-secondary dark:text-text-dark-secondary'
+                }`}
+                style={{ fontFamily: 'Inter_400Regular' }}
+              >
+                {datePresetLabel}
               </Text>
             </Pressable>
-          )}
+
+            {/* Store filter chip */}
+            <Pressable
+              onPress={() => setShowFilters(true)}
+              accessibilityRole="button"
+              accessibilityLabel={`${t('history.store')}: ${selectedStoreName}`}
+              accessibilityState={{ selected: selectedStoreId !== null }}
+              style={{ minHeight: MIN_TARGET }}
+              className={`flex-row items-center px-3 py-2 rounded-full border ${
+                selectedStoreId
+                  ? 'bg-primary/20 border-primary'
+                  : 'bg-surface dark:bg-surface-dark border-border dark:border-border-dark'
+              }`}
+            >
+              <Ionicons
+                name="storefront-outline"
+                size={16}
+                color={selectedStoreId ? colors.action : colors.textTertiary}
+              />
+              <Text
+                className={`ml-2 text-sm ${
+                  selectedStoreId
+                    ? 'text-action dark:text-action-dark'
+                    : 'text-text-secondary dark:text-text-dark-secondary'
+                }`}
+                numberOfLines={1}
+                style={{ fontFamily: 'Inter_400Regular' }}
+              >
+                {selectedStoreName}
+              </Text>
+            </Pressable>
+
+            {/* Clear filters */}
+            {hasActiveFilters && (
+              <Pressable
+                onPress={handleClearFilters}
+                accessibilityRole="button"
+                accessibilityLabel={t('history.clearFilters')}
+                style={{ minHeight: MIN_TARGET }}
+                className="flex-row items-center px-3 py-2 rounded-full bg-error/10 border border-error/30"
+              >
+                <Ionicons name="close" size={16} color={colors.error} />
+                <Text
+                  className="ml-1 text-sm text-error dark:text-error-light"
+                  style={{ fontFamily: 'Inter_400Regular' }}
+                >
+                  {t('history.clearFilters')}
+                </Text>
+              </Pressable>
+            )}
+          </View>
         </ScrollView>
       </View>
 
@@ -561,6 +563,9 @@ export default function HistoryScreen() {
         contentContainerStyle={{
           paddingHorizontal: 16,
           paddingBottom: insets.bottom + 20,
+          width: '100%',
+          maxWidth: 640,
+          alignSelf: 'center',
         }}
         ListEmptyComponent={renderEmptyState}
         ListFooterComponent={renderListFooter}

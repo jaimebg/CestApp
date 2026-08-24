@@ -104,32 +104,34 @@ export default function DashboardScreen() {
         className="flex-1 bg-background dark:bg-background-dark"
         contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 32 }}
       >
-        <View className="px-6 pt-4">
-          <Text
-            className="text-3xl text-text dark:text-text-dark"
-            style={{ fontFamily: 'Inter_700Bold' }}
-          >
-            {t('dashboard.title')}
-          </Text>
-          <Text
-            className="text-base text-text-secondary dark:text-text-dark-secondary mt-2"
-            style={{ fontFamily: 'Inter_400Regular' }}
-          >
-            {t('dashboard.subtitle')}
-          </Text>
+        <View className="w-full max-w-[640px] mx-auto">
+          <View className="px-6 pt-4">
+            <Text
+              className="text-3xl text-text dark:text-text-dark"
+              style={{ fontFamily: 'Inter_700Bold' }}
+            >
+              {t('dashboard.title')}
+            </Text>
+            <Text
+              className="text-base text-text-secondary dark:text-text-dark-secondary mt-2"
+              style={{ fontFamily: 'Inter_400Regular' }}
+            >
+              {t('dashboard.subtitle')}
+            </Text>
 
-          {/* Monthly spending skeleton */}
-          <View className="mt-8 bg-surface dark:bg-surface-dark rounded-2xl p-6">
-            <Skeleton width={100} height={14} borderRadius={4} />
-            <View className="h-3" />
-            <Skeleton width={150} height={40} borderRadius={8} />
-          </View>
+            {/* Monthly spending skeleton */}
+            <View className="mt-8 bg-surface dark:bg-surface-dark rounded-2xl p-6">
+              <Skeleton width={100} height={14} borderRadius={4} />
+              <View className="h-3" />
+              <Skeleton width={150} height={40} borderRadius={8} />
+            </View>
 
-          {/* Recent receipts skeleton */}
-          <View className="mt-8">
-            <Skeleton width={140} height={20} borderRadius={4} className="mb-4" />
-            <ReceiptCardSkeleton />
-            <ReceiptCardSkeleton />
+            {/* Recent receipts skeleton */}
+            <View className="mt-8">
+              <Skeleton width={140} height={20} borderRadius={4} className="mb-4" />
+              <ReceiptCardSkeleton />
+              <ReceiptCardSkeleton />
+            </View>
           </View>
         </View>
       </ScrollView>
@@ -151,150 +153,152 @@ export default function DashboardScreen() {
         />
       }
     >
-      <View className="px-6 pt-4">
-        <View className="flex-row items-start justify-between">
-          <View className="flex-1">
-            <Animated.Text
-              entering={entering(FadeIn, 0, 400)}
-              className="text-3xl text-text dark:text-text-dark"
-              style={{ fontFamily: 'Inter_700Bold' }}
-            >
-              {t('dashboard.title')}
-            </Animated.Text>
-            <Animated.Text
-              entering={entering(FadeIn, 100, 400)}
-              className="text-base text-text-secondary dark:text-text-dark-secondary mt-2"
-              style={{ fontFamily: 'Inter_400Regular' }}
-            >
-              {t('dashboard.subtitle')}
-            </Animated.Text>
-          </View>
-          <Animated.View entering={entering(FadeIn, 200, 400)}>
-            <Pressable
-              onPress={() => router.push('/settings')}
-              className="rounded-full bg-surface dark:bg-surface-dark items-center justify-center"
-              style={{ marginTop: 4, width: MIN_TARGET, height: MIN_TARGET }}
-              accessibilityRole="button"
-              accessibilityLabel={t('settings.title')}
-            >
-              <Ionicons name="settings-outline" size={24} color={colors.action} />
-            </Pressable>
-          </Animated.View>
-        </View>
-
-        {/* Monthly Spending Card */}
-        <Animated.View entering={entering(FadeInUp, 200, 400)}>
-          <Card variant="elevated" padding="lg" className="mt-8">
-            <View className="flex-row items-center justify-between mb-2">
-              <Text
-                className="text-sm text-text-secondary dark:text-text-dark-secondary"
-                style={{ fontFamily: 'Inter_500Medium' }}
+      <View className="w-full max-w-[640px] mx-auto">
+        <View className="px-6 pt-4">
+          <View className="flex-row items-start justify-between">
+            <View className="flex-1">
+              <Animated.Text
+                entering={entering(FadeIn, 0, 400)}
+                className="text-3xl text-text dark:text-text-dark"
+                style={{ fontFamily: 'Inter_700Bold' }}
               >
-                {t('dashboard.thisMonth')}
-              </Text>
-              <Badge
-                variant={receiptCount > 0 ? 'success' : 'default'}
-                size="sm"
-                label={`${receiptCount} ${receiptCount === 1 ? t('analytics.receipt') : t('analytics.receipts')}`}
-              />
+                {t('dashboard.title')}
+              </Animated.Text>
+              <Animated.Text
+                entering={entering(FadeIn, 100, 400)}
+                className="text-base text-text-secondary dark:text-text-dark-secondary mt-2"
+                style={{ fontFamily: 'Inter_400Regular' }}
+              >
+                {t('dashboard.subtitle')}
+              </Animated.Text>
             </View>
-            <Amount size="hero">{formatPrice(monthlyTotal)}</Amount>
-          </Card>
-        </Animated.View>
-
-        {/* Quick Scan CTA */}
-        {!hasReceipts && (
-          <Animated.View entering={entering(FadeInUp, 300, 400)}>
-            <Pressable
-              onPress={handleScanPress}
-              className="mt-4 bg-primary-deep rounded-2xl p-6 flex-row items-center active:opacity-90"
-              accessibilityRole="button"
-              accessibilityLabel={t('dashboard.scanFirst')}
-              accessibilityHint={t('dashboard.startScanning')}
-            >
-              <View className="bg-white/20 rounded-full p-3 mr-4">
-                <Ionicons name="scan-outline" size={24} color="#FFFFFF" />
-              </View>
-              <View className="flex-1">
-                <Text className="text-white text-lg" style={{ fontFamily: 'Inter_600SemiBold' }}>
-                  {t('dashboard.scanFirst')}
-                </Text>
-                <Text
-                  className="text-white/80 text-sm mt-0.5"
-                  style={{ fontFamily: 'Inter_400Regular' }}
-                >
-                  {t('dashboard.startScanning')}
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={24} color="#FFFFFF" />
-            </Pressable>
-          </Animated.View>
-        )}
-
-        {/* Recent Receipts */}
-        <Animated.View entering={entering(FadeInUp, 400, 400)} className="mt-8">
-          <View className="flex-row items-center justify-between mb-4">
-            <Text
-              className="text-lg text-text dark:text-text-dark"
-              style={{ fontFamily: 'Inter_600SemiBold' }}
-            >
-              {t('dashboard.recentReceipts')}
-            </Text>
-            {hasReceipts && (
+            <Animated.View entering={entering(FadeIn, 200, 400)}>
               <Pressable
-                onPress={handleViewAllPress}
-                className="flex-row items-center"
+                onPress={() => router.push('/settings')}
+                className="rounded-full bg-surface dark:bg-surface-dark items-center justify-center"
+                style={{ marginTop: 4, width: MIN_TARGET, height: MIN_TARGET }}
                 accessibilityRole="button"
-                accessibilityLabel={t('common.all')}
+                accessibilityLabel={t('settings.title')}
               >
-                <Text className="text-action dark:text-action-dark text-sm mr-1">
-                  {t('common.all')}
-                </Text>
-                <Ionicons name="chevron-forward" size={16} color={colors.action} />
+                <Ionicons name="settings-outline" size={24} color={colors.action} />
               </Pressable>
-            )}
+            </Animated.View>
           </View>
 
-          {hasReceipts ? (
-            recentReceipts.map((item, index) => (
-              <Animated.View
-                key={item.receipt.id}
-                entering={entering(FadeInDown, 500 + staggerDelay(index, 100), 400)}
-              >
-                <ReceiptCard
-                  receipt={item.receipt}
-                  store={item.store}
-                  itemCount={item.itemCount}
-                  onPress={() => handleReceiptPress(item.receipt.id)}
+          {/* Monthly Spending Card */}
+          <Animated.View entering={entering(FadeInUp, 200, 400)}>
+            <Card variant="elevated" padding="lg" className="mt-8">
+              <View className="flex-row items-center justify-between mb-2">
+                <Text
+                  className="text-sm text-text-secondary dark:text-text-dark-secondary"
+                  style={{ fontFamily: 'Inter_500Medium' }}
+                >
+                  {t('dashboard.thisMonth')}
+                </Text>
+                <Badge
+                  variant={receiptCount > 0 ? 'success' : 'default'}
+                  size="sm"
+                  label={`${receiptCount} ${receiptCount === 1 ? t('analytics.receipt') : t('analytics.receipts')}`}
                 />
-              </Animated.View>
-            ))
-          ) : (
-            <Animated.View entering={entering(FadeIn, 500, 400)}>
-              <Card variant="outlined" padding="md">
-                <View className="flex-row items-center">
-                  <View className="bg-primary/20 rounded-full p-3 mr-4">
-                    <Ionicons name="receipt-outline" size={24} color={colors.action} />
-                  </View>
-                  <View className="flex-1">
-                    <Text
-                      className="text-base text-text dark:text-text-dark"
-                      style={{ fontFamily: 'Inter_500Medium' }}
-                    >
-                      {t('dashboard.noReceipts')}
-                    </Text>
-                    <Text
-                      className="text-sm text-text-secondary dark:text-text-dark-secondary mt-0.5"
-                      style={{ fontFamily: 'Inter_400Regular' }}
-                    >
-                      {t('dashboard.startScanning')}
-                    </Text>
-                  </View>
+              </View>
+              <Amount size="hero">{formatPrice(monthlyTotal)}</Amount>
+            </Card>
+          </Animated.View>
+
+          {/* Quick Scan CTA */}
+          {!hasReceipts && (
+            <Animated.View entering={entering(FadeInUp, 300, 400)}>
+              <Pressable
+                onPress={handleScanPress}
+                className="mt-4 bg-primary-deep rounded-2xl p-6 flex-row items-center active:opacity-90"
+                accessibilityRole="button"
+                accessibilityLabel={t('dashboard.scanFirst')}
+                accessibilityHint={t('dashboard.startScanning')}
+              >
+                <View className="bg-white/20 rounded-full p-3 mr-4">
+                  <Ionicons name="scan-outline" size={24} color="#FFFFFF" />
                 </View>
-              </Card>
+                <View className="flex-1">
+                  <Text className="text-white text-lg" style={{ fontFamily: 'Inter_600SemiBold' }}>
+                    {t('dashboard.scanFirst')}
+                  </Text>
+                  <Text
+                    className="text-white/80 text-sm mt-0.5"
+                    style={{ fontFamily: 'Inter_400Regular' }}
+                  >
+                    {t('dashboard.startScanning')}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={24} color="#FFFFFF" />
+              </Pressable>
             </Animated.View>
           )}
-        </Animated.View>
+
+          {/* Recent Receipts */}
+          <Animated.View entering={entering(FadeInUp, 400, 400)} className="mt-8">
+            <View className="flex-row items-center justify-between mb-4">
+              <Text
+                className="text-lg text-text dark:text-text-dark"
+                style={{ fontFamily: 'Inter_600SemiBold' }}
+              >
+                {t('dashboard.recentReceipts')}
+              </Text>
+              {hasReceipts && (
+                <Pressable
+                  onPress={handleViewAllPress}
+                  className="flex-row items-center"
+                  accessibilityRole="button"
+                  accessibilityLabel={t('common.all')}
+                >
+                  <Text className="text-action dark:text-action-dark text-sm mr-1">
+                    {t('common.all')}
+                  </Text>
+                  <Ionicons name="chevron-forward" size={16} color={colors.action} />
+                </Pressable>
+              )}
+            </View>
+
+            {hasReceipts ? (
+              recentReceipts.map((item, index) => (
+                <Animated.View
+                  key={item.receipt.id}
+                  entering={entering(FadeInDown, 500 + staggerDelay(index, 100), 400)}
+                >
+                  <ReceiptCard
+                    receipt={item.receipt}
+                    store={item.store}
+                    itemCount={item.itemCount}
+                    onPress={() => handleReceiptPress(item.receipt.id)}
+                  />
+                </Animated.View>
+              ))
+            ) : (
+              <Animated.View entering={entering(FadeIn, 500, 400)}>
+                <Card variant="outlined" padding="md">
+                  <View className="flex-row items-center">
+                    <View className="bg-primary/20 rounded-full p-3 mr-4">
+                      <Ionicons name="receipt-outline" size={24} color={colors.action} />
+                    </View>
+                    <View className="flex-1">
+                      <Text
+                        className="text-base text-text dark:text-text-dark"
+                        style={{ fontFamily: 'Inter_500Medium' }}
+                      >
+                        {t('dashboard.noReceipts')}
+                      </Text>
+                      <Text
+                        className="text-sm text-text-secondary dark:text-text-dark-secondary mt-0.5"
+                        style={{ fontFamily: 'Inter_400Regular' }}
+                      >
+                        {t('dashboard.startScanning')}
+                      </Text>
+                    </View>
+                  </View>
+                </Card>
+              </Animated.View>
+            )}
+          </Animated.View>
+        </View>
       </View>
     </ScrollView>
   );

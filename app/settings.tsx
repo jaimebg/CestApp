@@ -178,325 +178,329 @@ export default function SettingsScreen() {
         contentContainerStyle={{ paddingBottom: 32 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Language Section */}
-        <Text
-          accessibilityRole="header"
-          className="text-sm uppercase tracking-wide mb-3 mt-4"
-          style={{ color: colors.textSecondary, fontFamily: 'Inter_600SemiBold' }}
-        >
-          {t('settings.preferences')}
-        </Text>
-
-        <View
-          className="p-4 rounded-xl mb-3"
-          style={{
-            backgroundColor: colors.surface,
-            borderWidth: 1,
-            borderColor: colors.border,
-          }}
-        >
+        <View className="w-full max-w-[640px] mx-auto">
+          {/* Language Section */}
           <Text
-            className="text-base mb-3"
-            style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
+            accessibilityRole="header"
+            className="text-sm uppercase tracking-wide mb-3 mt-4"
+            style={{ color: colors.textSecondary, fontFamily: 'Inter_600SemiBold' }}
           >
-            {t('settings.language')}
+            {t('settings.preferences')}
           </Text>
-          <View
-            className="flex-row rounded-lg p-1"
-            style={{
-              backgroundColor: colors.background,
-              borderWidth: 1,
-              borderColor: colors.border,
-            }}
-          >
-            {SUPPORTED_LANGUAGES.map((lang) => {
-              const isSelected = language === lang.code;
-              return (
-                <Pressable
-                  key={lang.code}
-                  className="flex-1 items-center justify-center rounded-md py-2"
-                  style={[
-                    isSelected ? { backgroundColor: colors.primaryDeep } : undefined,
-                    { minHeight: MIN_TARGET },
-                  ]}
-                  onPress={() => setLanguage(lang.code as SupportedLanguage)}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: isSelected }}
-                  accessibilityLabel={lang.nativeName}
-                >
-                  <Text
-                    style={{
-                      color: isSelected ? '#FFFFFF' : colors.textSecondary,
-                      fontFamily: isSelected ? 'Inter_600SemiBold' : 'Inter_500Medium',
-                      fontSize: 14,
-                    }}
-                  >
-                    {lang.nativeName}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
 
-        <View
-          className="p-4 rounded-xl mb-3"
-          style={{
-            backgroundColor: colors.surface,
-            borderWidth: 1,
-            borderColor: colors.border,
-          }}
-        >
-          <Text
-            className="text-base mb-3"
-            style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
-          >
-            {t('settings.appearance')}
-          </Text>
           <View
-            className="flex-row rounded-lg p-1"
-            style={{
-              backgroundColor: colors.background,
-              borderWidth: 1,
-              borderColor: colors.border,
-            }}
-          >
-            {(['light', 'dark'] as const).map((scheme) => {
-              const isSelected = colorScheme === scheme;
-              return (
-                <Pressable
-                  key={scheme}
-                  className="flex-1 items-center justify-center rounded-md py-2"
-                  style={[
-                    isSelected ? { backgroundColor: colors.primaryDeep } : undefined,
-                    { minHeight: MIN_TARGET },
-                  ]}
-                  onPress={() => setColorScheme(scheme)}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: isSelected }}
-                  accessibilityLabel={scheme === 'light' ? t('settings.light') : t('settings.dark')}
-                >
-                  <Text
-                    style={{
-                      color: isSelected ? '#FFFFFF' : colors.textSecondary,
-                      fontFamily: isSelected ? 'Inter_600SemiBold' : 'Inter_500Medium',
-                      fontSize: 14,
-                    }}
-                  >
-                    {scheme === 'light' ? t('settings.light') : t('settings.dark')}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
-
-        {llmSupported && (
-          <View
-            className="p-4 rounded-xl mb-3 flex-row items-center justify-between"
+            className="p-4 rounded-xl mb-3"
             style={{
               backgroundColor: colors.surface,
               borderWidth: 1,
               borderColor: colors.border,
             }}
           >
-            <View className="flex-1 pr-3">
-              <Text style={{ color: colors.text, fontFamily: 'Inter_500Medium', fontSize: 15 }}>
-                {t('settings.llmRefinement')}
-              </Text>
-              <Text
-                className="mt-1"
-                style={{
-                  color: colors.textSecondary,
-                  fontFamily: 'Inter_400Regular',
-                  fontSize: 13,
-                }}
-              >
-                {t('settings.llmRefinementDescription')}
-              </Text>
+            <Text
+              className="text-base mb-3"
+              style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
+            >
+              {t('settings.language')}
+            </Text>
+            <View
+              className="flex-row rounded-lg p-1"
+              style={{
+                backgroundColor: colors.background,
+                borderWidth: 1,
+                borderColor: colors.border,
+              }}
+            >
+              {SUPPORTED_LANGUAGES.map((lang) => {
+                const isSelected = language === lang.code;
+                return (
+                  <Pressable
+                    key={lang.code}
+                    className="flex-1 items-center justify-center rounded-md py-2"
+                    style={[
+                      isSelected ? { backgroundColor: colors.primaryDeep } : undefined,
+                      { minHeight: MIN_TARGET },
+                    ]}
+                    onPress={() => setLanguage(lang.code as SupportedLanguage)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isSelected }}
+                    accessibilityLabel={lang.nativeName}
+                  >
+                    <Text
+                      style={{
+                        color: isSelected ? '#FFFFFF' : colors.textSecondary,
+                        fontFamily: isSelected ? 'Inter_600SemiBold' : 'Inter_500Medium',
+                        fontSize: 14,
+                      }}
+                    >
+                      {lang.nativeName}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </View>
-            <Switch
-              value={llmRefinementEnabled}
-              onValueChange={setLlmRefinementEnabled}
-              trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel={t('settings.llmRefinement')}
-            />
           </View>
-        )}
 
-        {/* Spanish Defaults Info */}
-        <View
-          className="p-4 rounded-xl mb-3"
-          style={{
-            backgroundColor: `${colors.primary}10`,
-            borderWidth: 1,
-            borderColor: `${colors.primary}30`,
-          }}
-        >
-          <View className="flex-row items-start">
-            <Ionicons name="information-circle-outline" size={20} color={colors.action} />
-            <View className="flex-1 ml-2">
+          <View
+            className="p-4 rounded-xl mb-3"
+            style={{
+              backgroundColor: colors.surface,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+          >
+            <Text
+              className="text-base mb-3"
+              style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
+            >
+              {t('settings.appearance')}
+            </Text>
+            <View
+              className="flex-row rounded-lg p-1"
+              style={{
+                backgroundColor: colors.background,
+                borderWidth: 1,
+                borderColor: colors.border,
+              }}
+            >
+              {(['light', 'dark'] as const).map((scheme) => {
+                const isSelected = colorScheme === scheme;
+                return (
+                  <Pressable
+                    key={scheme}
+                    className="flex-1 items-center justify-center rounded-md py-2"
+                    style={[
+                      isSelected ? { backgroundColor: colors.primaryDeep } : undefined,
+                      { minHeight: MIN_TARGET },
+                    ]}
+                    onPress={() => setColorScheme(scheme)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isSelected }}
+                    accessibilityLabel={
+                      scheme === 'light' ? t('settings.light') : t('settings.dark')
+                    }
+                  >
+                    <Text
+                      style={{
+                        color: isSelected ? '#FFFFFF' : colors.textSecondary,
+                        fontFamily: isSelected ? 'Inter_600SemiBold' : 'Inter_500Medium',
+                        fontSize: 14,
+                      }}
+                    >
+                      {scheme === 'light' ? t('settings.light') : t('settings.dark')}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+
+          {llmSupported && (
+            <View
+              className="p-4 rounded-xl mb-3 flex-row items-center justify-between"
+              style={{
+                backgroundColor: colors.surface,
+                borderWidth: 1,
+                borderColor: colors.border,
+              }}
+            >
+              <View className="flex-1 pr-3">
+                <Text style={{ color: colors.text, fontFamily: 'Inter_500Medium', fontSize: 15 }}>
+                  {t('settings.llmRefinement')}
+                </Text>
+                <Text
+                  className="mt-1"
+                  style={{
+                    color: colors.textSecondary,
+                    fontFamily: 'Inter_400Regular',
+                    fontSize: 13,
+                  }}
+                >
+                  {t('settings.llmRefinementDescription')}
+                </Text>
+              </View>
+              <Switch
+                value={llmRefinementEnabled}
+                onValueChange={setLlmRefinementEnabled}
+                trackColor={{ true: colors.primary, false: colors.border }}
+                accessibilityLabel={t('settings.llmRefinement')}
+              />
+            </View>
+          )}
+
+          {/* Spanish Defaults Info */}
+          <View
+            className="p-4 rounded-xl mb-3"
+            style={{
+              backgroundColor: `${colors.primary}10`,
+              borderWidth: 1,
+              borderColor: `${colors.primary}30`,
+            }}
+          >
+            <View className="flex-row items-start">
+              <Ionicons name="information-circle-outline" size={20} color={colors.action} />
+              <View className="flex-1 ml-2">
+                <Text
+                  className="text-sm"
+                  style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
+                >
+                  {t('settings.spanishDefaults')}
+                </Text>
+                <Text
+                  className="text-sm mt-1"
+                  style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
+                >
+                  {t('settings.spanishDefaultsDesc')}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Data */}
+          <Text
+            accessibilityRole="header"
+            className="text-sm uppercase tracking-wide mb-3 mt-6"
+            style={{ color: colors.textSecondary, fontFamily: 'Inter_600SemiBold' }}
+          >
+            {t('settings.data')}
+          </Text>
+
+          <Pressable
+            onPress={() => setShowClearConfirm(true)}
+            disabled={isLoading}
+            accessibilityRole="button"
+            accessibilityLabel={t('settings.clearAllData')}
+            accessibilityState={{ disabled: isLoading, busy: isLoading }}
+            className="p-4 rounded-xl mb-3 flex-row items-center"
+            style={{
+              backgroundColor: `${colors.error}15`,
+              borderWidth: 1,
+              borderColor: colors.error,
+              opacity: isLoading ? 0.5 : 1,
+            }}
+          >
+            <Ionicons name="trash-outline" size={24} color={colors.error} />
+            <View className="flex-1 ml-3">
               <Text
-                className="text-sm"
-                style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
+                className="text-base"
+                style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
               >
-                {t('settings.spanishDefaults')}
+                {t('settings.clearAllData')}
               </Text>
               <Text
                 className="text-sm mt-1"
                 style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
               >
-                {t('settings.spanishDefaultsDesc')}
+                {t('settings.clearAllDataDesc')}
               </Text>
             </View>
-          </View>
+          </Pressable>
+
+          {/* Backup */}
+          <Pressable
+            onPress={handleBackup}
+            disabled={isBackingUp}
+            accessibilityRole="button"
+            accessibilityLabel={t('settings.backup')}
+            accessibilityState={{ disabled: isBackingUp, busy: isBackingUp }}
+            className="p-4 rounded-xl mb-3 flex-row items-center"
+            style={{
+              backgroundColor: colors.surface,
+              borderWidth: 1,
+              borderColor: colors.border,
+              opacity: isBackingUp ? 0.5 : 1,
+            }}
+          >
+            <Ionicons name="cloud-upload-outline" size={24} color={colors.action} />
+            <View className="flex-1 ml-3">
+              <Text
+                className="text-base"
+                style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
+              >
+                {t('settings.backup')}
+              </Text>
+              <Text
+                className="text-sm mt-1"
+                style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
+              >
+                {t('settings.backupDesc')}
+              </Text>
+            </View>
+          </Pressable>
+
+          {/* About Section */}
+          <Text
+            accessibilityRole="header"
+            className="text-sm uppercase tracking-wide mb-3 mt-6"
+            style={{ color: colors.textSecondary, fontFamily: 'Inter_600SemiBold' }}
+          >
+            {t('settings.about')}
+          </Text>
+
+          <Pressable
+            onPress={handleVersionTap}
+            accessibilityRole="button"
+            accessibilityLabel={`${t('settings.version')} ${Constants.expoConfig?.version ?? '1.0.0'}`}
+            className="p-4 rounded-xl"
+            style={{
+              backgroundColor: colors.surface,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+          >
+            <View className="flex-row items-center justify-between">
+              <Text
+                className="text-base"
+                style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
+              >
+                {t('settings.version')}
+              </Text>
+              <Text
+                className="text-base"
+                style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
+              >
+                {Constants.expoConfig?.version ?? '1.0.0'}
+              </Text>
+            </View>
+          </Pressable>
+
+          <Pressable
+            onPress={() => WebBrowser.openBrowserAsync('https://jbgsoft.com/cestapp/privacy')}
+            accessibilityRole="button"
+            accessibilityLabel={t('settings.privacyPolicy')}
+            className="p-4 rounded-xl mt-3 flex-row items-center"
+            style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }}
+          >
+            <Ionicons name="shield-checkmark-outline" size={22} color={colors.textSecondary} />
+            <Text
+              className="text-base flex-1 ml-3"
+              style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
+            >
+              {t('settings.privacyPolicy')}
+            </Text>
+            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+          </Pressable>
+
+          <Pressable
+            onPress={openDiagnostics}
+            accessibilityRole="button"
+            accessibilityLabel={t('settings.diagnostics')}
+            className="p-4 rounded-xl mt-3 flex-row items-center"
+            style={{
+              backgroundColor: colors.surface,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+          >
+            <Ionicons name="bug-outline" size={22} color={colors.textSecondary} />
+            <Text
+              className="text-base flex-1 ml-3"
+              style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
+            >
+              {t('settings.diagnostics')}
+            </Text>
+            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+          </Pressable>
         </View>
-
-        {/* Data */}
-        <Text
-          accessibilityRole="header"
-          className="text-sm uppercase tracking-wide mb-3 mt-6"
-          style={{ color: colors.textSecondary, fontFamily: 'Inter_600SemiBold' }}
-        >
-          {t('settings.data')}
-        </Text>
-
-        <Pressable
-          onPress={() => setShowClearConfirm(true)}
-          disabled={isLoading}
-          accessibilityRole="button"
-          accessibilityLabel={t('settings.clearAllData')}
-          accessibilityState={{ disabled: isLoading, busy: isLoading }}
-          className="p-4 rounded-xl mb-3 flex-row items-center"
-          style={{
-            backgroundColor: `${colors.error}15`,
-            borderWidth: 1,
-            borderColor: colors.error,
-            opacity: isLoading ? 0.5 : 1,
-          }}
-        >
-          <Ionicons name="trash-outline" size={24} color={colors.error} />
-          <View className="flex-1 ml-3">
-            <Text
-              className="text-base"
-              style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
-            >
-              {t('settings.clearAllData')}
-            </Text>
-            <Text
-              className="text-sm mt-1"
-              style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-            >
-              {t('settings.clearAllDataDesc')}
-            </Text>
-          </View>
-        </Pressable>
-
-        {/* Backup */}
-        <Pressable
-          onPress={handleBackup}
-          disabled={isBackingUp}
-          accessibilityRole="button"
-          accessibilityLabel={t('settings.backup')}
-          accessibilityState={{ disabled: isBackingUp, busy: isBackingUp }}
-          className="p-4 rounded-xl mb-3 flex-row items-center"
-          style={{
-            backgroundColor: colors.surface,
-            borderWidth: 1,
-            borderColor: colors.border,
-            opacity: isBackingUp ? 0.5 : 1,
-          }}
-        >
-          <Ionicons name="cloud-upload-outline" size={24} color={colors.action} />
-          <View className="flex-1 ml-3">
-            <Text
-              className="text-base"
-              style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
-            >
-              {t('settings.backup')}
-            </Text>
-            <Text
-              className="text-sm mt-1"
-              style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-            >
-              {t('settings.backupDesc')}
-            </Text>
-          </View>
-        </Pressable>
-
-        {/* About Section */}
-        <Text
-          accessibilityRole="header"
-          className="text-sm uppercase tracking-wide mb-3 mt-6"
-          style={{ color: colors.textSecondary, fontFamily: 'Inter_600SemiBold' }}
-        >
-          {t('settings.about')}
-        </Text>
-
-        <Pressable
-          onPress={handleVersionTap}
-          accessibilityRole="button"
-          accessibilityLabel={`${t('settings.version')} ${Constants.expoConfig?.version ?? '1.0.0'}`}
-          className="p-4 rounded-xl"
-          style={{
-            backgroundColor: colors.surface,
-            borderWidth: 1,
-            borderColor: colors.border,
-          }}
-        >
-          <View className="flex-row items-center justify-between">
-            <Text
-              className="text-base"
-              style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
-            >
-              {t('settings.version')}
-            </Text>
-            <Text
-              className="text-base"
-              style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-            >
-              {Constants.expoConfig?.version ?? '1.0.0'}
-            </Text>
-          </View>
-        </Pressable>
-
-        <Pressable
-          onPress={() => WebBrowser.openBrowserAsync('https://jbgsoft.com/cestapp/privacy')}
-          accessibilityRole="button"
-          accessibilityLabel={t('settings.privacyPolicy')}
-          className="p-4 rounded-xl mt-3 flex-row items-center"
-          style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }}
-        >
-          <Ionicons name="shield-checkmark-outline" size={22} color={colors.textSecondary} />
-          <Text
-            className="text-base flex-1 ml-3"
-            style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
-          >
-            {t('settings.privacyPolicy')}
-          </Text>
-          <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
-        </Pressable>
-
-        <Pressable
-          onPress={openDiagnostics}
-          accessibilityRole="button"
-          accessibilityLabel={t('settings.diagnostics')}
-          className="p-4 rounded-xl mt-3 flex-row items-center"
-          style={{
-            backgroundColor: colors.surface,
-            borderWidth: 1,
-            borderColor: colors.border,
-          }}
-        >
-          <Ionicons name="bug-outline" size={22} color={colors.textSecondary} />
-          <Text
-            className="text-base flex-1 ml-3"
-            style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
-          >
-            {t('settings.diagnostics')}
-          </Text>
-          <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
-        </Pressable>
       </ScrollView>
 
       {/* Dev Menu Modal */}
