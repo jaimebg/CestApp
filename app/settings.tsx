@@ -23,6 +23,7 @@ import { isLlmAvailable } from '@/src/services/llm';
 import { getBackupData } from '@/src/db/queries/backup';
 import { exportBackup } from '@/src/utils/backup';
 import { createScopedLogger } from '@/src/utils/debug';
+import { hapticDelete } from '@/src/utils/haptics';
 
 const logger = createScopedLogger('Settings');
 
@@ -117,6 +118,7 @@ export default function SettingsScreen() {
             await clearAllData();
             invalidateCache();
             showSuccessToast(t('settings.dataCleared'));
+            void hapticDelete();
             setShowDevMenu(false);
           } catch {
             showErrorToast(t('common.error'));

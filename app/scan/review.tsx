@@ -29,6 +29,7 @@ import {
 import { parseCapture } from '@/src/services/ocr/parseCapture';
 import { useScanDraftStore } from '@/src/store/scanDraft';
 import { deleteReceiptFile } from '@/src/services/storage';
+import { hapticSuccess } from '@/src/utils/haptics';
 import { openSavedReceipt } from '@/src/navigation/receiptFlow';
 import { parseWithTemplate, shouldUseTemplate } from '@/src/services/ocr/templateParser';
 import type { OcrBlock } from '@/src/services/ocr';
@@ -548,6 +549,7 @@ export default function ScanReviewScreen() {
       setWasSaved(true);
       setForceLeave(true);
       showSuccessToast(t('common.success'), t('scan.receiptSaved'));
+      void hapticSuccess();
       showSavedReceipt(receipt.id);
     } catch (error) {
       logger.error('Save error:', error);

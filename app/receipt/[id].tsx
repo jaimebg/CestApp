@@ -45,6 +45,7 @@ import { fonts } from '../../src/theme/type';
 import { useFormatPrice, usePreferencesStore } from '../../src/store/preferences';
 import { parseAmountInput } from '../../src/config/currency';
 import { createScopedLogger } from '../../src/utils/debug';
+import { hapticDelete } from '../../src/utils/haptics';
 import { showSuccessToast, showErrorToast } from '../../src/utils/toast';
 import type { Receipt } from '../../src/db/schema/receipts';
 import type { Store } from '../../src/db/schema/stores';
@@ -288,6 +289,7 @@ export default function ReceiptDetailScreen() {
         )
       );
       await deleteReceipt(receipt.id);
+      void hapticDelete();
       router.back();
     } catch (error) {
       logger.error('Failed to delete receipt:', error);

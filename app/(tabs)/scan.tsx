@@ -11,6 +11,7 @@ import { selectFromGallery, selectPdf, scanDocument, CaptureResult } from '@/src
 import { deleteReceiptFile, isPdfFile } from '@/src/services/storage';
 import { processCapture } from '@/src/services/ocr/processCapture';
 import { useScanDraftStore } from '@/src/store/scanDraft';
+import { hapticSelection } from '@/src/utils/haptics';
 
 export default function ScanScreen() {
   const insets = useSafeAreaInsets();
@@ -78,6 +79,7 @@ export default function ScanScreen() {
   };
 
   const handleScanDocument = async () => {
+    void hapticSelection();
     setIsLoading('scanner');
     try {
       const result = await scanDocument();
