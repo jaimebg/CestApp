@@ -457,7 +457,7 @@ export default function ScanReviewScreen() {
   };
 
   const enterManualMode = () => {
-    updateParsedData(createManualParsedReceipt());
+    updateParsedData({ ...createManualParsedReceipt(), confidence: 100 });
     markEdited();
   };
 
