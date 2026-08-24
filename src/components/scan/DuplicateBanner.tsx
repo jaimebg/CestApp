@@ -25,6 +25,7 @@ export function DuplicateBanner({ dateLabel, totalLabel, onView }: Props) {
     <View
       className="mx-4 my-2 flex-row items-center justify-between rounded-xl px-3 py-2"
       style={{ backgroundColor: colors.surface, borderColor: colors.error, borderWidth: 1 }}
+      accessibilityLiveRegion="polite"
     >
       <View className="flex-1 flex-row items-center gap-2">
         <Ionicons name="alert-circle-outline" size={16} color={colors.error} />
@@ -41,7 +42,12 @@ export function DuplicateBanner({ dateLabel, totalLabel, onView }: Props) {
         </View>
       </View>
 
-      <Pressable onPress={onView} hitSlop={ICON_HIT_SLOP}>
+      <Pressable
+        onPress={onView}
+        hitSlop={ICON_HIT_SLOP}
+        accessibilityRole="button"
+        accessibilityLabel={t('scan.duplicateView')}
+      >
         <Text className="text-sm" style={{ color: colors.action, fontFamily: 'Inter_600SemiBold' }}>
           {t('scan.duplicateView')}
         </Text>

@@ -20,7 +20,7 @@ export function RefinementBanner({ status, onUndo, onCompare, onDismiss }: Props
 
   if (status === 'running') {
     return (
-      <View className="flex-row items-center gap-2 px-4 py-2">
+      <View className="flex-row items-center gap-2 px-4 py-2" accessibilityLiveRegion="polite">
         <ActivityIndicator size="small" color={colors.textSecondary} />
         <Text
           className="text-sm"
@@ -38,6 +38,7 @@ export function RefinementBanner({ status, onUndo, onCompare, onDismiss }: Props
     <View
       className="mx-4 my-2 flex-row items-center justify-between rounded-xl px-3 py-2"
       style={{ backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }}
+      accessibilityLiveRegion="polite"
     >
       <View className="flex-1 flex-row items-center gap-2">
         <Ionicons
@@ -51,7 +52,12 @@ export function RefinementBanner({ status, onUndo, onCompare, onDismiss }: Props
       </View>
 
       {isApplied ? (
-        <Pressable onPress={onUndo} hitSlop={ICON_HIT_SLOP}>
+        <Pressable
+          onPress={onUndo}
+          hitSlop={ICON_HIT_SLOP}
+          accessibilityRole="button"
+          accessibilityLabel={t('scan.refinementUndo')}
+        >
           <Text
             className="text-sm"
             style={{ color: colors.action, fontFamily: 'Inter_600SemiBold' }}
@@ -61,7 +67,12 @@ export function RefinementBanner({ status, onUndo, onCompare, onDismiss }: Props
         </Pressable>
       ) : (
         <View className="flex-row gap-3">
-          <Pressable onPress={onDismiss} hitSlop={ICON_HIT_SLOP}>
+          <Pressable
+            onPress={onDismiss}
+            hitSlop={ICON_HIT_SLOP}
+            accessibilityRole="button"
+            accessibilityLabel={t('scan.refinementDismiss')}
+          >
             <Text
               className="text-sm"
               style={{ color: colors.textSecondary, fontFamily: 'Inter_500Medium' }}
@@ -69,7 +80,12 @@ export function RefinementBanner({ status, onUndo, onCompare, onDismiss }: Props
               {t('scan.refinementDismiss')}
             </Text>
           </Pressable>
-          <Pressable onPress={onCompare} hitSlop={ICON_HIT_SLOP}>
+          <Pressable
+            onPress={onCompare}
+            hitSlop={ICON_HIT_SLOP}
+            accessibilityRole="button"
+            accessibilityLabel={t('scan.refinementCompare')}
+          >
             <Text
               className="text-sm"
               style={{ color: colors.action, fontFamily: 'Inter_600SemiBold' }}

@@ -6,13 +6,13 @@
  */
 
 import { useMemo } from 'react';
-import { Modal, View, Text, ScrollView, Pressable, Platform } from 'react-native';
+import { Modal, View, Text, ScrollView, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppColors } from '@/src/hooks/useAppColors';
-import { ICON_HIT_SLOP } from '@/src/theme/a11y';
 import { usePreferencesStore } from '@/src/store/preferences';
 import { Button } from '@/src/components/ui/Button';
+import { ModalHeader } from '@/src/components/ui/ModalHeader';
 import type { ParsedItem, ParsedReceipt } from '@/src/services/ocr/parser';
 
 interface Props {
@@ -166,20 +166,13 @@ export function ProposalDiffModal({ visible, current, proposed, onAccept, onDism
           paddingBottom: insets.bottom,
         }}
       >
-        <View
-          className="flex-row items-center justify-between px-4 py-4 border-b"
-          style={{ borderColor: colors.border }}
-        >
-          <Pressable onPress={onDismiss} hitSlop={ICON_HIT_SLOP} accessibilityRole="button">
-            <Text style={{ color: colors.textSecondary, fontFamily: 'Inter_500Medium' }}>
-              {t('common.cancel')}
-            </Text>
-          </Pressable>
-          <Text className="text-lg" style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}>
-            {t('scan.refinementCompareTitle')}
-          </Text>
-          <View style={{ width: 40 }} />
-        </View>
+        <ModalHeader
+          title={t('scan.refinementCompareTitle')}
+          onClose={onDismiss}
+          closeLabel={t('common.cancel')}
+          confirmLabel={t('scan.refinementAccept')}
+          onConfirm={onAccept}
+        />
 
         <ScrollView className="flex-1">
           <View className="flex-row gap-4 px-4 py-4">

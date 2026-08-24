@@ -4,6 +4,7 @@ import { Image } from 'expo-image';
 import Svg, { Rect } from 'react-native-svg';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSharedValue, runOnJS } from 'react-native-reanimated';
+import { useTranslation } from 'react-i18next';
 import {
   type ZoneDefinition,
   type ZoneType,
@@ -44,6 +45,7 @@ export function ZoneSelectionCanvas({
   imageDimensions,
 }: ZoneSelectionCanvasProps) {
   const { width: screenWidth } = useWindowDimensions();
+  const { t } = useTranslation();
   const containerRef = useRef<View>(null);
   const [containerLayout, setContainerLayout] = useState<{
     width: number;
@@ -281,7 +283,11 @@ export function ZoneSelectionCanvas({
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <View className="items-center">
+      <View
+        className="items-center"
+        accessibilityLabel={`${t('scan.zonesTitleDefine')} - ${t('scan.zonesInstructionsDefine')}`}
+        accessibilityHint={t('scan.zonesInstructionsDefine')}
+      >
         <GestureDetector gesture={composedGesture}>
           <View
             ref={containerRef}

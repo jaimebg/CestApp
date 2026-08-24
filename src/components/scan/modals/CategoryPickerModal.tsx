@@ -57,6 +57,9 @@ export function CategoryPickerModal({
                 onPress={() => onSelect(item.id)}
                 className="flex-row items-center px-4 py-3 border-b"
                 style={{ borderColor: colors.border }}
+                accessibilityRole="button"
+                accessibilityLabel={item.name}
+                accessibilityState={{ selected: isSelected }}
               >
                 <View
                   className="w-8 h-8 rounded-full items-center justify-center mr-3"

@@ -868,6 +868,8 @@ export default function ScanReviewScreen() {
                       className="p-2 rounded-lg"
                       style={{ backgroundColor: colors.surface }}
                       hitSlop={ICON_HIT_SLOP}
+                      accessibilityRole="button"
+                      accessibilityLabel={t('scan.readingTitle')}
                     >
                       <Ionicons name="eye-outline" size={18} color={colors.textSecondary} />
                     </Pressable>
@@ -876,6 +878,8 @@ export default function ScanReviewScreen() {
                       className="p-2 rounded-lg"
                       style={{ backgroundColor: colors.error + '15' }}
                       hitSlop={ICON_HIT_SLOP}
+                      accessibilityRole="button"
+                      accessibilityLabel={t('common.delete')}
                     >
                       <Ionicons name="trash-outline" size={18} color={colors.error} />
                     </Pressable>
@@ -916,6 +920,8 @@ export default function ScanReviewScreen() {
                       className="p-2 rounded-lg"
                       style={{ backgroundColor: colors.error + '15' }}
                       hitSlop={ICON_HIT_SLOP}
+                      accessibilityRole="button"
+                      accessibilityLabel={t('common.delete')}
                     >
                       <Ionicons name="trash-outline" size={18} color={colors.error} />
                     </Pressable>
@@ -937,6 +943,8 @@ export default function ScanReviewScreen() {
               <Pressable
                 onPress={openStoreEdit}
                 className="flex-row items-center justify-between mb-3"
+                accessibilityRole="button"
+                accessibilityLabel={t('scan.editStore')}
               >
                 <View className="flex-row items-center flex-1">
                   <Ionicons name="storefront-outline" size={18} color={colors.textSecondary} />
@@ -965,7 +973,12 @@ export default function ScanReviewScreen() {
               )}
 
               {/* Date and Time - Editable */}
-              <Pressable onPress={openDateEdit} className="flex-row items-center justify-between">
+              <Pressable
+                onPress={openDateEdit}
+                className="flex-row items-center justify-between"
+                accessibilityRole="button"
+                accessibilityLabel={t('scan.editDate')}
+              >
                 <View className="flex-row items-center">
                   <Ionicons name="calendar-outline" size={18} color={colors.textSecondary} />
                   <Text
@@ -1100,6 +1113,8 @@ export default function ScanReviewScreen() {
                 onPress={() => openItemEdit(null)}
                 className="flex-row items-center justify-center py-3 mt-2 rounded-lg"
                 style={{ backgroundColor: colors.primary + '15' }}
+                accessibilityRole="button"
+                accessibilityLabel={t('scan.addItem')}
               >
                 <Ionicons name="add-circle-outline" size={20} color={colors.action} />
                 <Text
@@ -1185,6 +1200,8 @@ export default function ScanReviewScreen() {
                 onPress={openTotalEdit}
                 className="flex-row justify-between items-center pt-2 border-t"
                 style={{ borderColor: colors.border }}
+                accessibilityRole="button"
+                accessibilityLabel={t('receipt.total')}
               >
                 <Text
                   className="text-base"
@@ -1225,6 +1242,8 @@ export default function ScanReviewScreen() {
                     onPress={setTotalToItemsSum}
                     className="flex-row items-center justify-center py-2 mt-2 rounded-lg"
                     style={{ backgroundColor: colors.primary + '15' }}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('scan.matchToItemsSum')}
                   >
                     <Ionicons name="checkmark-circle-outline" size={18} color={colors.action} />
                     <Text
