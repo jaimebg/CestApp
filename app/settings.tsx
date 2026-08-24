@@ -606,7 +606,7 @@ export default function SettingsScreen() {
               <Pressable
                 onPress={clearDiagnostics}
                 accessibilityRole="button"
-                accessibilityLabel={t('common.delete')}
+                accessibilityLabel={t('common.clear')}
                 style={{ minHeight: MIN_TARGET, justifyContent: 'center' }}
                 className="items-center py-3"
               >

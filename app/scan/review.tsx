@@ -341,25 +341,27 @@ export default function ScanReviewScreen() {
       // If we haven't applied a template yet and a store was identified,
       // re-check for templates (user might have just created one)
       if (!templateApplied && currentStoreId) {
-        getTemplateByStoreId(currentStoreId).then((template) => {
-          if (
-            template &&
-            blocks.length > 0 &&
-            parsedData &&
-            shouldUseTemplate(template, parsedData.confidence)
-          ) {
-            const templateParsedData = parseWithTemplate(
-              blocks,
-              template,
-              ocrText || lines.join('\n'),
-              dimensions
-            );
-            updateParsedData(templateParsedData);
-            setTemplateApplied(true);
-            setHasExistingTemplate(true);
-            setAppliedZones(template.zones);
-          }
-        });
+        getTemplateByStoreId(currentStoreId)
+          .then((template) => {
+            if (
+              template &&
+              blocks.length > 0 &&
+              parsedData &&
+              shouldUseTemplate(template, parsedData.confidence)
+            ) {
+              const templateParsedData = parseWithTemplate(
+                blocks,
+                template,
+                ocrText || lines.join('\n'),
+                dimensions
+              );
+              updateParsedData(templateParsedData);
+              setTemplateApplied(true);
+              setHasExistingTemplate(true);
+              setAppliedZones(template.zones);
+            }
+          })
+          .catch((error) => logger.error('Template refetch failed:', error));
       }
     }, [
       templateApplied,
