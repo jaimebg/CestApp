@@ -16,16 +16,11 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT" />
   <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome" />
   <img src="https://img.shields.io/badge/platform-iOS%20%7C%20Android-lightgrey.svg" alt="Platform: iOS | Android" />
-  <img src="https://img.shields.io/badge/Expo-55-000020.svg?logo=expo" alt="Expo SDK 55" />
-  <img src="https://img.shields.io/badge/React%20Native-0.83-61DAFB.svg?logo=react" alt="React Native 0.83" />
+  <img src="https://img.shields.io/badge/Expo-57-000020.svg?logo=expo" alt="Expo SDK 57" />
+  <img src="https://img.shields.io/badge/React%20Native-0.86.2-61DAFB.svg?logo=react" alt="React Native 0.86.2" />
   <img src="https://img.shields.io/badge/TypeScript-strict-3178C6.svg?logo=typescript&logoColor=white" alt="TypeScript" />
   <img src="https://img.shields.io/badge/Privacy-100%25%20Local-success.svg" alt="Privacy: 100% Local" />
 </p>
-
----
-
-> **🚧 Under Construction**
-> CestApp is in active development. Core features work, but expect rough edges. Contributions welcome!
 
 ---
 
@@ -57,7 +52,7 @@
 
 **Analyze**: Monthly trends, category breakdowns, store comparisons, top items.
 
-**Privacy**: Offline-first, local SQLite, no tracking, no ads.
+**Privacy**: Offline-first, local SQLite, no tracking, no ads. Full policy: [jbgsoft.com/cestapp/privacy](https://jbgsoft.com/cestapp/privacy).
 
 **Details**: Dark mode, Spanish regional formats (EUR, DD/MM/YYYY, decimal comma), smooth animations.
 
@@ -77,18 +72,18 @@ npx expo run:android
 
 ## Tech Stack
 
-| Category   | Technology                      |
-| ---------- | ------------------------------- |
-| Framework  | React Native 0.83 + Expo SDK 55 |
-| Navigation | Expo Router                     |
-| Styling    | NativeWind v4                   |
-| Database   | Drizzle ORM + expo-sqlite       |
-| State      | Zustand v5                      |
-| OCR        | ML Kit (@infinitered)           |
-| PDF        | Custom parser + pako            |
-| i18n       | i18next                         |
-| Animations | Reanimated v4                   |
-| Charts     | react-native-gifted-charts      |
+| Category   | Technology                        |
+| ---------- | --------------------------------- |
+| Framework  | React Native 0.86.2 + Expo SDK 57 |
+| Navigation | Expo Router                       |
+| Styling    | NativeWind v4                     |
+| Database   | Drizzle ORM + expo-sqlite         |
+| State      | Zustand v5                        |
+| OCR        | ML Kit (@infinitered)             |
+| PDF        | Custom parser + pako              |
+| i18n       | i18next                           |
+| Animations | Reanimated v4                     |
+| Charts     | react-native-gifted-charts        |
 
 ## Project Structure
 

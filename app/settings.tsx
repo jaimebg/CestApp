@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState, useRef, useEffect } from 'react';
 import Constants from 'expo-constants';
+import * as WebBrowser from 'expo-web-browser';
 import { usePreferencesStore } from '@/src/store/preferences';
 import { SUPPORTED_LANGUAGES, SupportedLanguage } from '@/src/i18n';
 import { seedDemoData, clearAllData } from '@/src/db/demoData';
@@ -452,6 +453,23 @@ export default function SettingsScreen() {
               {Constants.expoConfig?.version ?? '0.1.0'}
             </Text>
           </View>
+        </Pressable>
+
+        <Pressable
+          onPress={() => WebBrowser.openBrowserAsync('https://jbgsoft.com/cestapp/privacy')}
+          accessibilityRole="button"
+          accessibilityLabel={t('settings.privacyPolicy')}
+          className="p-4 rounded-xl mt-3 flex-row items-center"
+          style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }}
+        >
+          <Ionicons name="shield-checkmark-outline" size={22} color={colors.textSecondary} />
+          <Text
+            className="text-base flex-1 ml-3"
+            style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
+          >
+            {t('settings.privacyPolicy')}
+          </Text>
+          <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
         </Pressable>
 
         <Pressable

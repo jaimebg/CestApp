@@ -270,6 +270,7 @@
     "about": "About",
     "data": "Data",
     "version": "Version",
+    "privacyPolicy": "Privacy policy",
     "parsingTemplates": "PDF Parsing Templates",
     "manageTemplates": "PDF Templates",
     "noTemplates": "No templates saved",
