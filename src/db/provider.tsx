@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import { initializeDatabase } from './client';
 import { seedCategories } from './seed';
 import { createScopedLogger } from '../utils/debug';
+import { logError } from '@/src/utils/errorLog';
 
 const logger = createScopedLogger('Database');
 
@@ -40,6 +41,7 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
         if (!cancelled) setIsReady(true);
       } catch (err) {
         logger.error('Database initialization error:', err);
+        logError('database', err);
         if (!cancelled) setError(err instanceof Error ? err : new Error('Unknown error'));
       }
     }

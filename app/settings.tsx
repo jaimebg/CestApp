@@ -86,7 +86,8 @@ export default function SettingsScreen() {
         })
       );
       setShowDevMenu(false);
-    } catch {
+    } catch (error) {
+      logger.error('Demo seed failed:', error);
       showErrorToast(t('common.error'));
     } finally {
       setIsLoading(false);
@@ -128,8 +129,12 @@ export default function SettingsScreen() {
   };
 
   const clearDiagnostics = async () => {
-    await clearErrorLog();
-    setErrorLog([]);
+    try {
+      await clearErrorLog();
+      setErrorLog([]);
+    } catch (error) {
+      logger.error('Clear diagnostics failed:', error);
+    }
   };
 
   const handleClearAllData = async () => {
@@ -431,7 +436,7 @@ export default function SettingsScreen() {
         <Pressable
           onPress={handleVersionTap}
           accessibilityRole="button"
-          accessibilityLabel={`${t('settings.version')} ${Constants.expoConfig?.version ?? '0.1.0'}`}
+          accessibilityLabel={`${t('settings.version')} ${Constants.expoConfig?.version ?? '1.0.0'}`}
           className="p-4 rounded-xl"
           style={{
             backgroundColor: colors.surface,
@@ -450,7 +455,7 @@ export default function SettingsScreen() {
               className="text-base"
               style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
             >
-              {Constants.expoConfig?.version ?? '0.1.0'}
+              {Constants.expoConfig?.version ?? '1.0.0'}
             </Text>
           </View>
         </Pressable>
