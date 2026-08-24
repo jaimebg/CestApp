@@ -202,6 +202,7 @@ export interface ReceiptFilters {
   startDate?: Date | null;
   endDate?: Date | null;
   searchTerm?: string | null;
+  categoryId?: number | null;
 }
 
 export async function getFilteredReceipts(filters: ReceiptFilters, limit = 50, offset = 0) {
@@ -229,6 +230,16 @@ export async function getFilteredReceipts(filters: ReceiptFilters, limit = 50, o
           WHERE items.receipt_id = receipts.id
           AND LOWER(items.name) LIKE ${searchPattern}
         )
+      )`
+    );
+  }
+
+  if (filters.categoryId != null) {
+    conditions.push(
+      sql`EXISTS (
+        SELECT 1 FROM items
+        WHERE items.receipt_id = receipts.id
+        AND items.category_id = ${filters.categoryId}
       )`
     );
   }

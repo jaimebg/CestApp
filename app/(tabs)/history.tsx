@@ -22,6 +22,9 @@ import {
   getStoresWithReceipts,
   type ReceiptFilters,
 } from '@/src/db/queries/receipts';
+import { getCategories } from '@/src/db/queries/categories';
+import { getPresetDateRange, type HistoryDatePreset } from '@/src/db/queries/dayRange';
+import { buildValidatedDateTime } from '@/src/utils/dateTime';
 import { ReceiptCard } from '@/src/components/receipt/ReceiptCard';
 import { ReceiptListSkeleton } from '@/src/components/receipt/ReceiptCardSkeleton';
 import { EmptyState } from '@/src/components/ui/EmptyState';
@@ -44,35 +47,35 @@ type ReceiptWithStore = {
   itemCount: number;
 };
 
-type DatePreset = 'all' | 'thisWeek' | 'thisMonth' | 'last3Months' | 'thisYear';
-
-function getDateRange(preset: DatePreset): { start: Date | null; end: Date | null } {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-
-  switch (preset) {
-    case 'thisWeek': {
-      const dayOfWeek = now.getDay();
-      const start = new Date(now);
-      start.setDate(now.getDate() - dayOfWeek);
-      start.setHours(0, 0, 0, 0);
-      return { start, end: today };
-    }
-    case 'thisMonth': {
-      const start = new Date(now.getFullYear(), now.getMonth(), 1);
-      return { start, end: today };
-    }
-    case 'last3Months': {
-      const start = new Date(now.getFullYear(), now.getMonth() - 2, 1);
-      return { start, end: today };
-    }
-    case 'thisYear': {
-      const start = new Date(now.getFullYear(), 0, 1);
-      return { start, end: today };
-    }
-    default:
-      return { start: null, end: null };
-  }
+function DateField({
+  value,
+  onChange,
+  placeholder,
+  maxLength,
+  colors,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  maxLength: number;
+  colors: ReturnType<typeof useAppColors>;
+}) {
+  return (
+    <TextInput
+      value={value}
+      onChangeText={onChange}
+      placeholder={placeholder}
+      placeholderTextColor={colors.textSecondary}
+      className="flex-1 px-4 py-3 rounded-xl text-base text-center"
+      style={{
+        backgroundColor: colors.surface,
+        color: colors.text,
+        fontFamily: 'Inter_400Regular',
+      }}
+      keyboardType="number-pad"
+      maxLength={maxLength}
+    />
+  );
 }
 
 export default function HistoryScreen() {
@@ -92,14 +95,28 @@ export default function HistoryScreen() {
 
   const [showFilters, setShowFilters] = useState(false);
   const [selectedStoreId, setSelectedStoreId] = useState<number | null>(null);
-  const [selectedDatePreset, setSelectedDatePreset] = useState<DatePreset>('all');
+  const [selectedDatePreset, setSelectedDatePreset] = useState<HistoryDatePreset>('all');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const [customStart, setCustomStart] = useState<{ day: string; month: string; year: string }>({
+    day: '',
+    month: '',
+    year: '',
+  });
+  const [customEnd, setCustomEnd] = useState<{ day: string; month: string; year: string }>({
+    day: '',
+    month: '',
+    year: '',
+  });
+  const [categoriesList, setCategoriesList] = useState<{ id: number; name: string }[]>([]);
+  const [invalidRange, setInvalidRange] = useState(false);
 
   const offsetRef = useRef(0);
   const requestIdRef = useRef(0);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-  const hasActiveFilters = selectedStoreId !== null || selectedDatePreset !== 'all';
+  const hasActiveFilters =
+    selectedStoreId !== null || selectedDatePreset !== 'all' || selectedCategoryId !== null;
 
   const loadStores = useCallback(async () => {
     if (!isReady) return;
@@ -111,6 +128,39 @@ export default function HistoryScreen() {
     }
   }, [isReady]);
 
+  const loadCategories = useCallback(async () => {
+    if (!isReady) return;
+    try {
+      const data = await getCategories();
+      setCategoriesList(data.map((category) => ({ id: category.id, name: category.name })));
+    } catch (error) {
+      logger.error('Failed to load categories:', error);
+    }
+  }, [isReady]);
+
+  const buildCustomRange = useCallback((): { start: Date | null; end: Date | null } => {
+    const start = buildValidatedDateTime(
+      parseInt(customStart.day, 10) || 0,
+      parseInt(customStart.month, 10) || 0,
+      parseInt(customStart.year, 10) || 0,
+      null
+    );
+    const end = buildValidatedDateTime(
+      parseInt(customEnd.day, 10) || 0,
+      parseInt(customEnd.month, 10) || 0,
+      parseInt(customEnd.year, 10) || 0,
+      null
+    );
+    if (!start || !end) return { start: null, end: null };
+    end.setHours(23, 59, 59, 999);
+    if (end.getTime() < start.getTime()) {
+      setInvalidRange(true);
+      return { start: null, end: null };
+    }
+    setInvalidRange(false);
+    return { start, end };
+  }, [customStart, customEnd]);
+
   const loadReceipts = useCallback(
     async (reset = true) => {
       if (!isReady) return;
@@ -118,16 +168,24 @@ export default function HistoryScreen() {
       const requestId = reset ? ++requestIdRef.current : requestIdRef.current;
 
       try {
-        const dateRange = getDateRange(selectedDatePreset);
+        const dateRange =
+          selectedDatePreset === 'custom'
+            ? buildCustomRange()
+            : getPresetDateRange(selectedDatePreset);
         const filters: ReceiptFilters = {
           storeId: selectedStoreId,
           startDate: dateRange.start,
           endDate: dateRange.end,
           searchTerm: searchQuery || null,
+          categoryId: selectedCategoryId,
         };
 
         const hasFilters =
-          filters.storeId || filters.startDate || filters.endDate || filters.searchTerm;
+          filters.storeId ||
+          filters.startDate ||
+          filters.endDate ||
+          filters.searchTerm ||
+          filters.categoryId;
 
         const pageOffset = reset ? 0 : offsetRef.current;
         const data = hasFilters
@@ -147,7 +205,14 @@ export default function HistoryScreen() {
         setIsLoadingMore(false);
       }
     },
-    [isReady, selectedStoreId, selectedDatePreset, searchQuery]
+    [
+      isReady,
+      selectedStoreId,
+      selectedDatePreset,
+      searchQuery,
+      selectedCategoryId,
+      buildCustomRange,
+    ]
   );
 
   const handleSearch = useCallback((query: string) => {
@@ -167,9 +232,9 @@ export default function HistoryScreen() {
 
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
-    await Promise.all([loadReceipts(), loadStores()]);
+    await Promise.all([loadReceipts(), loadStores(), loadCategories()]);
     setIsRefreshing(false);
-  }, [loadReceipts, loadStores]);
+  }, [loadReceipts, loadStores, loadCategories]);
 
   const handleLoadMore = useCallback(() => {
     if (isLoading || isLoadingMore || !hasMore || !isReady || isSearching) return;
@@ -188,6 +253,9 @@ export default function HistoryScreen() {
     setSelectedStoreId(null);
     setSelectedDatePreset('all');
     setSearchQuery('');
+    setSelectedCategoryId(null);
+    setCustomStart({ day: '', month: '', year: '' });
+    setCustomEnd({ day: '', month: '', year: '' });
   }, []);
 
   useFocusEffect(
@@ -195,8 +263,9 @@ export default function HistoryScreen() {
       if (isReady) {
         loadReceipts();
         loadStores();
+        loadCategories();
       }
-    }, [isReady, loadReceipts, loadStores])
+    }, [isReady, loadReceipts, loadStores, loadCategories])
   );
 
   const selectedStoreName = useMemo(() => {
@@ -215,6 +284,8 @@ export default function HistoryScreen() {
         return t('history.last3Months');
       case 'thisYear':
         return t('history.thisYear');
+      case 'custom':
+        return t('history.customRange');
       default:
         return t('history.allDates');
     }
@@ -391,7 +462,9 @@ export default function HistoryScreen() {
             {hasActiveFilters && (
               <View className="ml-1 w-5 h-5 rounded-full bg-primary-deep items-center justify-center">
                 <Text className="text-white text-xs font-bold">
-                  {(selectedStoreId ? 1 : 0) + (selectedDatePreset !== 'all' ? 1 : 0)}
+                  {(selectedStoreId ? 1 : 0) +
+                    (selectedDatePreset !== 'all' ? 1 : 0) +
+                    (selectedCategoryId ? 1 : 0)}
                 </Text>
               </View>
             )}
@@ -524,33 +597,111 @@ export default function HistoryScreen() {
               {t('history.dateRange')}
             </Text>
             <View className="flex-row flex-wrap gap-2 mb-6">
-              {(['all', 'thisWeek', 'thisMonth', 'last3Months', 'thisYear'] as DatePreset[]).map(
-                (preset) => (
-                  <Pressable
-                    key={preset}
-                    onPress={() => setSelectedDatePreset(preset)}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: selectedDatePreset === preset }}
-                    style={{ minHeight: MIN_TARGET, justifyContent: 'center' }}
-                    className={`px-4 py-2 rounded-full border ${
+              {(
+                [
+                  'all',
+                  'thisWeek',
+                  'thisMonth',
+                  'last3Months',
+                  'thisYear',
+                  'custom',
+                ] as HistoryDatePreset[]
+              ).map((preset) => (
+                <Pressable
+                  key={preset}
+                  onPress={() => setSelectedDatePreset(preset)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: selectedDatePreset === preset }}
+                  style={{ minHeight: MIN_TARGET, justifyContent: 'center' }}
+                  className={`px-4 py-2 rounded-full border ${
+                    selectedDatePreset === preset
+                      ? 'bg-primary-deep border-primary-deep'
+                      : 'bg-surface dark:bg-surface-dark border-border dark:border-border-dark'
+                  }`}
+                >
+                  <Text
+                    className={
                       selectedDatePreset === preset
-                        ? 'bg-primary-deep border-primary-deep'
-                        : 'bg-surface dark:bg-surface-dark border-border dark:border-border-dark'
-                    }`}
+                        ? 'text-white font-medium'
+                        : 'text-text-secondary dark:text-text-dark-secondary'
+                    }
                   >
-                    <Text
-                      className={
-                        selectedDatePreset === preset
-                          ? 'text-white font-medium'
-                          : 'text-text-secondary dark:text-text-dark-secondary'
-                      }
-                    >
-                      {preset === 'all' ? t('history.allDates') : t(`history.${preset}`)}
-                    </Text>
-                  </Pressable>
-                )
-              )}
+                    {preset === 'all' ? t('history.allDates') : t(`history.${preset}`)}
+                  </Text>
+                </Pressable>
+              ))}
             </View>
+
+            {selectedDatePreset === 'custom' && (
+              <View className="mb-6">
+                <Text
+                  className="text-sm mb-2"
+                  style={{ color: colors.textSecondary, fontFamily: 'Inter_500Medium' }}
+                >
+                  {t('history.startDate')}
+                </Text>
+                <View className="flex-row gap-2 mb-4">
+                  <DateField
+                    value={customStart.day}
+                    onChange={(value) => setCustomStart((prev) => ({ ...prev, day: value }))}
+                    placeholder="DD"
+                    maxLength={2}
+                    colors={colors}
+                  />
+                  <DateField
+                    value={customStart.month}
+                    onChange={(value) => setCustomStart((prev) => ({ ...prev, month: value }))}
+                    placeholder="MM"
+                    maxLength={2}
+                    colors={colors}
+                  />
+                  <DateField
+                    value={customStart.year}
+                    onChange={(value) => setCustomStart((prev) => ({ ...prev, year: value }))}
+                    placeholder="YYYY"
+                    maxLength={4}
+                    colors={colors}
+                  />
+                </View>
+                <Text
+                  className="text-sm mb-2"
+                  style={{ color: colors.textSecondary, fontFamily: 'Inter_500Medium' }}
+                >
+                  {t('history.endDate')}
+                </Text>
+                <View className="flex-row gap-2 mb-4">
+                  <DateField
+                    value={customEnd.day}
+                    onChange={(value) => setCustomEnd((prev) => ({ ...prev, day: value }))}
+                    placeholder="DD"
+                    maxLength={2}
+                    colors={colors}
+                  />
+                  <DateField
+                    value={customEnd.month}
+                    onChange={(value) => setCustomEnd((prev) => ({ ...prev, month: value }))}
+                    placeholder="MM"
+                    maxLength={2}
+                    colors={colors}
+                  />
+                  <DateField
+                    value={customEnd.year}
+                    onChange={(value) => setCustomEnd((prev) => ({ ...prev, year: value }))}
+                    placeholder="YYYY"
+                    maxLength={4}
+                    colors={colors}
+                  />
+                </View>
+                {invalidRange && (
+                  <Text
+                    className="text-sm text-error dark:text-error-light mb-4"
+                    style={{ fontFamily: 'Inter_400Regular' }}
+                  >
+                    {t('history.invalidRange')}
+                  </Text>
+                )}
+              </View>
+            )}
 
             {/* Store Section */}
             <Text
@@ -603,6 +754,62 @@ export default function HistoryScreen() {
                     }
                   >
                     {store.name}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
+            {/* Category Section */}
+            <Text
+              className="text-base text-text dark:text-text-dark mb-3"
+              style={{ fontFamily: 'Inter_600SemiBold' }}
+            >
+              {t('history.category')}
+            </Text>
+            <View className="flex-row flex-wrap gap-2 mb-6">
+              <Pressable
+                onPress={() => setSelectedCategoryId(null)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: selectedCategoryId === null }}
+                style={{ minHeight: MIN_TARGET, justifyContent: 'center' }}
+                className={`px-4 py-2 rounded-full border ${
+                  selectedCategoryId === null
+                    ? 'bg-primary-deep border-primary-deep'
+                    : 'bg-surface dark:bg-surface-dark border-border dark:border-border-dark'
+                }`}
+              >
+                <Text
+                  className={
+                    selectedCategoryId === null
+                      ? 'text-white font-medium'
+                      : 'text-text-secondary dark:text-text-dark-secondary'
+                  }
+                >
+                  {t('history.allCategories')}
+                </Text>
+              </Pressable>
+              {categoriesList.map((cat) => (
+                <Pressable
+                  key={cat.id}
+                  onPress={() => setSelectedCategoryId(cat.id)}
+                  accessibilityRole="button"
+                  accessibilityLabel={cat.name}
+                  accessibilityState={{ selected: selectedCategoryId === cat.id }}
+                  style={{ minHeight: MIN_TARGET, justifyContent: 'center' }}
+                  className={`px-4 py-2 rounded-full border ${
+                    selectedCategoryId === cat.id
+                      ? 'bg-primary-deep border-primary-deep'
+                      : 'bg-surface dark:bg-surface-dark border-border dark:border-border-dark'
+                  }`}
+                >
+                  <Text
+                    className={
+                      selectedCategoryId === cat.id
+                        ? 'text-white font-medium'
+                        : 'text-text-secondary dark:text-text-dark-secondary'
+                    }
+                  >
+                    {cat.name}
                   </Text>
                 </Pressable>
               ))}
