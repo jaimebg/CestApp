@@ -7,5 +7,9 @@ function luminance(hex: string): number {
 }
 
 export function getContrastingInk(bgColor: string): string {
-  return luminance(bgColor) < 0.25 ? '#FFFFFF' : '#1C1C1E';
+  const bg = luminance(bgColor);
+  const darkInkLum = 0.0117;
+  const whiteRatio = 1.05 / (bg + 0.05);
+  const darkRatio = (bg + 0.05) / (darkInkLum + 0.05);
+  return whiteRatio >= darkRatio ? '#FFFFFF' : '#1C1C1E';
 }
