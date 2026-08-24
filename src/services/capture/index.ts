@@ -6,7 +6,7 @@ import { createScopedLogger } from '../../utils/debug';
 
 const logger = createScopedLogger('Capture');
 
-export type CaptureSource = 'gallery' | 'pdf' | 'scanner';
+export type CaptureSource = 'gallery' | 'pdf' | 'scanner' | 'manual';
 
 export interface CaptureResult {
   success: boolean;

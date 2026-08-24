@@ -18,7 +18,12 @@ import { TotalEditModal } from '@/src/components/scan/modals/TotalEditModal';
 import { ReadingModal } from '@/src/components/scan/modals/ReadingModal';
 import { ConfirmationModal } from '@/src/components/ui/ConfirmationModal';
 import type { Category } from '@/src/components/scan/types';
-import type { ParsedReceipt, ParsedItem, ParserOptions } from '@/src/services/ocr/parser';
+import {
+  createManualParsedReceipt,
+  type ParsedReceipt,
+  type ParsedItem,
+  type ParserOptions,
+} from '@/src/services/ocr/parser';
 import { parseCapture } from '@/src/services/ocr/parseCapture';
 import { useScanDraftStore } from '@/src/store/scanDraft';
 import { deleteReceiptFile } from '@/src/services/storage';
@@ -91,6 +96,7 @@ export default function ScanReviewScreen() {
   const dimensions = draft?.dimensions ?? FALLBACK_DIMENSIONS;
   const detectedTotal = draft?.detectedTotal ?? null;
   const hasOcrResult = ocrText.length > 0;
+  const isManualEntry = draft !== null && uri === '';
 
   // A receipt that was never saved keeps no copy of its file, whichever way the
   // screen was left: the discard button, Back, or the system gesture. The draft
@@ -142,7 +148,9 @@ export default function ScanReviewScreen() {
     [lines, blocks, ocrText, dimensions, detectedTotal, parserOptions]
   );
 
-  const [initialParsedData] = useState(() => readReceipt(draft?.zones ?? NO_ZONES));
+  const [initialParsedData] = useState(() =>
+    isManualEntry ? createManualParsedReceipt() : readReceipt(draft?.zones ?? NO_ZONES)
+  );
 
   const [categoriesList, setCategoriesList] = useState<Category[]>([]);
 
@@ -416,7 +424,8 @@ export default function ScanReviewScreen() {
 
   const currentTotal = parsedData?.total || 0;
   const totalsDiffer = Math.abs(itemsSum - currentTotal) > 0.01;
-  const canSave = !totalsDiffer && parsedData && parsedData.items.length > 0;
+  const canSave =
+    !!parsedData && parsedData.items.length > 0 && (parsedData.total ?? 0) > 0 && !totalsDiffer;
 
   // Closing modals first prevents a SafeAreaProvider crash on Android, which
   // happens when SafeAreaView is unmounted during the native render cycle.
@@ -445,6 +454,11 @@ export default function ScanReviewScreen() {
     setTimeout(() => {
       router.back();
     }, 100);
+  };
+
+  const enterManualMode = () => {
+    updateParsedData(createManualParsedReceipt());
+    markEdited();
   };
 
   const showSavedReceipt = (receiptId: number) => {
@@ -779,32 +793,44 @@ export default function ScanReviewScreen() {
       </View>
 
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
-        {hasOcrResult && parsedData ? (
+        {parsedData ? (
           <>
-            {/* Confidence indicator */}
-            <View className="flex-row items-center justify-between mb-4">
-              <View className="flex-row items-center">
-                <View
-                  className="rounded-full p-2 mr-2"
-                  style={{ backgroundColor: getConfidenceColor(parsedData.confidence) + '20' }}
-                >
-                  <Ionicons
-                    name={parsedData.confidence >= 70 ? 'checkmark' : 'alert'}
-                    size={16}
-                    color={getConfidenceColor(parsedData.confidence)}
-                  />
-                </View>
+            {isManualEntry && (
+              <Card variant="outlined" padding="md" className="mb-4">
                 <Text
                   className="text-sm"
                   style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
                 >
-                  {t('scan.confidence')}: {parsedData.confidence}%
+                  {t('scan.manualEntryHint')}
                 </Text>
+              </Card>
+            )}
+            {/* Confidence indicator */}
+            {hasOcrResult && (
+              <View className="flex-row items-center justify-between mb-4">
+                <View className="flex-row items-center">
+                  <View
+                    className="rounded-full p-2 mr-2"
+                    style={{ backgroundColor: getConfidenceColor(parsedData.confidence) + '20' }}
+                  >
+                    <Ionicons
+                      name={parsedData.confidence >= 70 ? 'checkmark' : 'alert'}
+                      size={16}
+                      color={getConfidenceColor(parsedData.confidence)}
+                    />
+                  </View>
+                  <Text
+                    className="text-sm"
+                    style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
+                  >
+                    {t('scan.confidence')}: {parsedData.confidence}%
+                  </Text>
+                </View>
+                {parsedData.confidence < 70 && (
+                  <Badge variant="warning" size="sm" label={t('scan.lowConfidence')} />
+                )}
               </View>
-              {parsedData.confidence < 70 && (
-                <Badge variant="warning" size="sm" label={t('scan.lowConfidence')} />
-              )}
-            </View>
+            )}
 
             {/* Template Applied Indicator (PDF only) */}
             {templateApplied && isPdf && (
@@ -1050,39 +1076,41 @@ export default function ScanReviewScreen() {
             </Card>
 
             {/* What the scanner read, and where it read it */}
-            <Card variant="outlined" padding="md" className="mb-4">
-              <Pressable
-                onPress={() => setShowReading(true)}
-                className="flex-row items-center"
-                accessibilityRole="button"
-                accessibilityLabel={t('scan.readingTitle')}
-                accessibilityHint={t('scan.readingHint')}
-              >
-                <View
-                  className="rounded-full p-2 mr-3"
-                  style={{ backgroundColor: colors.primary + '20' }}
+            {hasOcrResult && (
+              <Card variant="outlined" padding="md" className="mb-4">
+                <Pressable
+                  onPress={() => setShowReading(true)}
+                  className="flex-row items-center"
+                  accessibilityRole="button"
+                  accessibilityLabel={t('scan.readingTitle')}
+                  accessibilityHint={t('scan.readingHint')}
                 >
-                  <Ionicons name="scan-outline" size={20} color={colors.action} />
-                </View>
-                <View className="flex-1">
-                  <Text
-                    className="text-sm"
-                    style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
+                  <View
+                    className="rounded-full p-2 mr-3"
+                    style={{ backgroundColor: colors.primary + '20' }}
                   >
-                    {t('scan.readingTitle')}
-                  </Text>
-                  <Text
-                    className="text-xs mt-0.5"
-                    style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-                  >
-                    {appliedZones.length > 0
-                      ? t('scan.zoneCount', { count: appliedZones.length })
-                      : t('scan.noZonesDetected')}
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
-              </Pressable>
-            </Card>
+                    <Ionicons name="scan-outline" size={20} color={colors.action} />
+                  </View>
+                  <View className="flex-1">
+                    <Text
+                      className="text-sm"
+                      style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
+                    >
+                      {t('scan.readingTitle')}
+                    </Text>
+                    <Text
+                      className="text-xs mt-0.5"
+                      style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
+                    >
+                      {appliedZones.length > 0
+                        ? t('scan.zoneCount', { count: appliedZones.length })
+                        : t('scan.noZonesDetected')}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+                </Pressable>
+              </Card>
+            )}
 
             <RefinementBanner
               status={refinement.status}
@@ -1297,6 +1325,17 @@ export default function ScanReviewScreen() {
               >
                 {t('scan.noTextDetectedDesc')}
               </Text>
+              <Pressable
+                onPress={enterManualMode}
+                className="mt-5 px-6 py-3 rounded-xl items-center"
+                style={{ backgroundColor: colors.primaryDeep }}
+                accessibilityRole="button"
+                accessibilityLabel={t('scan.addManually')}
+              >
+                <Text className="text-white text-sm" style={{ fontFamily: 'Inter_600SemiBold' }}>
+                  {t('scan.addManually')}
+                </Text>
+              </Pressable>
             </View>
           </Card>
         )}
@@ -1304,7 +1343,7 @@ export default function ScanReviewScreen() {
 
       {/* Action Buttons */}
       <View className="px-4 pb-4" style={{ paddingBottom: insets.bottom > 0 ? insets.bottom : 16 }}>
-        {hasOcrResult && parsedData ? (
+        {parsedData ? (
           <View className="flex-row gap-3">
             <View className="flex-1">
               <Button variant="secondary" size="lg" onPress={handleDone}>

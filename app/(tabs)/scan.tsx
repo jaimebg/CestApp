@@ -51,10 +51,11 @@ export default function ScanScreen() {
       if (!processed.success) {
         await deleteReceiptFile(uri);
         if (processed.error === 'no_text_content') {
-          showErrorToast(t('scan.pdfOcrPending'), t('scan.pdfOcrPendingDesc'));
+          showErrorToast(t('common.error'), t('scan.pdfOcrPendingDesc'));
         } else {
           showErrorToast(t('common.error'), t('errors.ocrFailed'));
         }
+        handleManualEntry();
         return;
       }
 
@@ -104,6 +105,21 @@ export default function ScanScreen() {
     } finally {
       setIsLoading(null);
     }
+  };
+
+  const handleManualEntry = () => {
+    setDraft({
+      uri: '',
+      source: 'manual',
+      isPdf: false,
+      ocrText: '',
+      lines: [],
+      blocks: [],
+      dimensions: { width: 1000, height: 1500 },
+      zones: [],
+      detectedTotal: null,
+    });
+    router.push('/scan/review');
   };
 
   return (
@@ -223,6 +239,36 @@ export default function ScanScreen() {
                   style={{ fontFamily: 'Inter_400Regular' }}
                 >
                   {isReading && isLoading === 'pdf' ? t('scan.analyzing') : t('scan.importPdfDesc')}
+                </Text>
+              </View>
+            </View>
+          </Card>
+
+          <Card
+            variant="outlined"
+            padding="lg"
+            onPress={handleManualEntry}
+            disabled={isLoading !== null}
+            accessibilityLabel={t('scan.addManually')}
+            accessibilityHint={t('scan.addManuallyDesc')}
+            style={{ opacity: isLoading !== null ? 0.5 : 1 }}
+          >
+            <View className="flex-row items-center">
+              <View className="bg-primary/20 rounded-full p-3 mr-4">
+                <Ionicons name="create-outline" size={28} color={colors.action} />
+              </View>
+              <View className="flex-1">
+                <Text
+                  className="text-text dark:text-text-dark text-lg"
+                  style={{ fontFamily: 'Inter_600SemiBold' }}
+                >
+                  {t('scan.addManually')}
+                </Text>
+                <Text
+                  className="text-text-secondary dark:text-text-dark-secondary text-sm mt-1"
+                  style={{ fontFamily: 'Inter_400Regular' }}
+                >
+                  {t('scan.addManuallyDesc')}
                 </Text>
               </View>
             </View>

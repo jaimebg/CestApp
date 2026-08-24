@@ -42,6 +42,24 @@ export interface ParsedReceipt {
   parsingMethod?: 'chain' | 'generic';
 }
 
+export function createManualParsedReceipt(date: Date = new Date()): ParsedReceipt {
+  return {
+    storeName: null,
+    storeAddress: null,
+    date,
+    time: null,
+    dateString: null,
+    items: [],
+    subtotal: null,
+    tax: null,
+    discount: null,
+    total: null,
+    paymentMethod: null,
+    rawText: '',
+    confidence: 0,
+  };
+}
+
 /**
  * Auto-detected receipt format settings
  */

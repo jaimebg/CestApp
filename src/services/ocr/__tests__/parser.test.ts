@@ -1,4 +1,4 @@
-import { parseReceipt, validateReceipt } from '../parser';
+import { createManualParsedReceipt, parseReceipt, validateReceipt } from '../parser';
 
 const MERCADONA_RECEIPT = [
   'MERCADONA, S.A.',
@@ -123,5 +123,16 @@ describe('parseReceipt with empty input', () => {
     const result = parseReceipt([]);
     expect(result.items).toEqual([]);
     expect(result.total).toBeNull();
+  });
+});
+
+describe('createManualParsedReceipt', () => {
+  it('builds an empty, today-dated receipt', () => {
+    const receipt = createManualParsedReceipt(new Date(2026, 7, 24));
+    expect(receipt.storeName).toBeNull();
+    expect(receipt.date?.getTime()).toBe(new Date(2026, 7, 24).getTime());
+    expect(receipt.items).toEqual([]);
+    expect(receipt.total).toBeNull();
+    expect(receipt.confidence).toBe(0);
   });
 });
