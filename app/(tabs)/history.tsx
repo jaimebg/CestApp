@@ -95,6 +95,7 @@ export default function HistoryScreen() {
   const [selectedDatePreset, setSelectedDatePreset] = useState<DatePreset>('all');
 
   const offsetRef = useRef(0);
+  const requestIdRef = useRef(0);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
@@ -114,6 +115,8 @@ export default function HistoryScreen() {
     async (reset = true) => {
       if (!isReady) return;
 
+      const requestId = reset ? ++requestIdRef.current : requestIdRef.current;
+
       try {
         const dateRange = getDateRange(selectedDatePreset);
         const filters: ReceiptFilters = {
@@ -130,6 +133,8 @@ export default function HistoryScreen() {
         const data = hasFilters
           ? await getFilteredReceipts(filters, PAGE_SIZE, pageOffset)
           : await getReceiptsWithItemCount(PAGE_SIZE, pageOffset);
+
+        if (requestId !== requestIdRef.current) return;
 
         setReceipts((prev) => mergePages(prev, data, reset, (r) => r.receipt.id));
         offsetRef.current = pageOffset + data.length;
@@ -167,10 +172,10 @@ export default function HistoryScreen() {
   }, [loadReceipts, loadStores]);
 
   const handleLoadMore = useCallback(() => {
-    if (isLoading || isLoadingMore || !hasMore || !isReady) return;
+    if (isLoading || isLoadingMore || !hasMore || !isReady || isSearching) return;
     setIsLoadingMore(true);
     loadReceipts(false);
-  }, [isLoading, isLoadingMore, hasMore, isReady, loadReceipts]);
+  }, [isLoading, isLoadingMore, hasMore, isReady, isSearching, loadReceipts]);
 
   const handleReceiptPress = useCallback(
     (receiptId: number) => {

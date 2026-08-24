@@ -213,7 +213,11 @@ export default function ReceiptDetailScreen() {
       const filePaths = [receipt.imagePath, receipt.pdfPath].filter((path): path is string =>
         Boolean(path)
       );
-      await Promise.allSettled(filePaths.map((path) => deleteReceiptFile(path)));
+      await Promise.allSettled(
+        filePaths.map((path) =>
+          deleteReceiptFile(path).catch((error) => logger.error('Could not delete file:', error))
+        )
+      );
       await deleteReceipt(receipt.id);
       router.back();
     } catch (error) {

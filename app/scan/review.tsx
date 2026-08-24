@@ -1263,6 +1263,7 @@ export default function ScanReviewScreen() {
                 style={{ backgroundColor: colors.primaryDeep }}
                 accessibilityRole="button"
                 accessibilityLabel={t('scan.addManually')}
+                accessibilityHint={t('scan.addManuallyDesc')}
               >
                 <Text className="text-white text-sm" style={{ fontFamily: 'Inter_600SemiBold' }}>
                   {t('scan.addManually')}
