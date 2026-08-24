@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, index } from 'drizzle-orm/sqlite-core';
 import { receipts } from './receipts';
 import { categories } from './categories';
 
@@ -12,7 +12,7 @@ export const items = sqliteTable(
     name: text('name').notNull(),
     normalizedName: text('normalized_name'),
     price: integer('price').notNull(), // Stored in cents
-    quantity: integer('quantity').default(1),
+    quantity: real('quantity').default(1),
     unitPrice: integer('unit_price'), // Stored in cents
     unit: text('unit'), // 'kg', 'lb', 'each', etc.
     categoryId: integer('category_id').references(() => categories.id),
