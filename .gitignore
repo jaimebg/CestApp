@@ -51,3 +51,6 @@ docs/
 .superpowers/
 .worktrees/
 .vscode/
+
+# store release pipeline (never committed)
+/fastlane/
