@@ -170,8 +170,6 @@ export function ProposalDiffModal({ visible, current, proposed, onAccept, onDism
           title={t('scan.refinementCompareTitle')}
           onClose={onDismiss}
           closeLabel={t('common.cancel')}
-          confirmLabel={t('scan.refinementAccept')}
-          onConfirm={onAccept}
         />
 
         <ScrollView className="flex-1">
