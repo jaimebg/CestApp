@@ -139,6 +139,12 @@
     "rereadMessage": "El recibo se leerá de nuevo con las zonas nuevas y se sustituirán las correcciones que has hecho a mano.",
     "rereadConfirm": "Volver a leer"
   },
+  "zones": {
+    "draw": "Dibujar",
+    "select": "Seleccionar",
+    "delete": "Eliminar",
+    "drawing": "Dibujando: "
+  },
   "history": {
     "title": "Historial",
     "subtitle": "Todos tus recibos escaneados",

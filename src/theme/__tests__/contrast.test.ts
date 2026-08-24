@@ -8,6 +8,9 @@
 
 import { lightColors, darkColors } from '../colors';
 
+import { getContrastingInk } from '../contrast';
+import { ZONE_COLORS } from '@/src/types/zones';
+
 /** WCAG 2.1 relative luminance, sRGB. */
 function luminance(hex: string): number {
   const channels = [1, 3, 5]
@@ -63,5 +66,19 @@ describe('palette contrast', () => {
 
   it('keeps the two themes on the same token set', () => {
     expect(Object.keys(darkColors).sort()).toEqual(Object.keys(lightColors).sort());
+  });
+});
+
+describe('zone icon ink', () => {
+  it('clears the 3:1 non-text floor against every zone color', () => {
+    for (const color of Object.values(ZONE_COLORS)) {
+      const ink = getContrastingInk(color);
+      expect(contrast(ink, color)).toBeGreaterThanOrEqual(AA_NON_TEXT);
+    }
+  });
+
+  it('picks white on the darkest zone color and near-black on pale ones', () => {
+    expect(getContrastingInk('#34495E')).toBe('#FFFFFF');
+    expect(getContrastingInk('#FBE580')).toBe('#1C1C1E');
   });
 });

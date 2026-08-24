@@ -3,6 +3,7 @@ import { Feather } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { type ZoneType, ZONE_COLORS, ZONE_ICONS, ZONE_LABELS } from '../../types/zones';
 import { useAppColors } from '../../hooks/useAppColors';
+import { getContrastingInk } from '@/src/theme/contrast';
 import { MIN_TARGET } from '../../theme/a11y';
 
 interface ZoneTypePickerProps {
@@ -24,7 +25,7 @@ const ZONE_TYPES: ZoneType[] = [
 ];
 
 export function ZoneTypePicker({ visible, onClose, onSelect, currentType }: ZoneTypePickerProps) {
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   const lang = i18n.language === 'es' ? 'es' : 'en';
   const colors = useAppColors();
 
@@ -48,7 +49,7 @@ export function ZoneTypePicker({ visible, onClose, onSelect, currentType }: Zone
             className="text-lg text-text dark:text-text-dark text-center mb-4"
             style={{ fontFamily: 'Inter_600SemiBold' }}
           >
-            {lang === 'es' ? 'Seleccionar Tipo de Zona' : 'Select Zone Type'}
+            {t('scan.zoneTypes')}
           </Text>
 
           <ScrollView className="px-4 pb-8">
@@ -70,7 +71,11 @@ export function ZoneTypePicker({ visible, onClose, onSelect, currentType }: Zone
                   style={{ backgroundColor: ZONE_COLORS[type] }}
                   className="w-10 h-10 rounded-full items-center justify-center mr-3"
                 >
-                  <Feather name={ZONE_ICONS[type] as any} size={20} color="white" />
+                  <Feather
+                    name={ZONE_ICONS[type] as any}
+                    size={20}
+                    color={getContrastingInk(ZONE_COLORS[type])}
+                  />
                 </View>
 
                 <View className="flex-1">

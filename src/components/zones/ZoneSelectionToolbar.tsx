@@ -31,21 +31,9 @@ export function ZoneSelectionToolbar({
   const lang = i18n.language === 'es' ? 'es' : 'en';
 
   const tools: { id: ToolMode; icon: string; label: string }[] = [
-    {
-      id: 'draw',
-      icon: 'edit-3',
-      label: lang === 'es' ? 'Dibujar' : 'Draw',
-    },
-    {
-      id: 'select',
-      icon: 'mouse-pointer',
-      label: lang === 'es' ? 'Seleccionar' : 'Select',
-    },
-    {
-      id: 'delete',
-      icon: 'trash-2',
-      label: lang === 'es' ? 'Eliminar' : 'Delete',
-    },
+    { id: 'draw', icon: 'edit-3', label: t('zones.draw') },
+    { id: 'select', icon: 'mouse-pointer', label: t('zones.select') },
+    { id: 'delete', icon: 'trash-2', label: t('zones.delete') },
   ];
 
   return (
@@ -95,7 +83,7 @@ export function ZoneSelectionToolbar({
             className="w-6 h-6 rounded-full mr-3"
           />
           <Text className="text-text dark:text-text-dark" style={{ fontFamily: 'Inter_500Medium' }}>
-            {lang === 'es' ? 'Dibujando: ' : 'Drawing: '}
+            {t('zones.drawing')}
             {ZONE_LABELS[activeZoneType][lang]}
           </Text>
         </View>

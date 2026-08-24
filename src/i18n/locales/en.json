@@ -139,6 +139,12 @@
     "rereadMessage": "The receipt will be read again through the new zones, and the corrections you made by hand will be replaced.",
     "rereadConfirm": "Read again"
   },
+  "zones": {
+    "draw": "Draw",
+    "select": "Select",
+    "delete": "Delete",
+    "drawing": "Drawing: "
+  },
   "history": {
     "title": "History",
     "subtitle": "All your scanned receipts",
