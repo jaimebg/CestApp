@@ -39,16 +39,12 @@ import {
   getStoreByNormalizedName,
   normalizeStoreName,
 } from '@/src/db/queries/stores';
-import { createReceipt, findDuplicateReceipt } from '@/src/db/queries/receipts';
-import type { Receipt } from '@/src/db/schema';
-import { createItems } from '@/src/db/queries/items';
+import { createReceiptWithItems, findDuplicateReceipt } from '@/src/db/queries/receipts';
+import type { Receipt, NewReceipt } from '@/src/db/schema';
+import { toNewItems } from '@/src/db/queries/items';
 import { getCategories } from '@/src/db/queries/categories';
 import { getTemplateByStoreId, deleteTemplate } from '@/src/db/queries/storeParsingTemplates';
-import {
-  getCategoryForItem,
-  normalizeItemName,
-  recordUserCorrection,
-} from '@/src/db/queries/categorization';
+import { getCategoryForItem, recordUserCorrection } from '@/src/db/queries/categorization';
 
 const logger = createScopedLogger('Review');
 
@@ -469,7 +465,7 @@ export default function ScanReviewScreen() {
 
       const receiptDateTime = resolveReceiptDateTime(parsedData.date, parsedData.time);
 
-      const receipt = await createReceipt({
+      const receiptData: NewReceipt = {
         storeId,
         dateTime: receiptDateTime,
         totalAmount: Math.round((parsedData.total || 0) * 100),
@@ -481,9 +477,9 @@ export default function ScanReviewScreen() {
         rawText: parsedData.rawText || lines.join('\n'),
         processingStatus: 'completed',
         confidence: parsedData.confidence,
-      });
+      };
 
-      const itemsData = await Promise.all(
+      const categorizedItems = await Promise.all(
         parsedData.items.map(async (item) => {
           const manualCategoryId = (item as ParsedItem & { categoryId?: number }).categoryId;
           let categoryId: number;
@@ -499,26 +495,15 @@ export default function ScanReviewScreen() {
             confidence = category.confidence;
           }
 
-          return {
-            receiptId: receipt.id,
-            name: item.name,
-            normalizedName: normalizeItemName(item.name),
-            price: Math.round(item.totalPrice * 100),
-            quantity: item.quantity,
-            unitPrice: Math.round(item.unitPrice * 100),
-            unit: item.unit || null,
-            categoryId,
-            confidence,
-          };
+          return { ...item, categoryId, confidence };
         })
       );
 
-      if (itemsData.length > 0) {
-        await createItems(itemsData);
-      }
+      // toNewItems maps with a placeholder receipt id; the transaction stamps
+      // the real one after the insert, so receipt and items commit atomically.
 
-      // The stored receipt points at the file, so leaving the screen must not
-      // take it away.
+      const receipt = await createReceiptWithItems(receiptData, toNewItems(0, categorizedItems));
+
       wasSaved.current = true;
 
       showSuccessToast(t('common.success'), t('scan.receiptSaved'));

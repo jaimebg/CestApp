@@ -1,6 +1,26 @@
 import { db } from '../client';
 import { items, categories, type NewItem } from '../schema';
 import { eq, sql } from 'drizzle-orm';
+import { normalizeItemName } from './categorization';
+import type { ParsedItem } from '@/src/services/ocr/parser';
+
+export interface CategorizedItem extends ParsedItem {
+  categoryId: number;
+}
+
+export function toNewItems(receiptId: number, items: CategorizedItem[]): NewItem[] {
+  return items.map((item) => ({
+    receiptId,
+    name: item.name,
+    normalizedName: normalizeItemName(item.name),
+    price: Math.round(item.totalPrice * 100),
+    quantity: item.quantity,
+    unitPrice: Math.round(item.unitPrice * 100),
+    unit: item.unit || null,
+    categoryId: item.categoryId,
+    confidence: item.confidence,
+  }));
+}
 
 export async function getItemsByReceiptId(receiptId: number) {
   return db

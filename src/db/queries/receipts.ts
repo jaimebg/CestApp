@@ -1,5 +1,5 @@
 import { db } from '../client';
-import { receipts, items, stores, type NewReceipt } from '../schema';
+import { receipts, items, stores, type NewReceipt, type NewItem, type Receipt } from '../schema';
 import { eq, desc, and, gte, lte, sql } from 'drizzle-orm';
 import { dayRange } from './dayRange';
 
@@ -87,6 +87,19 @@ export async function findDuplicateReceipt(storeId: number, dateTime: Date, tota
 export async function createReceipt(data: NewReceipt) {
   const result = await db.insert(receipts).values(data).returning();
   return result[0];
+}
+
+export async function createReceiptWithItems(
+  receiptData: NewReceipt,
+  itemsData: NewItem[]
+): Promise<Receipt> {
+  return db.transaction(async (tx) => {
+    const receipt = (await tx.insert(receipts).values(receiptData).returning())[0];
+    if (itemsData.length > 0) {
+      await tx.insert(items).values(itemsData.map((item) => ({ ...item, receiptId: receipt.id })));
+    }
+    return receipt;
+  });
 }
 
 export async function updateReceipt(id: number, data: Partial<NewReceipt>) {

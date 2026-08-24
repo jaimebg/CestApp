@@ -5,12 +5,15 @@ import { eq, and, isNull } from 'drizzle-orm';
 /**
  * Normalizes an item name for consistent matching
  * - Lowercases
+ * - Strips accents
  * - Trims whitespace
  * - Removes common suffixes/prefixes
  */
 export function normalizeItemName(name: string): string {
   return name
     .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
     .trim()
     .replace(/\s+/g, ' ')
     .replace(/^\d+\s*x\s*/i, '')
