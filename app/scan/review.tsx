@@ -104,15 +104,16 @@ export default function ScanReviewScreen() {
   // A receipt that was never saved keeps no copy of its file, whichever way the
   // screen was left: the discard button, Back, or the system gesture. The draft
   // goes with it, so a later scan cannot open onto the last receipt's text.
+  const wasSavedRef = useRef(false);
   const [wasSaved, setWasSaved] = useState(false);
   useEffect(
     () => () => {
       resetDraft();
-      if (!wasSaved && uri) {
+      if (!wasSavedRef.current && uri) {
         deleteReceiptFile(uri).catch((error) => logger.error('Could not delete the file:', error));
       }
     },
-    [resetDraft, uri, wasSaved]
+    [resetDraft, uri]
   );
 
   const hasLoggedDebugInfo = useRef(false);
@@ -538,6 +539,7 @@ export default function ScanReviewScreen() {
 
       const receipt = await createReceiptWithItems(receiptData, toNewItems(0, categorizedItems));
 
+      wasSavedRef.current = true;
       setWasSaved(true);
       setForceLeave(true);
       showSuccessToast(t('common.success'), t('scan.receiptSaved'));
