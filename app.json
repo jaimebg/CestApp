@@ -7,6 +7,10 @@
     "icon": "./assets/images/cestapp-logo.png",
     "scheme": "cestapp",
     "userInterfaceStyle": "automatic",
+    "locales": {
+      "en": "./locales/en.json",
+      "es": "./locales/es.json"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.jbgsoft.CestApp",

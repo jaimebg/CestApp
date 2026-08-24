@@ -27,7 +27,11 @@ import { getCategories } from '../../src/db/queries/categories';
 import { findOrCreateStore } from '../../src/db/queries/stores';
 import { recordUserCorrection } from '../../src/db/queries/categorization';
 import { DateEditModal } from '../../src/components/scan/modals/DateEditModal';
-import { buildValidatedDateTime } from '../../src/utils/dateTime';
+import {
+  buildValidatedDateTime,
+  formatLocalizedDate,
+  formatLocalizedTime,
+} from '../../src/utils/dateTime';
 import { deleteReceiptFile } from '../../src/services/storage';
 import { ReceiptSummary } from '../../src/components/receipt/ReceiptSummary';
 import { CollapsibleItemList } from '../../src/components/receipt/CollapsibleItemList';
@@ -84,6 +88,7 @@ export default function ReceiptDetailScreen() {
   const [editedItems, setEditedItems] = useState<EditableItem[]>([]);
 
   const dateFormat = usePreferencesStore((state) => state.dateFormat);
+  const language = usePreferencesStore((state) => state.language);
   const [showDateModal, setShowDateModal] = useState(false);
   const [editDay, setEditDay] = useState('');
   const [editMonth, setEditMonth] = useState('');
@@ -348,19 +353,11 @@ export default function ReceiptDetailScreen() {
   );
 
   const formattedDate = receipt?.dateTime
-    ? new Date(receipt.dateTime).toLocaleDateString(undefined, {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      })
+    ? formatLocalizedDate(new Date(receipt.dateTime), language)
     : t('scan.noDateFound');
 
   const formattedTime = receipt?.dateTime
-    ? new Date(receipt.dateTime).toLocaleTimeString(undefined, {
-        hour: '2-digit',
-        minute: '2-digit',
-      })
+    ? formatLocalizedTime(new Date(receipt.dateTime), language)
     : '';
 
   const getCategoryForItem = (categoryId: number | null) => {

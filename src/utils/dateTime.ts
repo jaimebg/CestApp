@@ -26,3 +26,18 @@ export function buildValidatedDateTime(
 
   return date;
 }
+
+export function formatLocalizedDate(date: Date, language: 'en' | 'es'): string {
+  const locale = language === 'es' ? 'es-ES' : 'en-GB';
+  return date.toLocaleDateString(locale, {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
+export function formatLocalizedTime(date: Date, language: 'en' | 'es'): string {
+  const locale = language === 'es' ? 'es-ES' : 'en-GB';
+  return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+}

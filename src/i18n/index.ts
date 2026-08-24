@@ -12,13 +12,13 @@ const resources = {
 
 const deviceLanguage = Localization.getLocales()[0]?.languageCode || 'en';
 const supportedLanguages = ['en', 'es'];
-const defaultLanguage = supportedLanguages.includes(deviceLanguage) ? deviceLanguage : 'en';
+const defaultLanguage = supportedLanguages.includes(deviceLanguage) ? deviceLanguage : 'es';
 
 // eslint-disable-next-line import/no-named-as-default-member
 i18next.use(initReactI18next).init({
   resources,
   lng: defaultLanguage,
-  fallbackLng: 'en',
+  fallbackLng: 'es',
   compatibilityJSON: 'v4',
   interpolation: {
     escapeValue: false,

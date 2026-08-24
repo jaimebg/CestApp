@@ -1,0 +1,4 @@
+{
+  "NSCameraUsageDescription": "CestApp necesita acceso a la cámara para capturar fotos de los recibos.",
+  "NSPhotoLibraryUsageDescription": "CestApp necesita acceso a tus fotos para seleccionar imágenes de recibos."
+}

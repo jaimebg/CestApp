@@ -34,6 +34,7 @@ import { parseWithTemplate, shouldUseTemplate } from '@/src/services/ocr/templat
 import type { OcrBlock } from '@/src/services/ocr';
 import { useFormatPrice, usePreferencesStore } from '@/src/store/preferences';
 import { parseAmountInput } from '@/src/config/currency';
+import { formatLocalizedDate } from '@/src/utils/dateTime';
 import { useAppColors } from '@/src/hooks/useAppColors';
 import { ICON_HIT_SLOP } from '@/src/theme/a11y';
 import { ScanItemRow } from '@/src/components/scan/ScanItemRow';
@@ -91,6 +92,7 @@ export default function ScanReviewScreen() {
   const { formatPrice, formatAmountInput } = useFormatPrice();
   const dateFormat = usePreferencesStore((state) => state.dateFormat);
   const decimalSeparator = usePreferencesStore((state) => state.decimalSeparator);
+  const language = usePreferencesStore((state) => state.language);
 
   const uri = draft?.uri ?? null;
   const isPdf = draft?.isPdf ?? false;
@@ -731,7 +733,7 @@ export default function ScanReviewScreen() {
 
   const formatDate = (date: Date | null) => {
     if (!date) return t('scan.noDateFound');
-    return date.toLocaleDateString();
+    return formatLocalizedDate(date, language);
   };
 
   const getConfidenceColor = (confidence: number) => {
