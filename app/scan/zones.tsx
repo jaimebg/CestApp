@@ -1,6 +1,9 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { View, Text } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
+import { usePreventRemove } from 'expo-router/build/react-navigation/core/usePreventRemove';
+import type { NavigationAction } from 'expo-router/build/react-navigation/routers';
+import { ConfirmationModal } from '@/src/components/ui/ConfirmationModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
@@ -103,6 +106,33 @@ export default function ZoneSelectionScreen() {
 
   const canSave = zones.length > 0;
 
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [forceLeave, setForceLeave] = useState(false);
+  const pendingRemoveAction = useRef<NavigationAction | null>(null);
+  const navigation = useNavigation();
+
+  usePreventRemove(zones.length > 0 && !forceLeave, ({ data }) => {
+    pendingRemoveAction.current = data.action;
+    setShowDiscardConfirm(true);
+  });
+
+  useEffect(() => {
+    if (forceLeave) {
+      router.back();
+    }
+  }, [forceLeave, router]);
+
+  const confirmDiscard = () => {
+    setShowDiscardConfirm(false);
+    const action = pendingRemoveAction.current;
+    pendingRemoveAction.current = null;
+    if (action) {
+      navigation.dispatch(action);
+    } else {
+      setForceLeave(true);
+    }
+  };
+
   const handleSave = useCallback(async () => {
     if (zones.length === 0) {
       showErrorToast(t('common.error'), t('scan.zonesMinimumError'));
@@ -114,7 +144,7 @@ export default function ZoneSelectionScreen() {
     if (isPreviewMode) {
       logger.log('Handing', zones.length, 'zones back to the review screen');
       useScanDraftStore.getState().setZones(zones);
-      router.back();
+      setForceLeave(true);
       return;
     }
 
@@ -137,16 +167,16 @@ export default function ZoneSelectionScreen() {
 
       showSuccessToast(t('common.success'), t('scan.templateSaved'));
 
-      router.back();
+      setForceLeave(true);
     } catch (error) {
       logger.error('Error saving template:', error);
       showErrorToast(t('common.error'), t('errors.saveFailed'));
     }
-  }, [storeId, zones, uri, router, t, isPreviewMode, parsedDimensions]);
+  }, [storeId, zones, uri, t, isPreviewMode, parsedDimensions]);
 
   const handleCancel = useCallback(() => {
-    router.back();
-  }, [router]);
+    setForceLeave(true);
+  }, []);
 
   if (!uri || isPdfFile(uri)) {
     return (
@@ -257,6 +287,20 @@ export default function ZoneSelectionScreen() {
         onClose={() => setShowTypePicker(false)}
         onSelect={setActiveZoneType}
         currentType={activeZoneType}
+      />
+
+      <ConfirmationModal
+        visible={showDiscardConfirm}
+        title={t('receipt.discardConfirm')}
+        message={t('receipt.discardConfirmDesc')}
+        confirmText={t('receipt.discardChanges')}
+        cancelText={t('common.cancel')}
+        isDestructive
+        onConfirm={confirmDiscard}
+        onCancel={() => {
+          pendingRemoveAction.current = null;
+          setShowDiscardConfirm(false);
+        }}
       />
     </View>
   );

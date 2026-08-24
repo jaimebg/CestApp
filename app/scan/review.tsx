@@ -3,7 +3,9 @@ import { View, Text, ScrollView, Pressable } from 'react-native';
 import { type ZoneDefinition } from '@/src/types/zones';
 import { showSuccessToast, showErrorToast } from '@/src/utils/toast';
 import { createScopedLogger } from '@/src/utils/debug';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useNavigation } from 'expo-router';
+import { usePreventRemove } from 'expo-router/build/react-navigation/core/usePreventRemove';
+import type { NavigationAction } from 'expo-router/build/react-navigation/routers';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
@@ -81,6 +83,7 @@ export default function ScanReviewScreen() {
   const draft = useScanDraftStore((state) => state.draft);
   const resetDraft = useScanDraftStore((state) => state.reset);
   const router = useRouter();
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const colors = useAppColors();
@@ -101,15 +104,15 @@ export default function ScanReviewScreen() {
   // A receipt that was never saved keeps no copy of its file, whichever way the
   // screen was left: the discard button, Back, or the system gesture. The draft
   // goes with it, so a later scan cannot open onto the last receipt's text.
-  const wasSaved = useRef(false);
+  const [wasSaved, setWasSaved] = useState(false);
   useEffect(
     () => () => {
       resetDraft();
-      if (!wasSaved.current && uri) {
+      if (!wasSaved && uri) {
         deleteReceiptFile(uri).catch((error) => logger.error('Could not delete the file:', error));
       }
     },
-    [resetDraft, uri]
+    [resetDraft, uri, wasSaved]
   );
 
   const hasLoggedDebugInfo = useRef(false);
@@ -244,6 +247,33 @@ export default function ScanReviewScreen() {
   const [zonesAwaitingConfirmation, setZonesAwaitingConfirmation] = useState<
     ZoneDefinition[] | null
   >(null);
+
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [forceLeave, setForceLeave] = useState(false);
+  const pendingRemoveAction = useRef<NavigationAction | null>(null);
+
+  const hasUnsavedWork =
+    !wasSaved &&
+    (hasManualEdits ||
+      uri !== '' ||
+      (parsedData != null &&
+        (parsedData.items.length > 0 || parsedData.total != null || parsedData.storeName != null)));
+
+  usePreventRemove(hasUnsavedWork && !forceLeave, ({ data }) => {
+    pendingRemoveAction.current = data.action;
+    setShowDiscardConfirm(true);
+  });
+
+  const confirmDiscard = () => {
+    setShowDiscardConfirm(false);
+    const action = pendingRemoveAction.current;
+    pendingRemoveAction.current = null;
+    if (action) {
+      navigation.dispatch(action);
+    } else {
+      router.dismissAll();
+    }
+  };
 
   // The draft zones this screen has already reacted to. Only the zone editor
   // replaces that array, so a change of identity means zones were redrawn.
@@ -429,6 +459,7 @@ export default function ScanReviewScreen() {
   };
 
   const handleDone = () => {
+    setForceLeave(true);
     closeAllModals();
 
     // Wait for modals to close before dismissing navigation
@@ -507,8 +538,8 @@ export default function ScanReviewScreen() {
 
       const receipt = await createReceiptWithItems(receiptData, toNewItems(0, categorizedItems));
 
-      wasSaved.current = true;
-
+      setWasSaved(true);
+      setForceLeave(true);
       showSuccessToast(t('common.success'), t('scan.receiptSaved'));
       showSavedReceipt(receipt.id);
     } catch (error) {
@@ -1351,6 +1382,20 @@ export default function ScanReviewScreen() {
           setZonesAwaitingConfirmation(null);
         }}
         onCancel={keepManualEdits}
+      />
+
+      <ConfirmationModal
+        visible={showDiscardConfirm}
+        title={t('receipt.discardConfirm')}
+        message={t('receipt.discardConfirmDesc')}
+        confirmText={t('receipt.discardChanges')}
+        cancelText={t('common.cancel')}
+        isDestructive
+        onConfirm={confirmDiscard}
+        onCancel={() => {
+          pendingRemoveAction.current = null;
+          setShowDiscardConfirm(false);
+        }}
       />
 
       <ProposalDiffModal
