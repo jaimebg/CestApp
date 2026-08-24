@@ -12,11 +12,6 @@ module.exports = {
       // Colours live in src/theme/palette.js so this config and the runtime
       // theme in src/theme/colors.ts cannot drift apart.
       colors,
-      components: {
-        text: {
-          fontFamily: 'Inter_400Regular',
-        },
-      },
     },
   },
   plugins: [],

@@ -1160,7 +1160,9 @@ export default function ScanReviewScreen() {
                   >
                     {t('receipt.discount')}
                   </Text>
-                  <Amount size="sm">-{formatPrice(parsedData.discount)}</Amount>
+                  <Amount size="sm" tone="action">
+                    -{formatPrice(parsedData.discount)}
+                  </Amount>
                 </View>
               )}
 

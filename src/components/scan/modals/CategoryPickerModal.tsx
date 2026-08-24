@@ -65,7 +65,9 @@ export function CategoryPickerModal({
                   className="w-8 h-8 rounded-full items-center justify-center mr-3"
                   style={{ backgroundColor: (item.color || colors.textSecondary) + '20' }}
                 >
-                  <Text className="text-base">{item.icon || '📦'}</Text>
+                  <Text className="text-base" style={{ fontFamily: 'Inter_400Regular' }}>
+                    {item.icon || '📦'}
+                  </Text>
                 </View>
                 <Text
                   className="flex-1 text-base"

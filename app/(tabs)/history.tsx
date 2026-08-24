@@ -456,6 +456,7 @@ export default function HistoryScreen() {
                   ? 'text-action dark:text-action-dark'
                   : 'text-text-secondary dark:text-text-dark-secondary'
               }`}
+              style={{ fontFamily: 'Inter_400Regular' }}
             >
               {t('history.filters')}
             </Text>
@@ -494,6 +495,7 @@ export default function HistoryScreen() {
                   ? 'text-action dark:text-action-dark'
                   : 'text-text-secondary dark:text-text-dark-secondary'
               }`}
+              style={{ fontFamily: 'Inter_400Regular' }}
             >
               {datePresetLabel}
             </Text>
@@ -524,6 +526,7 @@ export default function HistoryScreen() {
                   : 'text-text-secondary dark:text-text-dark-secondary'
               }`}
               numberOfLines={1}
+              style={{ fontFamily: 'Inter_400Regular' }}
             >
               {selectedStoreName}
             </Text>
@@ -539,7 +542,10 @@ export default function HistoryScreen() {
               className="flex-row items-center px-3 py-2 rounded-full bg-error/10 border border-error/30"
             >
               <Ionicons name="close" size={16} color={colors.error} />
-              <Text className="ml-1 text-sm text-error dark:text-error-light">
+              <Text
+                className="ml-1 text-sm text-error dark:text-error-light"
+                style={{ fontFamily: 'Inter_400Regular' }}
+              >
                 {t('history.clearFilters')}
               </Text>
             </Pressable>
@@ -626,7 +632,9 @@ export default function HistoryScreen() {
                         : 'text-text-secondary dark:text-text-dark-secondary'
                     }
                     style={
-                      selectedDatePreset === preset ? { fontFamily: 'Inter_500Medium' } : undefined
+                      selectedDatePreset === preset
+                        ? { fontFamily: 'Inter_500Medium' }
+                        : { fontFamily: 'Inter_400Regular' }
                     }
                   >
                     {preset === 'all' ? t('history.allDates') : t(`history.${preset}`)}
@@ -795,7 +803,9 @@ export default function HistoryScreen() {
                       : 'text-text-secondary dark:text-text-dark-secondary'
                   }
                   style={
-                    selectedCategoryId === null ? { fontFamily: 'Inter_500Medium' } : undefined
+                    selectedCategoryId === null
+                      ? { fontFamily: 'Inter_500Medium' }
+                      : { fontFamily: 'Inter_400Regular' }
                   }
                 >
                   {t('history.allCategories')}
@@ -822,7 +832,9 @@ export default function HistoryScreen() {
                         : 'text-text-secondary dark:text-text-dark-secondary'
                     }
                     style={
-                      selectedCategoryId === cat.id ? { fontFamily: 'Inter_500Medium' } : undefined
+                      selectedCategoryId === cat.id
+                        ? { fontFamily: 'Inter_500Medium' }
+                        : { fontFamily: 'Inter_400Regular' }
                     }
                   >
                     {cat.name}

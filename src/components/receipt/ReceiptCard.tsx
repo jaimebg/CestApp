@@ -59,22 +59,34 @@ function ReceiptCardComponent({ receipt, store, itemCount = 0, onPress }: Receip
           </Text>
           <View className="flex-row items-center">
             <Ionicons name="calendar-outline" size={14} color={colors.textSecondary} />
-            <Text className="text-text-secondary dark:text-text-dark-secondary text-sm ml-1">
+            <Text
+              className="text-text-secondary dark:text-text-dark-secondary text-sm ml-1"
+              style={{ fontFamily: 'Inter_400Regular' }}
+            >
               {formattedDate}
             </Text>
             {formattedTime && (
               <>
-                <Text className="text-text-secondary dark:text-text-dark-secondary text-sm mx-1">
+                <Text
+                  className="text-text-secondary dark:text-text-dark-secondary text-sm mx-1"
+                  style={{ fontFamily: 'Inter_400Regular' }}
+                >
                   •
                 </Text>
-                <Text className="text-text-secondary dark:text-text-dark-secondary text-sm">
+                <Text
+                  className="text-text-secondary dark:text-text-dark-secondary text-sm"
+                  style={{ fontFamily: 'Inter_400Regular' }}
+                >
                   {formattedTime}
                 </Text>
               </>
             )}
           </View>
           {itemCount > 0 && (
-            <Text className="text-text-secondary dark:text-text-dark-secondary text-xs mt-1">
+            <Text
+              className="text-text-secondary dark:text-text-dark-secondary text-xs mt-1"
+              style={{ fontFamily: 'Inter_400Regular' }}
+            >
               {t('scan.itemsFound', { count: itemCount })}
             </Text>
           )}
@@ -96,7 +108,10 @@ function ReceiptCardComponent({ receipt, store, itemCount = 0, onPress }: Receip
                 size={12}
                 color={colors.textSecondary}
               />
-              <Text className="text-text-secondary dark:text-text-dark-secondary text-xs ml-1 capitalize">
+              <Text
+                className="text-text-secondary dark:text-text-dark-secondary text-xs ml-1 capitalize"
+                style={{ fontFamily: 'Inter_400Regular' }}
+              >
                 {t(`receipt.${receipt.paymentMethod}`)}
               </Text>
             </View>

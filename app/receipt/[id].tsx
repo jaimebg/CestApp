@@ -389,7 +389,10 @@ export default function ReceiptDetailScreen() {
         className="flex-1 bg-background dark:bg-background-dark justify-center items-center"
         style={{ paddingTop: insets.top }}
       >
-        <Text className="text-text-secondary dark:text-text-dark-secondary">
+        <Text
+          className="text-text-secondary dark:text-text-dark-secondary"
+          style={{ fontFamily: 'Inter_400Regular' }}
+        >
           {t('receipt.notFound')}
         </Text>
         <Button onPress={() => router.back()} className="mt-4">
@@ -415,7 +418,12 @@ export default function ReceiptDetailScreen() {
           style={{ minHeight: MIN_TARGET, justifyContent: 'center' }}
         >
           {isEditing ? (
-            <Text className="text-error dark:text-error-light text-base">{t('common.cancel')}</Text>
+            <Text
+              className="text-error dark:text-error-light text-base"
+              style={{ fontFamily: 'Inter_400Regular' }}
+            >
+              {t('common.cancel')}
+            </Text>
           ) : (
             <Ionicons name="arrow-back" size={24} color={colors.action} />
           )}
@@ -533,7 +541,10 @@ export default function ReceiptDetailScreen() {
                     {store?.name || t('scan.unknownStore')}
                   </Text>
                   {store?.address && (
-                    <Text className="text-sm text-text-secondary dark:text-text-dark-secondary mt-0.5">
+                    <Text
+                      className="text-sm text-text-secondary dark:text-text-dark-secondary mt-0.5"
+                      style={{ fontFamily: 'Inter_400Regular' }}
+                    >
                       {store.address}
                     </Text>
                   )}
@@ -546,19 +557,35 @@ export default function ReceiptDetailScreen() {
             <View className="border-t border-border dark:border-border-dark pt-4">
               <View className="flex-row items-center mb-3">
                 <Ionicons name="calendar-outline" size={18} color={colors.textSecondary} />
-                <Text className="text-text-secondary dark:text-text-dark-secondary ml-2 flex-1">
+                <Text
+                  className="text-text-secondary dark:text-text-dark-secondary ml-2 flex-1"
+                  style={{ fontFamily: 'Inter_400Regular' }}
+                >
                   {t('receipt.date')}
                 </Text>
-                <Text className="text-text dark:text-text-dark">{formattedDate}</Text>
+                <Text
+                  className="text-text dark:text-text-dark"
+                  style={{ fontFamily: 'Inter_400Regular' }}
+                >
+                  {formattedDate}
+                </Text>
               </View>
 
               {formattedTime && (
                 <View className="flex-row items-center mb-3">
                   <Ionicons name="time-outline" size={18} color={colors.textSecondary} />
-                  <Text className="text-text-secondary dark:text-text-dark-secondary ml-2 flex-1">
+                  <Text
+                    className="text-text-secondary dark:text-text-dark-secondary ml-2 flex-1"
+                    style={{ fontFamily: 'Inter_400Regular' }}
+                  >
                     {t('scan.time')}
                   </Text>
-                  <Text className="text-text dark:text-text-dark">{formattedTime}</Text>
+                  <Text
+                    className="text-text dark:text-text-dark"
+                    style={{ fontFamily: 'Inter_400Regular' }}
+                  >
+                    {formattedTime}
+                  </Text>
                 </View>
               )}
 
@@ -575,10 +602,16 @@ export default function ReceiptDetailScreen() {
                     size={18}
                     color={colors.textSecondary}
                   />
-                  <Text className="text-text-secondary dark:text-text-dark-secondary ml-2 flex-1">
+                  <Text
+                    className="text-text-secondary dark:text-text-dark-secondary ml-2 flex-1"
+                    style={{ fontFamily: 'Inter_400Regular' }}
+                  >
                     {t('receipt.paymentMethod')}
                   </Text>
-                  <Text className="text-text dark:text-text-dark capitalize">
+                  <Text
+                    className="text-text dark:text-text-dark capitalize"
+                    style={{ fontFamily: 'Inter_400Regular' }}
+                  >
                     {t(`receipt.${receipt.paymentMethod}`)}
                   </Text>
                 </View>
@@ -597,9 +630,17 @@ export default function ReceiptDetailScreen() {
               >
                 <View className="flex-row items-center">
                   <Ionicons name="calendar-outline" size={18} color={colors.textSecondary} />
-                  <Text className="text-text dark:text-text-dark ml-2">{formattedDate}</Text>
+                  <Text
+                    className="text-text dark:text-text-dark ml-2"
+                    style={{ fontFamily: 'Inter_400Regular' }}
+                  >
+                    {formattedDate}
+                  </Text>
                   {formattedTime && (
-                    <Text className="text-text-secondary dark:text-text-dark-secondary ml-2">
+                    <Text
+                      className="text-text-secondary dark:text-text-dark-secondary ml-2"
+                      style={{ fontFamily: 'Inter_400Regular' }}
+                    >
                       {formattedTime}
                     </Text>
                   )}
@@ -629,7 +670,10 @@ export default function ReceiptDetailScreen() {
                 className="flex-row items-center bg-primary/20 px-3 py-1.5 rounded-full"
               >
                 <Ionicons name="add" size={18} color={colors.action} />
-                <Text className="text-action dark:text-action-dark text-sm ml-1">
+                <Text
+                  className="text-action dark:text-action-dark text-sm ml-1"
+                  style={{ fontFamily: 'Inter_400Regular' }}
+                >
                   {t('receipt.addItem')}
                 </Text>
               </Pressable>
@@ -658,14 +702,23 @@ export default function ReceiptDetailScreen() {
                             : `${colors.textTertiary}20`,
                         }}
                       >
-                        <Text className="text-sm">{category?.icon || '📦'}</Text>
+                        <Text className="text-sm" style={{ fontFamily: 'Inter_400Regular' }}>
+                          {category?.icon || '📦'}
+                        </Text>
                       </View>
                       <View className="flex-1 mr-3">
-                        <Text className="text-text dark:text-text-dark text-base" numberOfLines={1}>
+                        <Text
+                          className="text-text dark:text-text-dark text-base"
+                          numberOfLines={1}
+                          style={{ fontFamily: 'Inter_400Regular' }}
+                        >
                           {item.name || t('receipt.itemName')}
                         </Text>
                         {item.quantity > 1 && (
-                          <Text className="text-text-secondary dark:text-text-dark-secondary text-sm">
+                          <Text
+                            className="text-text-secondary dark:text-text-dark-secondary text-sm"
+                            style={{ fontFamily: 'Inter_400Regular' }}
+                          >
                             {item.quantity}x
                           </Text>
                         )}
@@ -686,7 +739,10 @@ export default function ReceiptDetailScreen() {
                 })
               ) : (
                 <View className="py-8 items-center">
-                  <Text className="text-text-secondary dark:text-text-dark-secondary">
+                  <Text
+                    className="text-text-secondary dark:text-text-dark-secondary"
+                    style={{ fontFamily: 'Inter_400Regular' }}
+                  >
                     {t('scan.noItemsFound')}
                   </Text>
                 </View>
@@ -695,7 +751,10 @@ export default function ReceiptDetailScreen() {
               <CollapsibleItemList items={items} />
             ) : (
               <View className="py-8 items-center">
-                <Text className="text-text-secondary dark:text-text-dark-secondary">
+                <Text
+                  className="text-text-secondary dark:text-text-dark-secondary"
+                  style={{ fontFamily: 'Inter_400Regular' }}
+                >
                   {t('scan.noItemsFound')}
                 </Text>
               </View>
@@ -742,7 +801,10 @@ export default function ReceiptDetailScreen() {
             >
               {t('receipt.notes')}
             </Text>
-            <Text className="text-text-secondary dark:text-text-dark-secondary">
+            <Text
+              className="text-text-secondary dark:text-text-dark-secondary"
+              style={{ fontFamily: 'Inter_400Regular' }}
+            >
               {receipt.notes}
             </Text>
           </View>
@@ -752,7 +814,10 @@ export default function ReceiptDetailScreen() {
         {receipt.confidence != null && receipt.confidence < 80 && !isEditing && (
           <View className="mx-4 mt-4 bg-accent/20 dark:bg-accent/30 rounded-2xl p-4 flex-row items-center">
             <Ionicons name="warning-outline" size={20} color={colors.warning} />
-            <Text className="text-text dark:text-text-dark ml-2 flex-1">
+            <Text
+              className="text-text dark:text-text-dark ml-2 flex-1"
+              style={{ fontFamily: 'Inter_400Regular' }}
+            >
               {t('scan.lowConfidence')}
             </Text>
           </View>
@@ -782,7 +847,10 @@ export default function ReceiptDetailScreen() {
 
           <ScrollView className="flex-1 px-6 py-4">
             {/* Item Name */}
-            <Text className="text-sm text-text-secondary dark:text-text-dark-secondary mb-2">
+            <Text
+              className="text-sm text-text-secondary dark:text-text-dark-secondary mb-2"
+              style={{ fontFamily: 'Inter_400Regular' }}
+            >
               {t('receipt.itemName')}
             </Text>
             <TextInput
@@ -797,7 +865,10 @@ export default function ReceiptDetailScreen() {
             />
 
             {/* Price */}
-            <Text className="text-sm text-text-secondary dark:text-text-dark-secondary mb-2">
+            <Text
+              className="text-sm text-text-secondary dark:text-text-dark-secondary mb-2"
+              style={{ fontFamily: 'Inter_400Regular' }}
+            >
               {t('receipt.itemPrice')}
             </Text>
             <TextInput
@@ -811,7 +882,10 @@ export default function ReceiptDetailScreen() {
             />
 
             {/* Quantity */}
-            <Text className="text-sm text-text-secondary dark:text-text-dark-secondary mb-2">
+            <Text
+              className="text-sm text-text-secondary dark:text-text-dark-secondary mb-2"
+              style={{ fontFamily: 'Inter_400Regular' }}
+            >
               {t('receipt.itemQuantity')}
             </Text>
             <TextInput
@@ -825,7 +899,10 @@ export default function ReceiptDetailScreen() {
             />
 
             {/* Category */}
-            <Text className="text-sm text-text-secondary dark:text-text-dark-secondary mb-2">
+            <Text
+              className="text-sm text-text-secondary dark:text-text-dark-secondary mb-2"
+              style={{ fontFamily: 'Inter_400Regular' }}
+            >
               {t('item.category')}
             </Text>
             <View className="flex-row flex-wrap gap-2">
@@ -845,13 +922,16 @@ export default function ReceiptDetailScreen() {
                       : 'bg-surface dark:bg-surface-dark border-border dark:border-border-dark'
                   }`}
                 >
-                  <Text className="mr-1">{cat.icon}</Text>
+                  <Text className="mr-1" style={{ fontFamily: 'Inter_400Regular' }}>
+                    {cat.icon}
+                  </Text>
                   <Text
                     className={
                       editingItem?.categoryId === cat.id
                         ? 'text-white'
                         : 'text-text-secondary dark:text-text-dark-secondary'
                     }
+                    style={{ fontFamily: 'Inter_400Regular' }}
                   >
                     {cat.name}
                   </Text>

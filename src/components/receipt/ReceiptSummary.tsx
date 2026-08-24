@@ -23,7 +23,10 @@ export function ReceiptSummary({ subtotal, tax, discount, total }: ReceiptSummar
         <>
           {subtotal != null && (
             <View className="flex-row justify-between py-2">
-              <Text className="text-text-secondary dark:text-text-dark-secondary text-base">
+              <Text
+                className="text-text-secondary dark:text-text-dark-secondary text-base"
+                style={{ fontFamily: 'Inter_400Regular' }}
+              >
                 {t('receipt.subtotal')}
               </Text>
               <Amount size="base">{formatPrice(subtotal / 100)}</Amount>
@@ -32,7 +35,10 @@ export function ReceiptSummary({ subtotal, tax, discount, total }: ReceiptSummar
 
           {tax != null && tax > 0 && (
             <View className="flex-row justify-between py-2">
-              <Text className="text-text-secondary dark:text-text-dark-secondary text-base">
+              <Text
+                className="text-text-secondary dark:text-text-dark-secondary text-base"
+                style={{ fontFamily: 'Inter_400Regular' }}
+              >
                 {t('receipt.tax')}
               </Text>
               <Amount size="base">{formatPrice(tax / 100)}</Amount>
@@ -41,7 +47,10 @@ export function ReceiptSummary({ subtotal, tax, discount, total }: ReceiptSummar
 
           {discount != null && discount > 0 && (
             <View className="flex-row justify-between py-2">
-              <Text className="text-action dark:text-action-dark text-base">
+              <Text
+                className="text-action dark:text-action-dark text-base"
+                style={{ fontFamily: 'Inter_400Regular' }}
+              >
                 {t('receipt.discount')}
               </Text>
               <Amount size="base" tone="action">

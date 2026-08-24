@@ -37,29 +37,44 @@ function ItemRowComponent({ item, category, showCategory = true, isLast = false 
             backgroundColor: `${category?.color || colors.textTertiary}20`,
           }}
         >
-          <Text className="text-sm">{category?.icon || '📦'}</Text>
+          <Text className="text-sm" style={{ fontFamily: 'Inter_400Regular' }}>
+            {category?.icon || '📦'}
+          </Text>
         </View>
       )}
 
       {/* Item details */}
       <View className="flex-1 mr-3">
-        <Text className="text-text dark:text-text-dark text-base" numberOfLines={2}>
+        <Text
+          className="text-text dark:text-text-dark text-base"
+          numberOfLines={2}
+          style={{ fontFamily: 'Inter_400Regular' }}
+        >
           {item.name}
         </Text>
         <View className="flex-row items-center mt-0.5">
           {hasQuantity && (
-            <Text className="text-text-secondary dark:text-text-dark-secondary text-sm">
+            <Text
+              className="text-text-secondary dark:text-text-dark-secondary text-sm"
+              style={{ fontFamily: 'Inter_400Regular' }}
+            >
               {item.quantity}x
             </Text>
           )}
           {item.unitPrice && hasQuantity && (
-            <Text className="text-text-secondary dark:text-text-dark-secondary text-sm ml-1">
+            <Text
+              className="text-text-secondary dark:text-text-dark-secondary text-sm ml-1"
+              style={{ fontFamily: 'Inter_400Regular' }}
+            >
               @ {formatPrice(item.unitPrice / 100)}
               {unitDisplay}
             </Text>
           )}
           {showCategory && category && (
-            <Text className="text-text-secondary dark:text-text-dark-secondary text-xs ml-2">
+            <Text
+              className="text-text-secondary dark:text-text-dark-secondary text-xs ml-2"
+              style={{ fontFamily: 'Inter_400Regular' }}
+            >
               {category.name}
             </Text>
           )}
