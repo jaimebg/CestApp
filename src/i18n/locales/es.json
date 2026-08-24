@@ -302,7 +302,9 @@
     "networkError": "Sin conexión. Vuelve a conectarte e inténtalo de nuevo.",
     "unknownError": "Ha ocurrido algo inesperado. Inténtalo de nuevo.",
     "somethingWentWrong": "Esta pantalla ha tenido un problema",
-    "backupFailed": "No se pudo crear la copia de seguridad. Inténtalo de nuevo."
+    "backupFailed": "No se pudo crear la copia de seguridad. Inténtalo de nuevo.",
+    "databaseFailed": "No se pudo abrir tus datos",
+    "databaseFailedDesc": "CestApp no pudo iniciar su base de datos local. Vuelve a intentarlo."
   },
   "onboarding": {
     "welcome": "Bienvenido a CestApp",

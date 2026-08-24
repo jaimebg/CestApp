@@ -302,7 +302,9 @@
     "networkError": "No connection. Reconnect and try again.",
     "unknownError": "Something unexpected happened. Try again.",
     "somethingWentWrong": "This screen ran into a problem",
-    "backupFailed": "Couldn't create the backup. Try again."
+    "backupFailed": "Couldn't create the backup. Try again.",
+    "databaseFailed": "Couldn't open your data",
+    "databaseFailedDesc": "CestApp couldn't start its local database. Retry to try again."
   },
   "onboarding": {
     "welcome": "Welcome to CestApp",

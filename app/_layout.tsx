@@ -1,20 +1,23 @@
 import '../styles/global.css';
 import '@/src/i18n';
-import { useState, useEffect, useLayoutEffect } from 'react';
+import { useState, useEffect, useLayoutEffect, type ReactNode } from 'react';
 import { Stack, useSegments, useRootNavigationState, useRouter } from 'expo-router';
-import { InteractionManager } from 'react-native';
+import { ActivityIndicator, InteractionManager, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { colorScheme as nativewindColorScheme } from 'nativewind';
 import { Toaster } from 'sonner-native';
+import { useTranslation } from 'react-i18next';
 import { ErrorBoundary } from '@/src/components/ErrorBoundary';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from '@expo-google-fonts/inter';
-import { DatabaseProvider } from '@/src/db/provider';
+import { DatabaseProvider, useDatabaseReady } from '@/src/db/provider';
 import { usePreferencesStore, type ColorScheme } from '@/src/store/preferences';
 import { lightColors, darkColors } from '@/src/theme/colors';
 import { fontModules } from '@/src/theme/type';
+import { ErrorState } from '@/src/components/ui/EmptyState';
+import { useAppColors } from '@/src/hooks/useAppColors';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -41,6 +44,39 @@ function useSyncedColorScheme(scheme: ColorScheme) {
   useLayoutEffect(() => {
     nativewindColorScheme.set(scheme);
   }, [scheme]);
+}
+
+function DatabaseGate({ children }: { children: ReactNode }) {
+  const { isReady, error, retry } = useDatabaseReady();
+  const { t } = useTranslation();
+  const colors = useAppColors();
+
+  if (error) {
+    return (
+      <View className="flex-1" style={{ backgroundColor: colors.background }}>
+        <ErrorState
+          title={t('errors.databaseFailed')}
+          description={t('errors.databaseFailedDesc')}
+          retryLabel={t('common.retry')}
+          onRetry={retry}
+        />
+      </View>
+    );
+  }
+
+  if (!isReady) {
+    return (
+      <View className="flex-1" style={{ backgroundColor: colors.background }}>
+        <ActivityIndicator
+          size="large"
+          color={colors.action}
+          style={{ marginTop: 'auto', marginBottom: 'auto' }}
+        />
+      </View>
+    );
+  }
+
+  return <>{children}</>;
 }
 
 export default function RootLayout() {
@@ -82,32 +118,34 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: bgColor }}>
       <SafeAreaProvider>
         <DatabaseProvider>
-          <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-          {/* Catches render errors anywhere in the tree so a bad receipt row
-              shows a retry instead of unmounting the app to a blank screen. */}
-          <ErrorBoundary>
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                contentStyle: { backgroundColor: bgColor },
-              }}
-            >
-              <Stack.Screen
-                name="onboarding"
-                options={{ gestureEnabled: false, animation: 'none' }}
-              />
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="scan" />
-              <Stack.Screen
-                name="settings"
-                options={{
-                  presentation: 'modal',
-                  animation: 'slide_from_bottom',
+          <DatabaseGate>
+            <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+            {/* Catches render errors anywhere in the tree so a bad receipt row
+                shows a retry instead of unmounting the app to a blank screen. */}
+            <ErrorBoundary>
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  contentStyle: { backgroundColor: bgColor },
                 }}
-              />
-            </Stack>
-          </ErrorBoundary>
-          <Toaster />
+              >
+                <Stack.Screen
+                  name="onboarding"
+                  options={{ gestureEnabled: false, animation: 'none' }}
+                />
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="scan" />
+                <Stack.Screen
+                  name="settings"
+                  options={{
+                    presentation: 'modal',
+                    animation: 'slide_from_bottom',
+                  }}
+                />
+              </Stack>
+            </ErrorBoundary>
+            <Toaster />
+          </DatabaseGate>
         </DatabaseProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
