@@ -4,7 +4,7 @@
  * Spanish defaults for currency, date format, and number format
  */
 
-import { View, Text, Pressable, ScrollView, Modal, Alert, Platform, Switch } from 'react-native';
+import { View, Text, Pressable, ScrollView, Modal, Platform, Switch } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,12 +18,12 @@ import { useReceiptsStore } from '@/src/store/receipts';
 import { showSuccessToast, showErrorToast } from '@/src/utils/toast';
 import { useAppColors } from '@/src/hooks/useAppColors';
 import { ModalHeader } from '@/src/components/ui/ModalHeader';
+import { ConfirmationModal } from '@/src/components/ui/ConfirmationModal';
 import { MIN_TARGET } from '@/src/theme/a11y';
 import { isLlmAvailable } from '@/src/services/llm';
 import { getBackupData } from '@/src/db/queries/backup';
 import { exportBackup } from '@/src/utils/backup';
 import { createScopedLogger } from '@/src/utils/debug';
-import { hapticDelete } from '@/src/utils/haptics';
 
 const logger = createScopedLogger('Settings');
 
@@ -51,10 +51,12 @@ export default function SettingsScreen() {
   const [showDevMenu, setShowDevMenu] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isBackingUp, setIsBackingUp] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const tapCountRef = useRef(0);
   const lastTapRef = useRef(0);
 
   const handleVersionTap = () => {
+    if (!__DEV__) return;
     const now = Date.now();
     if (now - lastTapRef.current > 500) {
       tapCountRef.current = 0;
@@ -106,28 +108,19 @@ export default function SettingsScreen() {
     }
   };
 
-  const handleClearAllData = () => {
-    Alert.alert(t('settings.clearDataTitle'), t('settings.clearDataMessage'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      {
-        text: t('common.delete'),
-        style: 'destructive',
-        onPress: async () => {
-          setIsLoading(true);
-          try {
-            await clearAllData();
-            invalidateCache();
-            showSuccessToast(t('settings.dataCleared'));
-            void hapticDelete();
-            setShowDevMenu(false);
-          } catch {
-            showErrorToast(t('common.error'));
-          } finally {
-            setIsLoading(false);
-          }
-        },
-      },
-    ]);
+  const handleClearAllData = async () => {
+    setShowClearConfirm(false);
+    setIsLoading(true);
+    try {
+      await clearAllData();
+      invalidateCache();
+      showSuccessToast(t('settings.dataCleared'));
+    } catch (error) {
+      logger.error('Clear data failed:', error);
+      showErrorToast(t('common.error'));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -330,6 +323,46 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        {/* Data */}
+        <Text
+          accessibilityRole="header"
+          className="text-sm uppercase tracking-wide mb-3 mt-6"
+          style={{ color: colors.textSecondary, fontFamily: 'Inter_600SemiBold' }}
+        >
+          {t('settings.data')}
+        </Text>
+
+        <Pressable
+          onPress={() => setShowClearConfirm(true)}
+          disabled={isLoading}
+          accessibilityRole="button"
+          accessibilityLabel={t('settings.clearAllData')}
+          accessibilityState={{ disabled: isLoading, busy: isLoading }}
+          className="p-4 rounded-xl mb-3 flex-row items-center"
+          style={{
+            backgroundColor: `${colors.error}15`,
+            borderWidth: 1,
+            borderColor: colors.error,
+            opacity: isLoading ? 0.5 : 1,
+          }}
+        >
+          <Ionicons name="trash-outline" size={24} color={colors.error} />
+          <View className="flex-1 ml-3">
+            <Text
+              className="text-base"
+              style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
+            >
+              {t('settings.clearAllData')}
+            </Text>
+            <Text
+              className="text-sm mt-1"
+              style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
+            >
+              {t('settings.clearAllDataDesc')}
+            </Text>
+          </View>
+        </Pressable>
+
         {/* Backup */}
         <Pressable
           onPress={handleBackup}
@@ -455,41 +488,21 @@ export default function SettingsScreen() {
                 </Text>
               </View>
             </Pressable>
-
-            <Pressable
-              onPress={handleClearAllData}
-              disabled={isLoading}
-              accessibilityRole="button"
-              accessibilityLabel={t('settings.clearAllData')}
-              accessibilityState={{ disabled: isLoading, busy: isLoading }}
-              className="flex-row items-center p-4 rounded-xl"
-              style={{
-                backgroundColor: `${colors.error}15`,
-                borderWidth: 1,
-                borderColor: colors.error,
-                opacity: isLoading ? 0.5 : 1,
-              }}
-            >
-              <Ionicons name="trash-outline" size={24} color={colors.error} />
-              <View className="flex-1 ml-3">
-                <Text style={{ color: colors.text, fontFamily: 'Inter_600SemiBold', fontSize: 16 }}>
-                  {t('settings.clearAllData')}
-                </Text>
-                <Text
-                  style={{
-                    color: colors.textSecondary,
-                    fontFamily: 'Inter_400Regular',
-                    fontSize: 13,
-                    marginTop: 2,
-                  }}
-                >
-                  {t('settings.clearAllDataDesc')}
-                </Text>
-              </View>
-            </Pressable>
           </ScrollView>
         </View>
       </Modal>
+
+      <ConfirmationModal
+        visible={showClearConfirm}
+        title={t('settings.clearDataTitle')}
+        message={t('settings.clearDataMessage')}
+        confirmText={t('common.delete')}
+        cancelText={t('common.cancel')}
+        isDestructive
+        isLoading={isLoading}
+        onConfirm={handleClearAllData}
+        onCancel={() => setShowClearConfirm(false)}
+      />
     </View>
   );
 }

@@ -1,5 +1,14 @@
 import { db } from './client';
-import { receipts, items, stores, categories } from './schema';
+import {
+  receipts,
+  items,
+  stores,
+  categories,
+  userLearnedItems,
+  parsingFeedback,
+  storeParsingTemplates,
+} from './schema';
+import { clearAllReceiptFiles } from '@/src/services/storage';
 import { createScopedLogger } from '../utils/debug';
 
 const logger = createScopedLogger('DemoData');
@@ -443,7 +452,11 @@ export async function seedDemoData(): Promise<{ receiptsCreated: number; itemsCr
 
 export async function clearAllData(): Promise<void> {
   logger.log('Clearing all data...');
+  await clearAllReceiptFiles();
   await db.delete(items);
+  await db.delete(userLearnedItems);
+  await db.delete(storeParsingTemplates);
+  await db.delete(parsingFeedback);
   await db.delete(receipts);
   await db.delete(stores);
   logger.log('All data cleared');
