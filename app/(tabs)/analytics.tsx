@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -53,6 +53,7 @@ export default function AnalyticsScreen() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const hasDataRef = useRef(false);
 
   const loadAnalytics = useCallback(
     async (refresh = false) => {
@@ -60,11 +61,12 @@ export default function AnalyticsScreen() {
 
       if (refresh) {
         setIsRefreshing(true);
-      } else if (data === null) {
+      } else if (!hasDataRef.current) {
         setIsLoading(true);
       }
       try {
         const analyticsData = await getAnalyticsSummary(period);
+        hasDataRef.current = true;
         setData(analyticsData);
       } catch (error) {
         logger.error('Failed to load analytics:', error);
