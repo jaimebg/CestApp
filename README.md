@@ -116,15 +116,6 @@ Learning is store-aware: same item can have different categories at different st
 4. `useTranslation()` for all text
 5. Test iOS + Android + dark mode
 
-## Roadmap
-
-- Cloud sync
-- Export (CSV, PDF)
-- Budget alerts
-- More languages
-- Better OCR parsing
-- Widgets
-
 ## License
 
 MIT — see [LICENSE](LICENSE)
