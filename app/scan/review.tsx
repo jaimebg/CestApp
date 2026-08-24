@@ -177,22 +177,19 @@ export default function ScanReviewScreen() {
     let cancelled = false;
 
     async function checkForDuplicate() {
-      if (!storeName || receiptTotal === null || receiptTotal <= 0) {
+      if (receiptTotal === null || receiptTotal <= 0) {
         setDuplicateReceipt(null);
         return;
       }
 
       // Looked up rather than created: the receipt may still be discarded.
-      const store = await getStoreByNormalizedName(normalizeStoreName(storeName));
+      const foundStore = storeName
+        ? await getStoreByNormalizedName(normalizeStoreName(storeName))
+        : null;
       if (cancelled) return;
 
-      if (!store) {
-        setDuplicateReceipt(null);
-        return;
-      }
-
       const existing = await findDuplicateReceipt(
-        store.id,
+        foundStore?.id ?? null,
         resolveReceiptDateTime(receiptDate, receiptTime),
         Math.round(receiptTotal * 100)
       );
@@ -495,8 +492,8 @@ export default function ScanReviewScreen() {
 
     setIsSaving(true);
     try {
-      const storeName = parsedData.storeName || t('scan.unknownStore');
-      const storeId = await findOrCreateStore(storeName);
+      const storeName = parsedData.storeName;
+      const storeId = storeName ? await findOrCreateStore(storeName) : null;
 
       const receiptDateTime = resolveReceiptDateTime(parsedData.date, parsedData.time);
 
