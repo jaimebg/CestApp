@@ -280,7 +280,10 @@
     "clearDataTitle": "¿Borrar Todos los Datos?",
     "clearDataMessage": "Esto eliminará permanentemente todos los recibos, artículos y tiendas. Esta acción no se puede deshacer.",
     "dataCleared": "Todos los datos borrados",
-    "demoDataAdded": "Se agregaron {{receipts}} recibos con {{items}} artículos"
+    "demoDataAdded": "Se agregaron {{receipts}} recibos con {{items}} artículos",
+    "backup": "Copia de seguridad",
+    "backupDesc": "Comparte una copia de todos tus recibos, artículos y categorías como archivo JSON",
+    "backupDone": "Copia compartida"
   },
   "errors": {
     "galleryPermission": "El acceso a las fotos está desactivado. Actívalo en Ajustes para elegir un recibo.",
@@ -291,7 +294,8 @@
     "loadFailed": "No se pudieron cargar tus recibos. Desliza hacia abajo para reintentar.",
     "networkError": "Sin conexión. Vuelve a conectarte e inténtalo de nuevo.",
     "unknownError": "Ha ocurrido algo inesperado. Inténtalo de nuevo.",
-    "somethingWentWrong": "Esta pantalla ha tenido un problema"
+    "somethingWentWrong": "Esta pantalla ha tenido un problema",
+    "backupFailed": "No se pudo crear la copia de seguridad. Inténtalo de nuevo."
   },
   "onboarding": {
     "welcome": "Bienvenido a CestApp",

@@ -20,6 +20,11 @@ import { useAppColors } from '@/src/hooks/useAppColors';
 import { ModalHeader } from '@/src/components/ui/ModalHeader';
 import { MIN_TARGET } from '@/src/theme/a11y';
 import { isLlmAvailable } from '@/src/services/llm';
+import { getBackupData } from '@/src/db/queries/backup';
+import { exportBackup } from '@/src/utils/backup';
+import { createScopedLogger } from '@/src/utils/debug';
+
+const logger = createScopedLogger('Settings');
 
 export default function SettingsScreen() {
   const { t } = useTranslation();
@@ -44,6 +49,7 @@ export default function SettingsScreen() {
 
   const [showDevMenu, setShowDevMenu] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isBackingUp, setIsBackingUp] = useState(false);
   const tapCountRef = useRef(0);
   const lastTapRef = useRef(0);
 
@@ -77,6 +83,25 @@ export default function SettingsScreen() {
       showErrorToast(t('common.error'));
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleBackup = async () => {
+    if (isBackingUp) return;
+    setIsBackingUp(true);
+    try {
+      const data = await getBackupData();
+      const shared = await exportBackup(data);
+      if (shared) {
+        showSuccessToast(t('common.success'), t('settings.backupDone'));
+      } else {
+        showErrorToast(t('common.error'), t('errors.backupFailed'));
+      }
+    } catch (error) {
+      logger.error('Backup failed:', error);
+      showErrorToast(t('common.error'), t('errors.backupFailed'));
+    } finally {
+      setIsBackingUp(false);
     }
   };
 
@@ -302,6 +327,38 @@ export default function SettingsScreen() {
             </View>
           </View>
         </View>
+
+        {/* Backup */}
+        <Pressable
+          onPress={handleBackup}
+          disabled={isBackingUp}
+          accessibilityRole="button"
+          accessibilityLabel={t('settings.backup')}
+          accessibilityState={{ disabled: isBackingUp, busy: isBackingUp }}
+          className="p-4 rounded-xl mb-3 flex-row items-center"
+          style={{
+            backgroundColor: colors.surface,
+            borderWidth: 1,
+            borderColor: colors.border,
+            opacity: isBackingUp ? 0.5 : 1,
+          }}
+        >
+          <Ionicons name="cloud-upload-outline" size={24} color={colors.action} />
+          <View className="flex-1 ml-3">
+            <Text
+              className="text-base"
+              style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
+            >
+              {t('settings.backup')}
+            </Text>
+            <Text
+              className="text-sm mt-1"
+              style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
+            >
+              {t('settings.backupDesc')}
+            </Text>
+          </View>
+        </Pressable>
 
         {/* About Section */}
         <Text

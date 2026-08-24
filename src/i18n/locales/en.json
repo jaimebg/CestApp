@@ -280,7 +280,10 @@
     "clearDataTitle": "Clear All Data?",
     "clearDataMessage": "This will permanently delete all receipts, items, and stores. This action cannot be undone.",
     "dataCleared": "All data cleared",
-    "demoDataAdded": "Added {{receipts}} receipts with {{items}} items"
+    "demoDataAdded": "Added {{receipts}} receipts with {{items}} items",
+    "backup": "Back up data",
+    "backupDesc": "Share a copy of all your receipts, items and categories as a JSON file",
+    "backupDone": "Backup shared"
   },
   "errors": {
     "galleryPermission": "Photo access is off. Turn it on in Settings to pick a receipt.",
@@ -291,7 +294,8 @@
     "loadFailed": "Couldn't load your receipts. Pull down to retry.",
     "networkError": "No connection. Reconnect and try again.",
     "unknownError": "Something unexpected happened. Try again.",
-    "somethingWentWrong": "This screen ran into a problem"
+    "somethingWentWrong": "This screen ran into a problem",
+    "backupFailed": "Couldn't create the backup. Try again."
   },
   "onboarding": {
     "welcome": "Welcome to CestApp",
