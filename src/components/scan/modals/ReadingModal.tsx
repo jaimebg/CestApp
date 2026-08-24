@@ -81,120 +81,122 @@ export function ReadingModal({
         <ModalHeader title={t('scan.readingTitle')} onClose={onClose} />
 
         <ScrollView className="flex-1 p-4">
-          {imageUri && (
-            <View className="items-center">
-              {/* The receipt is shown in the geometry the zones were read in, so
+          <View className="w-full max-w-[640px] mx-auto">
+            {imageUri && (
+              <View className="items-center">
+                {/* The receipt is shown in the geometry the zones were read in, so
                   a zone lands where the scanner placed it. */}
-              <View
-                style={{ width: previewWidth, height: previewHeight }}
-                className="rounded-2xl overflow-hidden"
-              >
-                {isPdf ? (
-                  <Pdf
-                    source={{ uri: imageUri }}
-                    style={{ flex: 1, backgroundColor: colors.surface }}
-                    fitPolicy={2}
-                    spacing={0}
-                    enablePaging
-                    trustAllCerts={false}
-                  />
-                ) : (
-                  <Image
-                    source={{ uri: imageUri }}
-                    style={{ width: previewWidth, height: previewHeight }}
-                    contentFit="fill"
-                  />
-                )}
-                <Svg
-                  pointerEvents="none"
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: previewWidth,
-                    height: previewHeight,
-                  }}
+                <View
+                  style={{ width: previewWidth, height: previewHeight }}
+                  className="rounded-2xl overflow-hidden"
                 >
-                  {zones.map((zone) => (
-                    <Rect
-                      key={zone.id}
-                      x={zone.boundingBox.x * previewWidth}
-                      y={zone.boundingBox.y * previewHeight}
-                      width={zone.boundingBox.width * previewWidth}
-                      height={zone.boundingBox.height * previewHeight}
-                      fill={`${ZONE_COLORS[zone.type]}40`}
-                      stroke={ZONE_COLORS[zone.type]}
-                      strokeWidth={2}
+                  {isPdf ? (
+                    <Pdf
+                      source={{ uri: imageUri }}
+                      style={{ flex: 1, backgroundColor: colors.surface }}
+                      fitPolicy={2}
+                      spacing={0}
+                      enablePaging
+                      trustAllCerts={false}
                     />
-                  ))}
-                </Svg>
-              </View>
-            </View>
-          )}
-
-          {zoneTypes.length > 0 && (
-            <View className="mt-4">
-              <Text
-                className="text-sm mb-3"
-                style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
-              >
-                {t('scan.zoneTypes')}
-              </Text>
-              <View className="flex-row flex-wrap gap-2">
-                {zoneTypes.map((type) => (
-                  <View
-                    key={type}
-                    className="flex-row items-center px-3 py-1.5 rounded-full"
-                    style={{ backgroundColor: colors.surface }}
+                  ) : (
+                    <Image
+                      source={{ uri: imageUri }}
+                      style={{ width: previewWidth, height: previewHeight }}
+                      contentFit="fill"
+                    />
+                  )}
+                  <Svg
+                    pointerEvents="none"
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: previewWidth,
+                      height: previewHeight,
+                    }}
                   >
+                    {zones.map((zone) => (
+                      <Rect
+                        key={zone.id}
+                        x={zone.boundingBox.x * previewWidth}
+                        y={zone.boundingBox.y * previewHeight}
+                        width={zone.boundingBox.width * previewWidth}
+                        height={zone.boundingBox.height * previewHeight}
+                        fill={`${ZONE_COLORS[zone.type]}40`}
+                        stroke={ZONE_COLORS[zone.type]}
+                        strokeWidth={2}
+                      />
+                    ))}
+                  </Svg>
+                </View>
+              </View>
+            )}
+
+            {zoneTypes.length > 0 && (
+              <View className="mt-4">
+                <Text
+                  className="text-sm mb-3"
+                  style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
+                >
+                  {t('scan.zoneTypes')}
+                </Text>
+                <View className="flex-row flex-wrap gap-2">
+                  {zoneTypes.map((type) => (
                     <View
-                      className="w-3 h-3 rounded-full mr-2"
-                      style={{ backgroundColor: ZONE_COLORS[type] }}
-                    />
-                    <Text
-                      className="text-sm"
-                      style={{ color: colors.text, fontFamily: 'Inter_400Regular' }}
+                      key={type}
+                      className="flex-row items-center px-3 py-1.5 rounded-full"
+                      style={{ backgroundColor: colors.surface }}
                     >
-                      {ZONE_LABELS[type][language]}
-                    </Text>
-                  </View>
+                      <View
+                        className="w-3 h-3 rounded-full mr-2"
+                        style={{ backgroundColor: ZONE_COLORS[type] }}
+                      />
+                      <Text
+                        className="text-sm"
+                        style={{ color: colors.text, fontFamily: 'Inter_400Regular' }}
+                      >
+                        {ZONE_LABELS[type][language]}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            <Pressable
+              onPress={() => setShowText(!showText)}
+              className="flex-row items-center justify-center py-3 mt-4"
+              accessibilityRole="button"
+              accessibilityState={{ expanded: showText }}
+            >
+              <Ionicons
+                name={showText ? 'chevron-up' : 'chevron-down'}
+                size={16}
+                color={colors.textSecondary}
+              />
+              <Text
+                className="text-sm ml-1"
+                style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
+              >
+                {showText ? t('scan.hideRawText') : t('scan.showRawText')}
+              </Text>
+            </Pressable>
+
+            {showText && (
+              <View className="rounded-2xl p-4 mb-4" style={{ backgroundColor: colors.surface }}>
+                {lines.map((line, index) => (
+                  <Text
+                    key={index}
+                    className="text-xs mb-0.5"
+                    style={{ color: colors.text, fontFamily: 'Inter_400Regular', lineHeight: 16 }}
+                  >
+                    {line}
+                  </Text>
                 ))}
               </View>
-            </View>
-          )}
-
-          <Pressable
-            onPress={() => setShowText(!showText)}
-            className="flex-row items-center justify-center py-3 mt-4"
-            accessibilityRole="button"
-            accessibilityState={{ expanded: showText }}
-          >
-            <Ionicons
-              name={showText ? 'chevron-up' : 'chevron-down'}
-              size={16}
-              color={colors.textSecondary}
-            />
-            <Text
-              className="text-sm ml-1"
-              style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-            >
-              {showText ? t('scan.hideRawText') : t('scan.showRawText')}
-            </Text>
-          </Pressable>
-
-          {showText && (
-            <View className="rounded-2xl p-4 mb-4" style={{ backgroundColor: colors.surface }}>
-              {lines.map((line, index) => (
-                <Text
-                  key={index}
-                  className="text-xs mb-0.5"
-                  style={{ color: colors.text, fontFamily: 'Inter_400Regular', lineHeight: 16 }}
-                >
-                  {line}
-                </Text>
-              ))}
-            </View>
-          )}
+            )}
+          </View>
         </ScrollView>
 
         {onEditZones && (

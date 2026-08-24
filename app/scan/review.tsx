@@ -806,482 +806,484 @@ export default function ScanReviewScreen() {
       </View>
 
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
-        {parsedData ? (
-          <>
-            {isManualEntry && (
-              <Card variant="outlined" padding="md" className="mb-4">
-                <Text
-                  className="text-sm"
-                  style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-                >
-                  {t('scan.manualEntryHint')}
-                </Text>
-              </Card>
-            )}
-            {/* Confidence indicator */}
-            {hasOcrResult && (
-              <View className="flex-row items-center justify-between mb-4">
-                <View className="flex-row items-center">
-                  <View
-                    className="rounded-full p-2 mr-2"
-                    style={{ backgroundColor: getConfidenceColor(parsedData.confidence) + '20' }}
-                  >
-                    <Ionicons
-                      name={parsedData.confidence >= 70 ? 'checkmark' : 'alert'}
-                      size={16}
-                      color={getConfidenceColor(parsedData.confidence)}
-                    />
-                  </View>
+        <View className="w-full max-w-[640px] mx-auto">
+          {parsedData ? (
+            <>
+              {isManualEntry && (
+                <Card variant="outlined" padding="md" className="mb-4">
                   <Text
                     className="text-sm"
                     style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
                   >
-                    {t('scan.confidence')}: {parsedData.confidence}%
+                    {t('scan.manualEntryHint')}
                   </Text>
+                </Card>
+              )}
+              {/* Confidence indicator */}
+              {hasOcrResult && (
+                <View className="flex-row items-center justify-between mb-4">
+                  <View className="flex-row items-center">
+                    <View
+                      className="rounded-full p-2 mr-2"
+                      style={{ backgroundColor: getConfidenceColor(parsedData.confidence) + '20' }}
+                    >
+                      <Ionicons
+                        name={parsedData.confidence >= 70 ? 'checkmark' : 'alert'}
+                        size={16}
+                        color={getConfidenceColor(parsedData.confidence)}
+                      />
+                    </View>
+                    <Text
+                      className="text-sm"
+                      style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
+                    >
+                      {t('scan.confidence')}: {parsedData.confidence}%
+                    </Text>
+                  </View>
+                  {parsedData.confidence < 70 && (
+                    <Badge variant="warning" size="sm" label={t('scan.lowConfidence')} />
+                  )}
                 </View>
-                {parsedData.confidence < 70 && (
-                  <Badge variant="warning" size="sm" label={t('scan.lowConfidence')} />
-                )}
-              </View>
-            )}
+              )}
 
-            {/* Template Applied Indicator (PDF only) */}
-            {templateApplied && isPdf && (
-              <Card variant="outlined" padding="md" className="mb-4">
-                <View className="flex-row items-center justify-between">
+              {/* Template Applied Indicator (PDF only) */}
+              {templateApplied && isPdf && (
+                <Card variant="outlined" padding="md" className="mb-4">
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-row items-center flex-1">
+                      <View
+                        className="rounded-full p-2 mr-3"
+                        style={{ backgroundColor: colors.primary + '20' }}
+                      >
+                        <Ionicons name="checkmark-circle" size={20} color={colors.action} />
+                      </View>
+                      <View className="flex-1">
+                        <Text
+                          className="text-sm"
+                          style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
+                        >
+                          {t('scan.templateApplied')}
+                        </Text>
+                        <Text
+                          className="text-xs mt-0.5"
+                          style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
+                        >
+                          {t('scan.zoneCount', { count: appliedZones.length })}
+                        </Text>
+                      </View>
+                    </View>
+                    <View className="flex-row gap-2">
+                      <Pressable
+                        onPress={() => setShowReading(true)}
+                        className="p-2 rounded-lg"
+                        style={{ backgroundColor: colors.surface }}
+                        hitSlop={ICON_HIT_SLOP}
+                        accessibilityRole="button"
+                        accessibilityLabel={t('scan.readingTitle')}
+                      >
+                        <Ionicons name="eye-outline" size={18} color={colors.textSecondary} />
+                      </Pressable>
+                      <Pressable
+                        onPress={handleDeleteTemplate}
+                        className="p-2 rounded-lg"
+                        style={{ backgroundColor: colors.error + '15' }}
+                        hitSlop={ICON_HIT_SLOP}
+                        accessibilityRole="button"
+                        accessibilityLabel={t('common.delete')}
+                      >
+                        <Ionicons name="trash-outline" size={18} color={colors.error} />
+                      </Pressable>
+                    </View>
+                  </View>
+                </Card>
+              )}
+
+              {/* Existing Template (not yet applied) - Show delete option (PDF only) */}
+              {hasExistingTemplate && !templateApplied && isPdf && (
+                <Card variant="outlined" padding="md" className="mb-4">
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-row items-center flex-1">
+                      <View
+                        className="rounded-full p-2 mr-3"
+                        style={{ backgroundColor: colors.accent + '30' }}
+                      >
+                        <Ionicons name="grid-outline" size={20} color={colors.warning} />
+                      </View>
+                      <View className="flex-1">
+                        <Text
+                          className="text-sm"
+                          style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
+                        >
+                          {t('scan.hasTemplate')}
+                        </Text>
+                        <Text
+                          className="text-xs mt-0.5"
+                          style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
+                        >
+                          {t('scan.hasTemplateDesc')}
+                        </Text>
+                      </View>
+                    </View>
+                    <View className="flex-row gap-2">
+                      <Pressable
+                        onPress={handleDeleteTemplate}
+                        className="p-2 rounded-lg"
+                        style={{ backgroundColor: colors.error + '15' }}
+                        hitSlop={ICON_HIT_SLOP}
+                        accessibilityRole="button"
+                        accessibilityLabel={t('common.delete')}
+                      >
+                        <Ionicons name="trash-outline" size={18} color={colors.error} />
+                      </Pressable>
+                    </View>
+                  </View>
+                </Card>
+              )}
+
+              {/* Store and Date Info */}
+              <Card variant="filled" padding="md" className="mb-4">
+                <Text
+                  className="text-sm mb-3"
+                  style={{ color: colors.textSecondary, fontFamily: 'Inter_500Medium' }}
+                >
+                  {t('scan.receiptInfo')}
+                </Text>
+
+                {/* Store - Editable */}
+                <Pressable
+                  onPress={openStoreEdit}
+                  className="flex-row items-center justify-between mb-3"
+                  accessibilityRole="button"
+                  accessibilityLabel={t('scan.editStore')}
+                >
                   <View className="flex-row items-center flex-1">
+                    <Ionicons name="storefront-outline" size={18} color={colors.textSecondary} />
+                    <Text
+                      className="text-base ml-2 flex-1"
+                      style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
+                      numberOfLines={1}
+                    >
+                      {parsedData.storeName || t('scan.unknownStore')}
+                    </Text>
+                  </View>
+                  <Ionicons name="pencil" size={16} color={colors.textSecondary} />
+                </Pressable>
+
+                {/* Address if available */}
+                {parsedData.storeAddress && (
+                  <View className="flex-row items-center mb-3 ml-6">
+                    <Text
+                      className="text-xs"
+                      style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
+                      numberOfLines={1}
+                    >
+                      {parsedData.storeAddress}
+                    </Text>
+                  </View>
+                )}
+
+                {/* Date and Time - Editable */}
+                <Pressable
+                  onPress={openDateEdit}
+                  className="flex-row items-center justify-between"
+                  accessibilityRole="button"
+                  accessibilityLabel={t('scan.editDate')}
+                >
+                  <View className="flex-row items-center">
+                    <Ionicons name="calendar-outline" size={18} color={colors.textSecondary} />
+                    <Text
+                      className="text-base ml-2"
+                      style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
+                    >
+                      {formatDate(parsedData.date)}
+                    </Text>
+                  </View>
+                  <View className="flex-row items-center">
+                    {parsedData.time && (
+                      <View className="flex-row items-center mr-2">
+                        <Ionicons name="time-outline" size={16} color={colors.textSecondary} />
+                        <Text
+                          className="text-sm ml-1"
+                          style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
+                        >
+                          {parsedData.time}
+                        </Text>
+                      </View>
+                    )}
+                    <Ionicons name="pencil" size={16} color={colors.textSecondary} />
+                  </View>
+                </Pressable>
+
+                {/* Payment Method */}
+                {parsedData.paymentMethod && (
+                  <View className="flex-row items-center mt-3">
+                    <Ionicons
+                      name={parsedData.paymentMethod === 'cash' ? 'cash-outline' : 'card-outline'}
+                      size={18}
+                      color={colors.textSecondary}
+                    />
+                    <Text
+                      className="text-sm ml-2"
+                      style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
+                    >
+                      {getPaymentMethodLabel(parsedData.paymentMethod)}
+                    </Text>
+                  </View>
+                )}
+              </Card>
+
+              {/* What the scanner read, and where it read it */}
+              {hasOcrResult && (
+                <Card variant="outlined" padding="md" className="mb-4">
+                  <Pressable
+                    onPress={() => setShowReading(true)}
+                    className="flex-row items-center"
+                    accessibilityRole="button"
+                    accessibilityLabel={t('scan.readingTitle')}
+                    accessibilityHint={t('scan.readingHint')}
+                  >
                     <View
                       className="rounded-full p-2 mr-3"
                       style={{ backgroundColor: colors.primary + '20' }}
                     >
-                      <Ionicons name="checkmark-circle" size={20} color={colors.action} />
+                      <Ionicons name="scan-outline" size={20} color={colors.action} />
                     </View>
                     <View className="flex-1">
                       <Text
                         className="text-sm"
                         style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
                       >
-                        {t('scan.templateApplied')}
+                        {t('scan.readingTitle')}
                       </Text>
                       <Text
                         className="text-xs mt-0.5"
                         style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
                       >
-                        {t('scan.zoneCount', { count: appliedZones.length })}
+                        {appliedZones.length > 0
+                          ? t('scan.zoneCount', { count: appliedZones.length })
+                          : t('scan.noZonesDetected')}
                       </Text>
                     </View>
-                  </View>
-                  <View className="flex-row gap-2">
-                    <Pressable
-                      onPress={() => setShowReading(true)}
-                      className="p-2 rounded-lg"
-                      style={{ backgroundColor: colors.surface }}
-                      hitSlop={ICON_HIT_SLOP}
-                      accessibilityRole="button"
-                      accessibilityLabel={t('scan.readingTitle')}
-                    >
-                      <Ionicons name="eye-outline" size={18} color={colors.textSecondary} />
-                    </Pressable>
-                    <Pressable
-                      onPress={handleDeleteTemplate}
-                      className="p-2 rounded-lg"
-                      style={{ backgroundColor: colors.error + '15' }}
-                      hitSlop={ICON_HIT_SLOP}
-                      accessibilityRole="button"
-                      accessibilityLabel={t('common.delete')}
-                    >
-                      <Ionicons name="trash-outline" size={18} color={colors.error} />
-                    </Pressable>
-                  </View>
-                </View>
-              </Card>
-            )}
-
-            {/* Existing Template (not yet applied) - Show delete option (PDF only) */}
-            {hasExistingTemplate && !templateApplied && isPdf && (
-              <Card variant="outlined" padding="md" className="mb-4">
-                <View className="flex-row items-center justify-between">
-                  <View className="flex-row items-center flex-1">
-                    <View
-                      className="rounded-full p-2 mr-3"
-                      style={{ backgroundColor: colors.accent + '30' }}
-                    >
-                      <Ionicons name="grid-outline" size={20} color={colors.warning} />
-                    </View>
-                    <View className="flex-1">
-                      <Text
-                        className="text-sm"
-                        style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
-                      >
-                        {t('scan.hasTemplate')}
-                      </Text>
-                      <Text
-                        className="text-xs mt-0.5"
-                        style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-                      >
-                        {t('scan.hasTemplateDesc')}
-                      </Text>
-                    </View>
-                  </View>
-                  <View className="flex-row gap-2">
-                    <Pressable
-                      onPress={handleDeleteTemplate}
-                      className="p-2 rounded-lg"
-                      style={{ backgroundColor: colors.error + '15' }}
-                      hitSlop={ICON_HIT_SLOP}
-                      accessibilityRole="button"
-                      accessibilityLabel={t('common.delete')}
-                    >
-                      <Ionicons name="trash-outline" size={18} color={colors.error} />
-                    </Pressable>
-                  </View>
-                </View>
-              </Card>
-            )}
-
-            {/* Store and Date Info */}
-            <Card variant="filled" padding="md" className="mb-4">
-              <Text
-                className="text-sm mb-3"
-                style={{ color: colors.textSecondary, fontFamily: 'Inter_500Medium' }}
-              >
-                {t('scan.receiptInfo')}
-              </Text>
-
-              {/* Store - Editable */}
-              <Pressable
-                onPress={openStoreEdit}
-                className="flex-row items-center justify-between mb-3"
-                accessibilityRole="button"
-                accessibilityLabel={t('scan.editStore')}
-              >
-                <View className="flex-row items-center flex-1">
-                  <Ionicons name="storefront-outline" size={18} color={colors.textSecondary} />
-                  <Text
-                    className="text-base ml-2 flex-1"
-                    style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
-                    numberOfLines={1}
-                  >
-                    {parsedData.storeName || t('scan.unknownStore')}
-                  </Text>
-                </View>
-                <Ionicons name="pencil" size={16} color={colors.textSecondary} />
-              </Pressable>
-
-              {/* Address if available */}
-              {parsedData.storeAddress && (
-                <View className="flex-row items-center mb-3 ml-6">
-                  <Text
-                    className="text-xs"
-                    style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-                    numberOfLines={1}
-                  >
-                    {parsedData.storeAddress}
-                  </Text>
-                </View>
+                    <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+                  </Pressable>
+                </Card>
               )}
 
-              {/* Date and Time - Editable */}
-              <Pressable
-                onPress={openDateEdit}
-                className="flex-row items-center justify-between"
-                accessibilityRole="button"
-                accessibilityLabel={t('scan.editDate')}
-              >
-                <View className="flex-row items-center">
-                  <Ionicons name="calendar-outline" size={18} color={colors.textSecondary} />
-                  <Text
-                    className="text-base ml-2"
-                    style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
-                  >
-                    {formatDate(parsedData.date)}
-                  </Text>
-                </View>
-                <View className="flex-row items-center">
-                  {parsedData.time && (
-                    <View className="flex-row items-center mr-2">
-                      <Ionicons name="time-outline" size={16} color={colors.textSecondary} />
-                      <Text
-                        className="text-sm ml-1"
-                        style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-                      >
-                        {parsedData.time}
-                      </Text>
-                    </View>
-                  )}
-                  <Ionicons name="pencil" size={16} color={colors.textSecondary} />
-                </View>
-              </Pressable>
+              <RefinementBanner
+                status={refinement.status}
+                onUndo={refinement.undoApplied}
+                onCompare={() => setShowDiffModal(true)}
+                onDismiss={refinement.dismissProposal}
+              />
 
-              {/* Payment Method */}
-              {parsedData.paymentMethod && (
-                <View className="flex-row items-center mt-3">
-                  <Ionicons
-                    name={parsedData.paymentMethod === 'cash' ? 'cash-outline' : 'card-outline'}
-                    size={18}
-                    color={colors.textSecondary}
+              {duplicateReceipt && (
+                <DuplicateBanner
+                  dateLabel={formatLocalizedDate(new Date(duplicateReceipt.dateTime), language)}
+                  totalLabel={formatPrice(duplicateReceipt.totalAmount / 100)}
+                  onView={() => router.push(`/receipt/${duplicateReceipt.id}`)}
+                />
+              )}
+
+              {/* Items */}
+              <Card variant="outlined" padding="md" className="mb-4">
+                <View className="flex-row items-center justify-between mb-2">
+                  <Text
+                    className="text-sm"
+                    style={{ color: colors.textSecondary, fontFamily: 'Inter_500Medium' }}
+                  >
+                    {t('receipt.items')}
+                  </Text>
+                  <Badge
+                    variant="info"
+                    size="sm"
+                    label={t('scan.itemCount', { count: parsedData.items.length })}
                   />
-                  <Text
-                    className="text-sm ml-2"
-                    style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-                  >
-                    {getPaymentMethodLabel(parsedData.paymentMethod)}
-                  </Text>
                 </View>
-              )}
-            </Card>
 
-            {/* What the scanner read, and where it read it */}
-            {hasOcrResult && (
-              <Card variant="outlined" padding="md" className="mb-4">
-                <Pressable
-                  onPress={() => setShowReading(true)}
-                  className="flex-row items-center"
-                  accessibilityRole="button"
-                  accessibilityLabel={t('scan.readingTitle')}
-                  accessibilityHint={t('scan.readingHint')}
-                >
-                  <View
-                    className="rounded-full p-2 mr-3"
-                    style={{ backgroundColor: colors.primary + '20' }}
-                  >
-                    <Ionicons name="scan-outline" size={20} color={colors.action} />
+                {parsedData.items.length > 0 ? (
+                  <View>
+                    {parsedData.items.map((item, index) =>
+                      renderItemRow(item as ParsedItem & { categoryId?: number }, index)
+                    )}
                   </View>
-                  <View className="flex-1">
+                ) : (
+                  <View className="py-4 items-center">
+                    <Ionicons name="receipt-outline" size={24} color={colors.textSecondary} />
                     <Text
-                      className="text-sm"
-                      style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
-                    >
-                      {t('scan.readingTitle')}
-                    </Text>
-                    <Text
-                      className="text-xs mt-0.5"
+                      className="text-sm mt-2"
                       style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
                     >
-                      {appliedZones.length > 0
-                        ? t('scan.zoneCount', { count: appliedZones.length })
-                        : t('scan.noZonesDetected')}
+                      {t('scan.noItemsFound')}
                     </Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+                )}
+
+                {/* Add Item Button */}
+                <Pressable
+                  onPress={() => openItemEdit(null)}
+                  className="flex-row items-center justify-center py-3 mt-2 rounded-lg"
+                  style={{ backgroundColor: colors.primary + '15' }}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('scan.addItem')}
+                >
+                  <Ionicons name="add-circle-outline" size={20} color={colors.action} />
+                  <Text
+                    className="text-sm ml-2"
+                    style={{ color: colors.action, fontFamily: 'Inter_500Medium' }}
+                  >
+                    {t('scan.addItem')}
+                  </Text>
                 </Pressable>
               </Card>
-            )}
 
-            <RefinementBanner
-              status={refinement.status}
-              onUndo={refinement.undoApplied}
-              onCompare={() => setShowDiffModal(true)}
-              onDismiss={refinement.dismissProposal}
-            />
-
-            {duplicateReceipt && (
-              <DuplicateBanner
-                dateLabel={formatLocalizedDate(new Date(duplicateReceipt.dateTime), language)}
-                totalLabel={formatPrice(duplicateReceipt.totalAmount / 100)}
-                onView={() => router.push(`/receipt/${duplicateReceipt.id}`)}
-              />
-            )}
-
-            {/* Items */}
-            <Card variant="outlined" padding="md" className="mb-4">
-              <View className="flex-row items-center justify-between mb-2">
-                <Text
-                  className="text-sm"
-                  style={{ color: colors.textSecondary, fontFamily: 'Inter_500Medium' }}
-                >
-                  {t('receipt.items')}
-                </Text>
-                <Badge
-                  variant="info"
-                  size="sm"
-                  label={t('scan.itemCount', { count: parsedData.items.length })}
-                />
-              </View>
-
-              {parsedData.items.length > 0 ? (
-                <View>
-                  {parsedData.items.map((item, index) =>
-                    renderItemRow(item as ParsedItem & { categoryId?: number }, index)
-                  )}
-                </View>
-              ) : (
-                <View className="py-4 items-center">
-                  <Ionicons name="receipt-outline" size={24} color={colors.textSecondary} />
-                  <Text
-                    className="text-sm mt-2"
-                    style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-                  >
-                    {t('scan.noItemsFound')}
-                  </Text>
-                </View>
-              )}
-
-              {/* Add Item Button */}
-              <Pressable
-                onPress={() => openItemEdit(null)}
-                className="flex-row items-center justify-center py-3 mt-2 rounded-lg"
-                style={{ backgroundColor: colors.primary + '15' }}
-                accessibilityRole="button"
-                accessibilityLabel={t('scan.addItem')}
-              >
-                <Ionicons name="add-circle-outline" size={20} color={colors.action} />
-                <Text
-                  className="text-sm ml-2"
-                  style={{ color: colors.action, fontFamily: 'Inter_500Medium' }}
-                >
-                  {t('scan.addItem')}
-                </Text>
-              </Pressable>
-            </Card>
-
-            {/* Totals */}
-            <Card variant="filled" padding="md" className="mb-4">
-              {/* Items Sum */}
-              <View className="flex-row justify-between mb-2">
-                <Text
-                  className="text-sm"
-                  style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-                >
-                  {t('scan.itemsSum')}
-                </Text>
-                <Amount size="sm">{formatPrice(itemsSum)}</Amount>
-              </View>
-
-              {parsedData.subtotal !== null && (
+              {/* Totals */}
+              <Card variant="filled" padding="md" className="mb-4">
+                {/* Items Sum */}
                 <View className="flex-row justify-between mb-2">
                   <Text
                     className="text-sm"
                     style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
                   >
-                    {t('receipt.subtotal')}
+                    {t('scan.itemsSum')}
                   </Text>
-                  <Amount size="sm">{formatPrice(parsedData.subtotal)}</Amount>
+                  <Amount size="sm">{formatPrice(itemsSum)}</Amount>
                 </View>
-              )}
 
-              {parsedData.discount !== null && parsedData.discount > 0 && (
-                <View className="flex-row justify-between mb-2">
+                {parsedData.subtotal !== null && (
+                  <View className="flex-row justify-between mb-2">
+                    <Text
+                      className="text-sm"
+                      style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
+                    >
+                      {t('receipt.subtotal')}
+                    </Text>
+                    <Amount size="sm">{formatPrice(parsedData.subtotal)}</Amount>
+                  </View>
+                )}
+
+                {parsedData.discount !== null && parsedData.discount > 0 && (
+                  <View className="flex-row justify-between mb-2">
+                    <Text
+                      className="text-sm"
+                      style={{ color: colors.action, fontFamily: 'Inter_400Regular' }}
+                    >
+                      {t('receipt.discount')}
+                    </Text>
+                    <Amount size="sm" tone="action">
+                      -{formatPrice(parsedData.discount)}
+                    </Amount>
+                  </View>
+                )}
+
+                {parsedData.tax !== null && (
+                  <View className="flex-row justify-between mb-2">
+                    <Text
+                      className="text-sm"
+                      style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
+                    >
+                      {t('receipt.tax')}
+                    </Text>
+                    <Amount size="sm">{formatPrice(parsedData.tax)}</Amount>
+                  </View>
+                )}
+
+                {/* Total - Editable */}
+                <Pressable
+                  onPress={openTotalEdit}
+                  className="flex-row justify-between items-center pt-2 border-t"
+                  style={{ borderColor: colors.border }}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('receipt.total')}
+                >
                   <Text
-                    className="text-sm"
-                    style={{ color: colors.action, fontFamily: 'Inter_400Regular' }}
+                    className="text-base"
+                    style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
                   >
-                    {t('receipt.discount')}
+                    {t('receipt.total')}
                   </Text>
-                  <Amount size="sm" tone="action">
-                    -{formatPrice(parsedData.discount)}
-                  </Amount>
-                </View>
-              )}
+                  <View className="flex-row items-center">
+                    <Amount
+                      size="base"
+                      className="mr-2"
+                      style={{ color: totalsDiffer ? colors.error : colors.text }}
+                    >
+                      {formatPrice(parsedData.total)}
+                    </Amount>
+                    <Ionicons name="pencil" size={14} color={colors.textSecondary} />
+                  </View>
+                </Pressable>
 
-              {parsedData.tax !== null && (
-                <View className="flex-row justify-between mb-2">
-                  <Text
-                    className="text-sm"
-                    style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-                  >
-                    {t('receipt.tax')}
-                  </Text>
-                  <Amount size="sm">{formatPrice(parsedData.tax)}</Amount>
+                {/* Totals Mismatch Warning */}
+                {totalsDiffer && (
+                  <View className="mt-3">
+                    <View
+                      className="flex-row items-center p-3 rounded-lg"
+                      style={{ backgroundColor: colors.error + '15' }}
+                    >
+                      <Ionicons name="warning" size={18} color={colors.error} />
+                      <Text
+                        className="flex-1 text-xs ml-2"
+                        style={{ color: colors.error, fontFamily: 'Inter_500Medium' }}
+                      >
+                        {t('scan.totalsMismatch')}
+                      </Text>
+                    </View>
+                    <Pressable
+                      onPress={setTotalToItemsSum}
+                      className="flex-row items-center justify-center py-2 mt-2 rounded-lg"
+                      style={{ backgroundColor: colors.primary + '15' }}
+                      accessibilityRole="button"
+                      accessibilityLabel={t('scan.matchToItemsSum')}
+                    >
+                      <Ionicons name="checkmark-circle-outline" size={18} color={colors.action} />
+                      <Text
+                        className="text-sm ml-2"
+                        style={{ color: colors.action, fontFamily: 'Inter_500Medium' }}
+                      >
+                        {t('scan.matchToItemsSum')}
+                      </Text>
+                    </Pressable>
+                  </View>
+                )}
+              </Card>
+            </>
+          ) : (
+            <Card variant="outlined" padding="lg">
+              <View className="items-center py-4">
+                <View
+                  className="rounded-full p-4 mb-3"
+                  style={{ backgroundColor: colors.error + '20' }}
+                >
+                  <Ionicons name="alert-circle-outline" size={32} color={colors.error} />
                 </View>
-              )}
-
-              {/* Total - Editable */}
-              <Pressable
-                onPress={openTotalEdit}
-                className="flex-row justify-between items-center pt-2 border-t"
-                style={{ borderColor: colors.border }}
-                accessibilityRole="button"
-                accessibilityLabel={t('receipt.total')}
-              >
                 <Text
-                  className="text-base"
+                  className="text-base text-center"
                   style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
                 >
-                  {t('receipt.total')}
+                  {t('scan.noTextDetected')}
                 </Text>
-                <View className="flex-row items-center">
-                  <Amount
-                    size="base"
-                    className="mr-2"
-                    style={{ color: totalsDiffer ? colors.error : colors.text }}
-                  >
-                    {formatPrice(parsedData.total)}
-                  </Amount>
-                  <Ionicons name="pencil" size={14} color={colors.textSecondary} />
-                </View>
-              </Pressable>
-
-              {/* Totals Mismatch Warning */}
-              {totalsDiffer && (
-                <View className="mt-3">
-                  <View
-                    className="flex-row items-center p-3 rounded-lg"
-                    style={{ backgroundColor: colors.error + '15' }}
-                  >
-                    <Ionicons name="warning" size={18} color={colors.error} />
-                    <Text
-                      className="flex-1 text-xs ml-2"
-                      style={{ color: colors.error, fontFamily: 'Inter_500Medium' }}
-                    >
-                      {t('scan.totalsMismatch')}
-                    </Text>
-                  </View>
-                  <Pressable
-                    onPress={setTotalToItemsSum}
-                    className="flex-row items-center justify-center py-2 mt-2 rounded-lg"
-                    style={{ backgroundColor: colors.primary + '15' }}
-                    accessibilityRole="button"
-                    accessibilityLabel={t('scan.matchToItemsSum')}
-                  >
-                    <Ionicons name="checkmark-circle-outline" size={18} color={colors.action} />
-                    <Text
-                      className="text-sm ml-2"
-                      style={{ color: colors.action, fontFamily: 'Inter_500Medium' }}
-                    >
-                      {t('scan.matchToItemsSum')}
-                    </Text>
-                  </Pressable>
-                </View>
-              )}
-            </Card>
-          </>
-        ) : (
-          <Card variant="outlined" padding="lg">
-            <View className="items-center py-4">
-              <View
-                className="rounded-full p-4 mb-3"
-                style={{ backgroundColor: colors.error + '20' }}
-              >
-                <Ionicons name="alert-circle-outline" size={32} color={colors.error} />
+                <Text
+                  className="text-sm text-center mt-2"
+                  style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
+                >
+                  {t('scan.noTextDetectedDesc')}
+                </Text>
+                <Pressable
+                  onPress={enterManualMode}
+                  className="mt-5 px-6 py-3 rounded-xl items-center"
+                  style={{ backgroundColor: colors.primaryDeep }}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('scan.addManually')}
+                  accessibilityHint={t('scan.addManuallyDesc')}
+                >
+                  <Text className="text-white text-sm" style={{ fontFamily: 'Inter_600SemiBold' }}>
+                    {t('scan.addManually')}
+                  </Text>
+                </Pressable>
               </View>
-              <Text
-                className="text-base text-center"
-                style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
-              >
-                {t('scan.noTextDetected')}
-              </Text>
-              <Text
-                className="text-sm text-center mt-2"
-                style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-              >
-                {t('scan.noTextDetectedDesc')}
-              </Text>
-              <Pressable
-                onPress={enterManualMode}
-                className="mt-5 px-6 py-3 rounded-xl items-center"
-                style={{ backgroundColor: colors.primaryDeep }}
-                accessibilityRole="button"
-                accessibilityLabel={t('scan.addManually')}
-                accessibilityHint={t('scan.addManuallyDesc')}
-              >
-                <Text className="text-white text-sm" style={{ fontFamily: 'Inter_600SemiBold' }}>
-                  {t('scan.addManually')}
-                </Text>
-              </Pressable>
-            </View>
-          </Card>
-        )}
+            </Card>
+          )}
+        </View>
       </ScrollView>
 
       {/* Action Buttons */}
