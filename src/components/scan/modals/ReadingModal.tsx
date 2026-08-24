@@ -56,7 +56,7 @@ export function ReadingModal({
 
   const language = i18n.language.startsWith('es') ? 'es' : 'en';
   const aspectRatio = dimensions.height > 0 ? dimensions.width / dimensions.height : 1.5;
-  const previewWidth = screenWidth - 32;
+  const previewWidth = Math.min(screenWidth, 640) - 32;
   const previewHeight = previewWidth / aspectRatio;
 
   // One entry per kind of zone: a receipt has many product rows but one
