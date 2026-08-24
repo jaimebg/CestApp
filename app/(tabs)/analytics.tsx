@@ -1,18 +1,20 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View,
   Text,
   ScrollView,
   Pressable,
   ActivityIndicator,
+  RefreshControl,
   useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import { useFocusEffect } from 'expo-router';
 import { BarChart, PieChart } from 'react-native-gifted-charts';
 import { useDatabaseReady } from '@/src/db/provider';
 import { getAnalyticsSummary, TimePeriod } from '@/src/db/queries/analytics';
-import { useFormatPrice } from '@/src/store/preferences';
+import { useFormatPrice, usePreferencesStore } from '@/src/store/preferences';
 import { useAppColors } from '@/src/hooks/useAppColors';
 import { chartSeries } from '@/src/theme/colors';
 import { EmptyState } from '@/src/components/ui/EmptyState';
@@ -22,6 +24,16 @@ import { createScopedLogger } from '@/src/utils/debug';
 
 const logger = createScopedLogger('Analytics');
 
+const MONTH_SHORT: Record<'en' | 'es', string[]> = {
+  en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+  es: ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'],
+};
+
+function monthLabel(language: 'en' | 'es', monthKey: string): string {
+  const index = parseInt(monthKey.split('-')[1], 10) - 1;
+  return MONTH_SHORT[language][index] || monthKey;
+}
+
 type AnalyticsData = Awaited<ReturnType<typeof getAnalyticsSummary>>;
 
 export default function AnalyticsScreen() {
@@ -30,6 +42,7 @@ export default function AnalyticsScreen() {
   const colors = useAppColors();
   const { isReady } = useDatabaseReady();
   const { formatPrice } = useFormatPrice();
+  const language = usePreferencesStore((state) => state.language);
   const { width: windowWidth } = useWindowDimensions();
 
   // The chart card is mx-4 (32) inside p-4 (32). A fixed 280 clipped its right
@@ -39,24 +52,35 @@ export default function AnalyticsScreen() {
   const [period, setPeriod] = useState<TimePeriod>('month');
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const loadAnalytics = useCallback(async () => {
-    if (!isReady) return;
+  const loadAnalytics = useCallback(
+    async (refresh = false) => {
+      if (!isReady) return;
 
-    setIsLoading(true);
-    try {
-      const analyticsData = await getAnalyticsSummary(period);
-      setData(analyticsData);
-    } catch (error) {
-      logger.error('Failed to load analytics:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [isReady, period]);
+      if (refresh) {
+        setIsRefreshing(true);
+      } else {
+        setIsLoading(true);
+      }
+      try {
+        const analyticsData = await getAnalyticsSummary(period);
+        setData(analyticsData);
+      } catch (error) {
+        logger.error('Failed to load analytics:', error);
+      } finally {
+        setIsLoading(false);
+        setIsRefreshing(false);
+      }
+    },
+    [isReady, period]
+  );
 
-  useEffect(() => {
-    loadAnalytics();
-  }, [loadAnalytics]);
+  useFocusEffect(
+    useCallback(() => {
+      loadAnalytics();
+    }, [loadAnalytics])
+  );
 
   const periodOptions: { key: TimePeriod; label: string }[] = [
     { key: 'week', label: t('analytics.thisWeek') },
@@ -66,15 +90,17 @@ export default function AnalyticsScreen() {
 
   const barChartData =
     data?.spendingByDay.map((item, index) => {
-      const date = new Date(item.date);
-      const dayLabel = date.toLocaleDateString(undefined, {
-        weekday: 'short',
-        day: 'numeric',
-      });
+      const label =
+        period === 'year'
+          ? monthLabel(language, item.date)
+          : new Date(item.date).toLocaleDateString(undefined, {
+              weekday: 'short',
+              day: 'numeric',
+            });
 
       return {
         value: item.amount,
-        label: period === 'week' ? dayLabel.split(' ')[0] : date.getDate().toString(),
+        label: period === 'year' ? label : label.split(' ')[0],
         frontColor: colors.primary,
         topLabelComponent: () => null,
       };
@@ -92,6 +118,8 @@ export default function AnalyticsScreen() {
         shiftTextX: -8,
         shiftTextY: 0,
       })) || [];
+
+  const maxValue = Math.max(...barChartData.map((bar) => bar.value), 1);
 
   // Fit the bars to the width we actually have rather than to the period.
   const barLayout = (() => {
@@ -123,6 +151,14 @@ export default function AnalyticsScreen() {
         className="flex-1"
         contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={() => loadAnalytics(true)}
+            tintColor={colors.action}
+            colors={[colors.action]}
+          />
+        }
       >
         {/* Header */}
         <View className="px-6 pt-4 pb-2">
@@ -236,7 +272,9 @@ export default function AnalyticsScreen() {
                       fontFamily: 'Inter_400Regular',
                     }}
                     hideRules
-                    isAnimated
+                    maxValue={Math.ceil(maxValue)}
+                    formatYLabel={(label) => formatPrice(Number(label))}
+                    isAnimated={barChartData.length <= 31}
                     animationDuration={500}
                   />
                 </View>

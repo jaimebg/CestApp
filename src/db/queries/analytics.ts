@@ -56,15 +56,20 @@ export async function getSpendingByDay(
 ): Promise<{ date: string; amount: number }[]> {
   const { start, end } = getDateRange(period);
 
+  const bucketExpr =
+    period === 'year'
+      ? sql<string>`strftime('%Y-%m', ${receipts.dateTime}, 'unixepoch')`
+      : sql<string>`DATE(${receipts.dateTime}, 'unixepoch')`;
+
   const result = await db
     .select({
-      date: sql<string>`DATE(${receipts.dateTime}, 'unixepoch')`.as('date'),
+      date: bucketExpr.as('date'),
       amount: sql<number>`COALESCE(SUM(${receipts.totalAmount}), 0)`.as('amount'),
     })
     .from(receipts)
     .where(and(gte(receipts.dateTime, start), lte(receipts.dateTime, end)))
-    .groupBy(sql`DATE(${receipts.dateTime}, 'unixepoch')`)
-    .orderBy(sql`DATE(${receipts.dateTime}, 'unixepoch')`);
+    .groupBy(bucketExpr)
+    .orderBy(bucketExpr);
 
   return result.map((r) => ({
     date: r.date,
