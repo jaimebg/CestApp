@@ -13,6 +13,8 @@ import { type ZoneDefinition, type ZoneType, type ParsingHints } from '@/src/typ
 import { upsertStoreTemplate, getTemplateByStoreId } from '@/src/db/queries/storeParsingTemplates';
 import { useAppColors } from '@/src/hooks/useAppColors';
 import { useScanDraftStore } from '@/src/store/scanDraft';
+import { Button } from '@/src/components/ui/Button';
+import { isPdfFile } from '@/src/services/storage';
 
 const logger = createScopedLogger('Zones');
 
@@ -146,19 +148,28 @@ export default function ZoneSelectionScreen() {
     router.back();
   }, [router]);
 
-  if (!uri) {
+  if (!uri || isPdfFile(uri)) {
     return (
       <View
-        className="flex-1 justify-center items-center"
+        className="flex-1 justify-center items-center px-6"
         style={{ backgroundColor: colors.background }}
       >
-        <Ionicons name="alert-circle" size={48} color={colors.textSecondary} />
+        <Ionicons
+          name={!uri ? 'alert-circle' : 'document-text-outline'}
+          size={48}
+          color={colors.textSecondary}
+        />
         <Text
-          className="text-base mt-4"
+          className="text-base mt-4 text-center"
           style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
         >
-          {t('errors.loadFailed')}
+          {!uri ? t('errors.loadFailed') : t('scan.zonesPdfUnsupported')}
         </Text>
+        <View className="mt-6 w-48">
+          <Button variant="primary" size="md" onPress={() => router.back()}>
+            {t('common.back')}
+          </Button>
+        </View>
       </View>
     );
   }

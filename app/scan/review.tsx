@@ -235,7 +235,6 @@ export default function ScanReviewScreen() {
   const [showItemModal, setShowItemModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showTotalModal, setShowTotalModal] = useState(false);
-  const [showZonePrompt, setShowZonePrompt] = useState(false);
   const [showDiffModal, setShowDiffModal] = useState(false);
   const [currentStoreId, setCurrentStoreId] = useState<number | null>(null);
   const [hasExistingTemplate, setHasExistingTemplate] = useState(false);
@@ -319,7 +318,6 @@ export default function ScanReviewScreen() {
             updateParsedData(templateParsedData);
             setTemplateApplied(true);
             setHasExistingTemplate(true);
-            setShowZonePrompt(false);
             setAppliedZones(template.zones);
           }
         });
@@ -371,24 +369,15 @@ export default function ScanReviewScreen() {
             updateParsedData(templateParsedData);
             setTemplateApplied(true);
             setAppliedZones(template.zones);
-            // Don't show zone prompt if template was successfully applied
-            setShowZonePrompt(false);
             return;
           }
-
-          // Only show zone prompt for PDFs with low confidence and no template
-          const shouldShowPrompt = !template && parsedData.confidence < 90;
-          setShowZonePrompt(shouldShowPrompt);
         } else {
           // For camera images, don't use templates
           setHasExistingTemplate(false);
-          setShowZonePrompt(false);
         }
       } else {
         setCurrentStoreId(null);
         setHasExistingTemplate(false);
-        // Only show zone prompt for PDFs with low confidence
-        setShowZonePrompt(isPdf && parsedData.confidence < 90);
       }
     }
 
@@ -657,26 +646,6 @@ export default function ScanReviewScreen() {
     setShowCategoryModal(true);
   };
 
-  const handleConfigureZones = async () => {
-    let storeId = currentStoreId;
-
-    if (!storeId && parsedData?.storeName) {
-      storeId = await findOrCreateStore(parsedData.storeName);
-      setCurrentStoreId(storeId);
-    }
-
-    if (!storeId) return;
-
-    router.push({
-      pathname: '/scan/zones',
-      params: {
-        uri,
-        storeId: storeId.toString(),
-        imageDimensions: JSON.stringify(dimensions),
-      },
-    });
-  };
-
   const handleEditZones = () => {
     setShowReading(false);
 
@@ -868,14 +837,6 @@ export default function ScanReviewScreen() {
                       <Ionicons name="eye-outline" size={18} color={colors.textSecondary} />
                     </Pressable>
                     <Pressable
-                      onPress={handleConfigureZones}
-                      className="p-2 rounded-lg"
-                      style={{ backgroundColor: colors.surface }}
-                      hitSlop={ICON_HIT_SLOP}
-                    >
-                      <Ionicons name="pencil" size={18} color={colors.textSecondary} />
-                    </Pressable>
-                    <Pressable
                       onPress={handleDeleteTemplate}
                       className="p-2 rounded-lg"
                       style={{ backgroundColor: colors.error + '15' }}
@@ -888,7 +849,7 @@ export default function ScanReviewScreen() {
               </Card>
             )}
 
-            {/* Existing Template (not yet applied) - Show edit/delete options (PDF only) */}
+            {/* Existing Template (not yet applied) - Show delete option (PDF only) */}
             {hasExistingTemplate && !templateApplied && isPdf && (
               <Card variant="outlined" padding="md" className="mb-4">
                 <View className="flex-row items-center justify-between">
@@ -916,14 +877,6 @@ export default function ScanReviewScreen() {
                   </View>
                   <View className="flex-row gap-2">
                     <Pressable
-                      onPress={handleConfigureZones}
-                      className="p-2 rounded-lg"
-                      style={{ backgroundColor: colors.surface }}
-                      hitSlop={ICON_HIT_SLOP}
-                    >
-                      <Ionicons name="pencil" size={18} color={colors.textSecondary} />
-                    </Pressable>
-                    <Pressable
                       onPress={handleDeleteTemplate}
                       className="p-2 rounded-lg"
                       style={{ backgroundColor: colors.error + '15' }}
@@ -932,60 +885,6 @@ export default function ScanReviewScreen() {
                       <Ionicons name="trash-outline" size={18} color={colors.error} />
                     </Pressable>
                   </View>
-                </View>
-              </Card>
-            )}
-
-            {/* Zone Configuration Prompt - No template exists (PDF only) */}
-            {showZonePrompt && !hasExistingTemplate && !templateApplied && isPdf && (
-              <Card variant="outlined" padding="md" className="mb-4">
-                <View className="flex-row items-center mb-2">
-                  <View
-                    className="rounded-full p-2 mr-3"
-                    style={{ backgroundColor: colors.accent + '30' }}
-                  >
-                    <Ionicons name="grid-outline" size={20} color={colors.warning} />
-                  </View>
-                  <View className="flex-1">
-                    <Text
-                      className="text-sm"
-                      style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
-                    >
-                      {t('scan.configureZones')}
-                    </Text>
-                    <Text
-                      className="text-xs mt-0.5"
-                      style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-                    >
-                      {t('scan.configureZonesDesc')}
-                    </Text>
-                  </View>
-                </View>
-                <View className="flex-row gap-2 mt-2">
-                  <Pressable
-                    onPress={() => setShowZonePrompt(false)}
-                    className="flex-1 py-2 rounded-lg items-center"
-                    style={{ backgroundColor: colors.surface }}
-                  >
-                    <Text
-                      className="text-sm"
-                      style={{ color: colors.textSecondary, fontFamily: 'Inter_500Medium' }}
-                    >
-                      {t('common.skip')}
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={handleConfigureZones}
-                    className="flex-1 py-2 rounded-lg items-center"
-                    style={{ backgroundColor: colors.primaryDeep }}
-                  >
-                    <Text
-                      className="text-sm text-white"
-                      style={{ fontFamily: 'Inter_600SemiBold' }}
-                    >
-                      {t('scan.defineZones')}
-                    </Text>
-                  </Pressable>
                 </View>
               </Card>
             )}
