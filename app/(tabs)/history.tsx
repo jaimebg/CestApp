@@ -622,8 +622,11 @@ export default function HistoryScreen() {
                   <Text
                     className={
                       selectedDatePreset === preset
-                        ? 'text-white font-medium'
+                        ? 'text-white'
                         : 'text-text-secondary dark:text-text-dark-secondary'
+                    }
+                    style={
+                      selectedDatePreset === preset ? { fontFamily: 'Inter_500Medium' } : undefined
                     }
                   >
                     {preset === 'all' ? t('history.allDates') : t(`history.${preset}`)}
@@ -781,8 +784,11 @@ export default function HistoryScreen() {
                 <Text
                   className={
                     selectedCategoryId === null
-                      ? 'text-white font-medium'
+                      ? 'text-white'
                       : 'text-text-secondary dark:text-text-dark-secondary'
+                  }
+                  style={
+                    selectedCategoryId === null ? { fontFamily: 'Inter_500Medium' } : undefined
                   }
                 >
                   {t('history.allCategories')}
@@ -805,8 +811,11 @@ export default function HistoryScreen() {
                   <Text
                     className={
                       selectedCategoryId === cat.id
-                        ? 'text-white font-medium'
+                        ? 'text-white'
                         : 'text-text-secondary dark:text-text-dark-secondary'
+                    }
+                    style={
+                      selectedCategoryId === cat.id ? { fontFamily: 'Inter_500Medium' } : undefined
                     }
                   >
                     {cat.name}
