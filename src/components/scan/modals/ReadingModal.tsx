@@ -5,15 +5,7 @@
  */
 
 import { useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  Modal,
-  Platform,
-  Pressable,
-  useWindowDimensions,
-} from 'react-native';
+import { View, Text, ScrollView, Modal, Platform, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import Svg, { Rect } from 'react-native-svg';
@@ -23,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { ModalHeader } from '../../ui/ModalHeader';
 import { Button } from '../../ui/Button';
 import { ReadingColumn } from '../../ui/ReadingColumn';
+import { fitInBox, READING_MAX } from '../../../theme/layout';
 import { ZONE_COLORS, ZONE_LABELS, type ZoneDefinition, type ZoneType } from '@/src/types/zones';
 import type { ReviewColors } from '../types';
 
@@ -52,13 +45,19 @@ export function ReadingModal({
 }: ReadingModalProps) {
   const { t, i18n } = useTranslation();
   const insets = useSafeAreaInsets();
-  const { width: screenWidth } = useWindowDimensions();
   const [showText, setShowText] = useState(false);
+  const [viewport, setViewport] = useState<{ width: number; height: number } | null>(null);
 
   const language = i18n.language.startsWith('es') ? 'es' : 'en';
   const aspectRatio = dimensions.height > 0 ? dimensions.width / dimensions.height : 1.5;
-  const previewWidth = Math.min(screenWidth, 640) - 32;
-  const previewHeight = previewWidth / aspectRatio;
+  const preview = viewport
+    ? fitInBox({
+        aspect: aspectRatio,
+        maxWidth: Math.min(viewport.width, READING_MAX) - 32,
+        /** Leave room for the zone-type legend and the text toggle below. */
+        maxHeight: viewport.height * 0.72,
+      })
+    : null;
 
   // One entry per kind of zone: a receipt has many product rows but one
   // meaning for them.
@@ -81,14 +80,20 @@ export function ReadingModal({
       >
         <ModalHeader title={t('scan.readingTitle')} onClose={onClose} />
 
-        <ScrollView className="flex-1 p-4">
+        <ScrollView
+          className="flex-1 p-4"
+          onLayout={(event) => {
+            const { width, height } = event.nativeEvent.layout;
+            setViewport({ width, height });
+          }}
+        >
           <ReadingColumn>
-            {imageUri && (
+            {imageUri && preview && (
               <View className="items-center">
                 {/* The receipt is shown in the geometry the zones were read in, so
                   a zone lands where the scanner placed it. */}
                 <View
-                  style={{ width: previewWidth, height: previewHeight }}
+                  style={{ width: preview.width, height: preview.height }}
                   className="rounded-2xl overflow-hidden"
                 >
                   {isPdf ? (
@@ -103,7 +108,7 @@ export function ReadingModal({
                   ) : (
                     <Image
                       source={{ uri: imageUri }}
-                      style={{ width: previewWidth, height: previewHeight }}
+                      style={{ width: preview.width, height: preview.height }}
                       contentFit="fill"
                     />
                   )}
@@ -113,17 +118,17 @@ export function ReadingModal({
                       position: 'absolute',
                       top: 0,
                       left: 0,
-                      width: previewWidth,
-                      height: previewHeight,
+                      width: preview.width,
+                      height: preview.height,
                     }}
                   >
                     {zones.map((zone) => (
                       <Rect
                         key={zone.id}
-                        x={zone.boundingBox.x * previewWidth}
-                        y={zone.boundingBox.y * previewHeight}
-                        width={zone.boundingBox.width * previewWidth}
-                        height={zone.boundingBox.height * previewHeight}
+                        x={zone.boundingBox.x * preview.width}
+                        y={zone.boundingBox.y * preview.height}
+                        width={zone.boundingBox.width * preview.width}
+                        height={zone.boundingBox.height * preview.height}
                         fill={`${ZONE_COLORS[zone.type]}40`}
                         stroke={ZONE_COLORS[zone.type]}
                         strokeWidth={2}
