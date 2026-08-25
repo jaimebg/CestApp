@@ -1,63 +1,57 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { BRAND, escapeHtml, fontFaces, px } from './theme.js';
+import { statusBarHtml, STATUS_BAR_CSS } from './devices.js';
+import { fitDevice, screenBands, stageBox } from './geometry.js';
 
-const here = path.dirname(fileURLToPath(import.meta.url));
-const root = path.resolve(here, '..', '..');
-
-export const DEFAULT_FONTS = {
-  regular: path.join(
-    root,
-    'node_modules',
-    '@expo-google-fonts',
-    'inter',
-    '400Regular',
-    'Inter_400Regular.ttf'
-  ),
-  bold: path.join(
-    root,
-    'node_modules',
-    '@expo-google-fonts',
-    'inter',
-    '700Bold',
-    'Inter_700Bold.ttf'
-  ),
+/** Caption band proportions, per device kind. */
+const CAPTION = {
+  phone: { top: 0.062, band: 0.105, gap: 0.022, size: 0.082, rule: 0.005 },
+  tablet: { top: 0.05, band: 0.095, gap: 0.018, size: 0.062, rule: 0.004 },
 };
 
-const fontCache = new Map();
+/**
+ * One store tile: caption, rule, and a framed device holding the whole capture.
+ *
+ * Nothing here picks a crop. `fitDevice` sizes the screen to the capture's own
+ * aspect ratio, so the shot is always rendered complete; the only pixels removed
+ * are the capture's system status bar, which `screenBands` replaces with a
+ * synthetic one of exactly the same height.
+ */
+export function slotHtml({ caption, shotDataUri, slot, device, raw }) {
+  const { width, height, insets, platform } = slot;
+  const kind = device.kind;
+  const c = CAPTION[kind];
 
-function fontFace(weight, ttfPath) {
-  if (!fontCache.has(ttfPath)) {
-    const ttf = fs.readFileSync(ttfPath);
-    fontCache.set(ttfPath, `data:font/ttf;base64,${ttf.toString('base64')}`);
-  }
-  return `@font-face {
-    font-family: 'Inter';
-    font-style: normal;
-    font-weight: ${weight};
-    src: url('${fontCache.get(ttfPath)}') format('truetype');
-  }`;
-}
+  const { stageWidth, stageHeight, stageLeft, stageTop } = stageBox({ width, height, insets });
+  const screenAspect = raw.width / raw.height;
+  const frame = fitDevice({
+    stageWidth,
+    stageHeight,
+    screenAspect,
+    bezelRatio: device.bezelRatio,
+  });
+  const bands = screenBands({
+    screenWidth: frame.screenWidth,
+    screenHeight: frame.screenHeight,
+    rawHeight: raw.height,
+    statusStrip: device.statusStrip,
+  });
 
-const escapeHtml = (text) =>
-  text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const deviceLeft = stageLeft + (stageWidth - frame.deviceWidth) / 2;
+  const deviceTop = stageTop + (stageHeight - frame.deviceHeight) / 2;
+  const deviceRadius = frame.deviceWidth * device.cornerRatio;
+  const screenRadius = Math.max(0, deviceRadius - frame.bezel);
 
-export function slotHtml({
-  caption,
-  shotDataUri,
-  width,
-  height,
-  fit = 'cover',
-  fonts = DEFAULT_FONTS,
-}) {
-  const captionSize = Math.round(height * 0.021);
+  const captionTop = height * c.top;
+  const captionBand = height * c.band;
+  const ruleTop = captionTop + captionBand + height * c.gap;
+
   return `<!doctype html>
 <html>
   <head>
     <meta charset="utf-8" />
     <style>
-      ${fontFace(400, fonts.regular)}
-      ${fontFace(700, fonts.bold)}
+      ${fontFaces()}
+      ${STATUS_BAR_CSS}
       * {
         margin: 0;
         padding: 0;
@@ -65,68 +59,198 @@ export function slotHtml({
       }
       html,
       body {
-        width: ${width}px;
-        height: ${height}px;
+        width: ${px(width)};
+        height: ${px(height)};
         overflow: hidden;
-        background: #fffde1;
         -webkit-font-smoothing: antialiased;
       }
-      .stage {
-        display: flex;
-        flex-direction: column;
-        width: 100%;
-        height: 100%;
+      /*
+       * Warm at the top so the caption keeps its 6.13:1 on cream, cooling into
+       * brand green under the device. The golden note is kept to one corner and
+       * away from the green: overlap the two and the tile turns olive.
+       */
+      body {
+        position: relative;
+        background:
+          radial-gradient(112% 58% at 50% 0%, #ffffff 0%, rgba(255, 255, 255, 0) 58%),
+          radial-gradient(
+            66% 36% at 97% 5%,
+            rgba(251, 229, 128, 0.55),
+            rgba(251, 229, 128, 0) 68%
+          ),
+          radial-gradient(104% 46% at 50% 104%, rgba(118, 165, 60, 0.78), rgba(118, 165, 60, 0) 72%),
+          linear-gradient(
+            180deg,
+            ${BRAND.cream} 0%,
+            #fbfae2 36%,
+            #ecf1cc 64%,
+            #d2e4ad 86%,
+            #b3d387 100%
+          );
       }
-      .band {
-        flex: 0 0 12%;
+      .halo {
+        position: absolute;
+        left: 50%;
+        top: ${px(deviceTop + frame.deviceHeight * 0.42)};
+        width: ${px(frame.deviceWidth * 2.1)};
+        height: ${px(frame.deviceHeight * 1.05)};
+        transform: translate(-50%, -50%);
+        border-radius: 50%;
+        background: radial-gradient(
+          closest-side,
+          rgba(255, 255, 255, 0.75),
+          rgba(255, 255, 255, 0.28) 48%,
+          rgba(255, 255, 255, 0) 76%
+        );
+      }
+      .caption-area {
+        position: absolute;
+        left: ${px(width * insets.left)};
+        top: ${px(captionTop)};
+        width: ${px(width * (1 - insets.left - insets.right))};
+        height: ${px(captionBand)};
         display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0 4%;
+        align-items: flex-end;
       }
       .caption {
         font-family: 'Inter', sans-serif;
         font-weight: 700;
-        color: #3d6b23;
-        font-size: ${captionSize}px;
-        line-height: 1.15;
-        letter-spacing: -0.01em;
-        text-align: center;
+        color: ${BRAND.deep};
+        font-size: ${px(width * c.size)};
+        line-height: 1.12;
+        letter-spacing: -0.022em;
+        text-wrap: balance;
       }
-      .frame-area {
-        flex: 0 0 84%;
-        min-height: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+      .rule {
+        position: absolute;
+        left: ${px(width * insets.left)};
+        top: ${px(ruleTop)};
+        width: ${px(width * 0.115)};
+        height: ${px(height * c.rule)};
+        border-radius: ${px(height * c.rule)};
+        background: ${BRAND.fresh};
       }
-      .frame {
-        width: 92%;
-        height: 95%;
-        border-radius: 60px;
-        border: 2px solid rgba(61, 107, 35, 0.25);
-        box-shadow: 0 24px 60px rgba(61, 107, 35, 0.18);
+      .device {
+        position: absolute;
+        left: ${px(deviceLeft)};
+        top: ${px(deviceTop)};
+        width: ${px(frame.deviceWidth)};
+        height: ${px(frame.deviceHeight)};
+        padding: ${px(frame.bezel)};
+        border-radius: ${px(deviceRadius)};
+        background: linear-gradient(155deg, #3a3733 0%, ${BRAND.charcoal} 42%, #0d0c0b 100%);
+        box-shadow:
+          0 ${px(frame.deviceHeight * 0.012)} ${px(frame.deviceHeight * 0.03)}
+            rgba(26, 25, 24, 0.24),
+          0 ${px(frame.deviceHeight * 0.05)} ${px(frame.deviceHeight * 0.11)} rgba(61, 107, 35, 0.32);
+      }
+      .device::after {
+        content: '';
+        position: absolute;
+        inset: ${px(frame.bezel * 0.28)};
+        border-radius: ${px(deviceRadius - frame.bezel * 0.28)};
+        border: ${px(Math.max(1, frame.bezel * 0.1))} solid rgba(255, 255, 255, 0.09);
+        pointer-events: none;
+      }
+      .screen {
+        position: relative;
+        width: ${px(frame.screenWidth)};
+        height: ${px(frame.screenHeight)};
+        border-radius: ${px(screenRadius)};
         overflow: hidden;
-        background: ${fit === 'contain' ? '#fffde1' : '#ffffff'};
+        background: ${BRAND.cream};
       }
-      .frame img {
-        width: 100%;
-        height: 100%;
-        object-fit: ${fit};
+      .shot {
+        position: absolute;
+        left: 0;
+        top: ${px(bands.statusBarHeight)};
+        width: ${px(bands.shotRenderedWidth)};
+        height: ${px(bands.shotWindowHeight)};
+        overflow: hidden;
+      }
+      .shot img {
+        position: absolute;
+        left: 0;
+        top: ${px(bands.shotOffsetY)};
+        width: ${px(bands.shotRenderedWidth)};
+        height: ${px(bands.shotRenderedHeight)};
         display: block;
-      }
-      .strip {
-        flex: 0 0 4%;
-        background: #93bd57;
       }
     </style>
   </head>
   <body>
-    <div class="stage">
-      <div class="band"><div class="caption">${escapeHtml(caption)}</div></div>
-      <div class="frame-area"><div class="frame"><img src="${shotDataUri}" /></div></div>
-      <div class="strip"></div>
+    <div class="halo"></div>
+    <div class="caption-area"><div class="caption">${escapeHtml(caption)}</div></div>
+    <div class="rule"></div>
+    <div class="device">
+      <div class="screen">
+        ${statusBarHtml({ platform, kind, width: frame.screenWidth, height: bands.statusBarHeight })}
+        <div class="shot"><img src="${shotDataUri}" /></div>
+      </div>
     </div>
+    <script>
+      /**
+       * Runs once per tile before the screenshot is taken. Returns the numbers
+       * compose asserts on, so a layout regression fails the run instead of
+       * shipping a cropped tile.
+       */
+      window.__prepare = async function (sampleY) {
+        const img = document.querySelector('.shot img');
+        await img.decode();
+
+        // Paint the synthetic status bar in the capture's own first content
+        // colour, so there is no seam whether the screen below is cream or the
+        // Settings modal's dimmed backdrop.
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = 1;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        ctx.drawImage(img, 0, -sampleY);
+        const row = ctx.getImageData(0, 0, canvas.width, 1).data;
+        const tally = new Map();
+        for (let x = 0; x < canvas.width; x += 1) {
+          const key = row[x * 4] + ',' + row[x * 4 + 1] + ',' + row[x * 4 + 2];
+          tally.set(key, (tally.get(key) || 0) + 1);
+        }
+        let best = '255,253,225';
+        let bestCount = -1;
+        for (const [key, count] of tally) {
+          if (count > bestCount) {
+            best = key;
+            bestCount = count;
+          }
+        }
+        const [r, g, b] = best.split(',').map(Number);
+        const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+        const root = document.documentElement.style;
+        root.setProperty('--statusbar-bg', 'rgb(' + best + ')');
+        root.setProperty('--statusbar-ink', luminance > 0.5 ? '#1a1918' : '#fffde1');
+
+        // Spanish captions run about a fifth longer than their English
+        // counterparts; shrink until the longest one fits its band.
+        const caption = document.querySelector('.caption');
+        const area = document.querySelector('.caption-area');
+        let size = parseFloat(getComputedStyle(caption).fontSize);
+        while (
+          size > 12 &&
+          (caption.scrollHeight > area.clientHeight || caption.scrollWidth > area.clientWidth)
+        ) {
+          size -= 1;
+          caption.style.fontSize = size + 'px';
+        }
+
+        await document.fonts.ready;
+        const screen = document.querySelector('.screen').getBoundingClientRect();
+        const frame = document.querySelector('.device').getBoundingClientRect();
+        return {
+          captionFontSize: size,
+          captionLines: Math.round(caption.scrollHeight / (size * 1.12)),
+          screen: { width: screen.width, height: screen.height },
+          device: { left: frame.left, top: frame.top, right: frame.right, bottom: frame.bottom },
+          natural: { width: img.naturalWidth, height: img.naturalHeight },
+        };
+      };
+    </script>
   </body>
 </html>`;
 }
