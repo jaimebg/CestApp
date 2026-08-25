@@ -21,6 +21,8 @@ import { EmptyState } from '@/src/components/ui/EmptyState';
 import { Amount } from '@/src/components/ui/Amount';
 import { MIN_TARGET } from '@/src/theme/a11y';
 import { createScopedLogger } from '@/src/utils/debug';
+import { formatDayLabel } from '@/src/utils/dateTime';
+import { categoryLabel } from '@/src/utils/categoryLabel';
 
 const logger = createScopedLogger('Analytics');
 
@@ -93,10 +95,7 @@ export default function AnalyticsScreen() {
 
   const barChartData =
     data?.spendingByDay.map((item) => {
-      const dayLabel = new Date(item.date).toLocaleDateString(undefined, {
-        weekday: 'short',
-        day: 'numeric',
-      });
+      const dayLabel = formatDayLabel(new Date(item.date), language);
 
       const label =
         period === 'year'
@@ -336,8 +335,7 @@ export default function AnalyticsScreen() {
                             style={{ fontFamily: 'Inter_400Regular' }}
                             numberOfLines={1}
                           >
-                            {category.categoryIcon}{' '}
-                            {category.categoryName || t('item.uncategorized')}
+                            {category.categoryIcon} {categoryLabel(category.categoryName, t)}
                           </Text>
                           <Text
                             className="text-xs text-text-secondary dark:text-text-dark-secondary ml-1"

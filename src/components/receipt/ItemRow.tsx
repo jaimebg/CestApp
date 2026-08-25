@@ -1,10 +1,12 @@
 import { memo } from 'react';
 import { View, Text } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useFormatPrice } from '../../store/preferences';
 import { useAppColors } from '../../hooks/useAppColors';
 import { Amount } from '../ui/Amount';
 import type { Item } from '../../db/schema/items';
 import type { Category } from '../../db/schema/categories';
+import { categoryLabel } from '../../utils/categoryLabel';
 
 interface ItemRowProps {
   item: Item;
@@ -15,6 +17,7 @@ interface ItemRowProps {
 }
 
 function ItemRowComponent({ item, category, showCategory = true, isLast = false }: ItemRowProps) {
+  const { t } = useTranslation();
   const { formatPrice } = useFormatPrice();
   const colors = useAppColors();
 
@@ -75,7 +78,7 @@ function ItemRowComponent({ item, category, showCategory = true, isLast = false 
               className="text-text-secondary dark:text-text-dark-secondary text-xs ml-2"
               style={{ fontFamily: 'Inter_400Regular' }}
             >
-              {category.name}
+              {categoryLabel(category.name, t)}
             </Text>
           )}
         </View>

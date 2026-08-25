@@ -47,6 +47,7 @@ import { parseAmountInput } from '../../src/config/currency';
 import { createScopedLogger } from '../../src/utils/debug';
 import { hapticDelete } from '../../src/utils/haptics';
 import { showSuccessToast, showErrorToast } from '../../src/utils/toast';
+import { categoryLabel } from '../../src/utils/categoryLabel';
 import type { Receipt } from '../../src/db/schema/receipts';
 import type { Store } from '../../src/db/schema/stores';
 import type { Item } from '../../src/db/schema/items';
@@ -908,7 +909,7 @@ export default function ReceiptDetailScreen() {
                     setEditingItem((prev) => (prev ? { ...prev, categoryId: cat.id } : null))
                   }
                   accessibilityRole="button"
-                  accessibilityLabel={cat.name}
+                  accessibilityLabel={categoryLabel(cat.name, t)}
                   accessibilityState={{ selected: editingItem?.categoryId === cat.id }}
                   style={{ minHeight: MIN_TARGET }}
                   className={`flex-row items-center px-3 py-2 rounded-full border ${
@@ -928,7 +929,7 @@ export default function ReceiptDetailScreen() {
                     }
                     style={{ fontFamily: 'Inter_400Regular' }}
                   >
-                    {cat.name}
+                    {categoryLabel(cat.name, t)}
                   </Text>
                 </Pressable>
               ))}

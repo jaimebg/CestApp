@@ -95,7 +95,7 @@ export function DateEditModal({
                 <TextInput
                   value={monthFirst ? month : day}
                   onChangeText={monthFirst ? onChangeMonth : onChangeDay}
-                  placeholder={monthFirst ? 'MM' : 'DD'}
+                  placeholder={monthFirst ? t('scan.monthPlaceholder') : t('scan.dayPlaceholder')}
                   placeholderTextColor={colors.textSecondary}
                   className="px-4 py-3 rounded-xl text-base text-center"
                   style={inputStyle}
@@ -113,7 +113,7 @@ export function DateEditModal({
                 <TextInput
                   value={monthFirst ? day : month}
                   onChangeText={monthFirst ? onChangeDay : onChangeMonth}
-                  placeholder={monthFirst ? 'DD' : 'MM'}
+                  placeholder={monthFirst ? t('scan.dayPlaceholder') : t('scan.monthPlaceholder')}
                   placeholderTextColor={colors.textSecondary}
                   className="px-4 py-3 rounded-xl text-base text-center"
                   style={inputStyle}
@@ -131,7 +131,7 @@ export function DateEditModal({
                 <TextInput
                   value={year}
                   onChangeText={onChangeYear}
-                  placeholder="YYYY"
+                  placeholder={t('scan.yearPlaceholder')}
                   placeholderTextColor={colors.textSecondary}
                   className="px-4 py-3 rounded-xl text-base text-center"
                   style={inputStyle}

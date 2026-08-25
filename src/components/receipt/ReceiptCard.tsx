@@ -4,8 +4,9 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
 import type { Receipt } from '../../db/schema/receipts';
 import type { Store } from '../../db/schema/stores';
-import { useFormatPrice } from '../../store/preferences';
+import { useFormatPrice, usePreferencesStore } from '../../store/preferences';
 import { useAppColors } from '../../hooks/useAppColors';
+import { formatShortDate, formatLocalizedTime } from '../../utils/dateTime';
 import { Amount } from '../ui/Amount';
 import { fonts } from '../../theme/type';
 
@@ -19,21 +20,15 @@ interface ReceiptCardProps {
 function ReceiptCardComponent({ receipt, store, itemCount = 0, onPress }: ReceiptCardProps) {
   const { t } = useTranslation();
   const { formatPrice } = useFormatPrice();
+  const language = usePreferencesStore((state) => state.language);
   const colors = useAppColors();
 
   const formattedDate = receipt.dateTime
-    ? new Date(receipt.dateTime).toLocaleDateString(undefined, {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
-      })
+    ? formatShortDate(new Date(receipt.dateTime), language)
     : t('scan.noDateFound');
 
   const formattedTime = receipt.dateTime
-    ? new Date(receipt.dateTime).toLocaleTimeString(undefined, {
-        hour: '2-digit',
-        minute: '2-digit',
-      })
+    ? formatLocalizedTime(new Date(receipt.dateTime), language)
     : '';
 
   const storeName = store?.name || t('scan.unknownStore');

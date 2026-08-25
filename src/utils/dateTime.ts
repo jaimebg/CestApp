@@ -27,9 +27,19 @@ export function buildValidatedDateTime(
   return date;
 }
 
+/**
+ * The app's language preference, as a BCP 47 tag.
+ *
+ * Never pass `undefined` to a `toLocale*` call: that follows the device, so a
+ * Spanish app on an English phone renders English weekdays and months next to
+ * Spanish UI chrome.
+ */
+function localeFor(language: 'en' | 'es'): string {
+  return language === 'es' ? 'es-ES' : 'en-GB';
+}
+
 export function formatLocalizedDate(date: Date, language: 'en' | 'es'): string {
-  const locale = language === 'es' ? 'es-ES' : 'en-GB';
-  return date.toLocaleDateString(locale, {
+  return date.toLocaleDateString(localeFor(language), {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
@@ -38,6 +48,19 @@ export function formatLocalizedDate(date: Date, language: 'en' | 'es'): string {
 }
 
 export function formatLocalizedTime(date: Date, language: 'en' | 'es'): string {
-  const locale = language === 'es' ? 'es-ES' : 'en-GB';
-  return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+  return date.toLocaleTimeString(localeFor(language), { hour: '2-digit', minute: '2-digit' });
+}
+
+/** `Mon, 24 Aug` / `lun, 24 ago` — receipt cards and list rows. */
+export function formatShortDate(date: Date, language: 'en' | 'es'): string {
+  return date.toLocaleDateString(localeFor(language), {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+/** `Mon 24` / `lun 24` — chart axis ticks, where the month is already implied. */
+export function formatDayLabel(date: Date, language: 'en' | 'es'): string {
+  return date.toLocaleDateString(localeFor(language), { weekday: 'short', day: 'numeric' });
 }

@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { ModalHeader } from '../../ui/ModalHeader';
 import type { Category, ReviewColors } from '../types';
+import { categoryLabel } from '../../../utils/categoryLabel';
 
 interface CategoryPickerModalProps {
   visible: boolean;
@@ -52,13 +53,14 @@ export function CategoryPickerModal({
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => {
             const isSelected = item.id === selectedCategoryId;
+            const label = categoryLabel(item.name, t);
             return (
               <Pressable
                 onPress={() => onSelect(item.id)}
                 className="flex-row items-center px-4 py-3 border-b"
                 style={{ borderColor: colors.border }}
                 accessibilityRole="button"
-                accessibilityLabel={item.name}
+                accessibilityLabel={label}
                 accessibilityState={{ selected: isSelected }}
               >
                 <View
@@ -76,7 +78,7 @@ export function CategoryPickerModal({
                     fontFamily: isSelected ? 'Inter_600SemiBold' : 'Inter_500Medium',
                   }}
                 >
-                  {item.name}
+                  {label}
                 </Text>
                 {isSelected && <Ionicons name="checkmark-circle" size={24} color={colors.action} />}
               </Pressable>

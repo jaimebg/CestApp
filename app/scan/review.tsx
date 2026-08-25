@@ -36,6 +36,7 @@ import type { OcrBlock } from '@/src/services/ocr';
 import { useFormatPrice, usePreferencesStore } from '@/src/store/preferences';
 import { parseAmountInput } from '@/src/config/currency';
 import { formatLocalizedDate } from '@/src/utils/dateTime';
+import { categoryLabelWithIcon } from '@/src/utils/categoryLabel';
 import { useAppColors } from '@/src/hooks/useAppColors';
 import { ICON_HIT_SLOP } from '@/src/theme/a11y';
 import { ScanItemRow } from '@/src/components/scan/ScanItemRow';
@@ -763,8 +764,10 @@ export default function ScanReviewScreen() {
 
   const getCategoryName = (categoryId: number | null | undefined) => {
     if (!categoryId) return null;
-    const category = categoriesList.find((c) => c.id === categoryId);
-    return category ? `${category.icon || ''} ${category.name}`.trim() : null;
+    return categoryLabelWithIcon(
+      categoriesList.find((c) => c.id === categoryId),
+      t
+    );
   };
 
   // Row identity and callbacks are memoised by React Compiler (enabled in

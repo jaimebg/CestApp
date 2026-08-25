@@ -34,6 +34,7 @@ import { useEntering, staggerDelay } from '@/src/hooks/useEntering';
 import { ICON_HIT_SLOP, MIN_TARGET } from '@/src/theme/a11y';
 import { createScopedLogger } from '@/src/utils/debug';
 import { mergePages } from '@/src/utils/pagination';
+import { categoryLabel } from '@/src/utils/categoryLabel';
 import type { Receipt } from '@/src/db/schema/receipts';
 import type { Store } from '@/src/db/schema/stores';
 
@@ -664,21 +665,21 @@ export default function HistoryScreen() {
                   <DateField
                     value={customStart.day}
                     onChange={(value) => setCustomStart((prev) => ({ ...prev, day: value }))}
-                    placeholder="DD"
+                    placeholder={t('scan.dayPlaceholder')}
                     maxLength={2}
                     colors={colors}
                   />
                   <DateField
                     value={customStart.month}
                     onChange={(value) => setCustomStart((prev) => ({ ...prev, month: value }))}
-                    placeholder="MM"
+                    placeholder={t('scan.monthPlaceholder')}
                     maxLength={2}
                     colors={colors}
                   />
                   <DateField
                     value={customStart.year}
                     onChange={(value) => setCustomStart((prev) => ({ ...prev, year: value }))}
-                    placeholder="YYYY"
+                    placeholder={t('scan.yearPlaceholder')}
                     maxLength={4}
                     colors={colors}
                   />
@@ -693,21 +694,21 @@ export default function HistoryScreen() {
                   <DateField
                     value={customEnd.day}
                     onChange={(value) => setCustomEnd((prev) => ({ ...prev, day: value }))}
-                    placeholder="DD"
+                    placeholder={t('scan.dayPlaceholder')}
                     maxLength={2}
                     colors={colors}
                   />
                   <DateField
                     value={customEnd.month}
                     onChange={(value) => setCustomEnd((prev) => ({ ...prev, month: value }))}
-                    placeholder="MM"
+                    placeholder={t('scan.monthPlaceholder')}
                     maxLength={2}
                     colors={colors}
                   />
                   <DateField
                     value={customEnd.year}
                     onChange={(value) => setCustomEnd((prev) => ({ ...prev, year: value }))}
-                    placeholder="YYYY"
+                    placeholder={t('scan.yearPlaceholder')}
                     maxLength={4}
                     colors={colors}
                   />
@@ -825,7 +826,7 @@ export default function HistoryScreen() {
                   key={cat.id}
                   onPress={() => setSelectedCategoryId(cat.id)}
                   accessibilityRole="button"
-                  accessibilityLabel={cat.name}
+                  accessibilityLabel={categoryLabel(cat.name, t)}
                   accessibilityState={{ selected: selectedCategoryId === cat.id }}
                   style={{ minHeight: MIN_TARGET, justifyContent: 'center' }}
                   className={`px-4 py-2 rounded-full border ${
@@ -846,7 +847,7 @@ export default function HistoryScreen() {
                         : { fontFamily: 'Inter_400Regular' }
                     }
                   >
-                    {cat.name}
+                    {categoryLabel(cat.name, t)}
                   </Text>
                 </Pressable>
               ))}
