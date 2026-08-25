@@ -35,6 +35,9 @@ interface ZoneSelectionCanvasProps {
   imageDimensions: { width: number; height: number };
 }
 
+/** Padding between the receipt and the edges of the space it is given. */
+const CANVAS_INSET = 16;
+
 export function ZoneSelectionCanvas({
   imageUri,
   zones,
@@ -53,9 +56,6 @@ export function ZoneSelectionCanvas({
     x: number;
     y: number;
   } | null>(null);
-
-  /** Padding between the receipt and the edges of the space it is given. */
-  const CANVAS_INSET = 16;
 
   const [availableBox, setAvailableBox] = useState<{ width: number; height: number } | null>(null);
 

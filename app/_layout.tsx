@@ -21,6 +21,9 @@ import { ErrorState } from '@/src/components/ui/EmptyState';
 import { useAppColors } from '@/src/hooks/useAppColors';
 import { installGlobalErrorHandlers } from '@/src/utils/errorLog';
 import { resolveLayout } from '@/src/theme/layout';
+import { createScopedLogger } from '@/src/utils/debug';
+
+const logger = createScopedLogger('RootLayout');
 
 installGlobalErrorHandlers();
 
@@ -123,7 +126,9 @@ export default function RootLayout() {
     if (Platform.OS !== 'android') return;
     const { width, height } = Dimensions.get('window');
     if (resolveLayout({ width, height }).isTablet) return;
-    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
+    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch((error) => {
+      logger.error('Failed to lock orientation:', error);
+    });
   }, []);
 
   if (!appReady) {

@@ -10,7 +10,7 @@ import { READING_MAX } from '@/src/theme/layout';
 export function ReadingColumn({ children, className = '', style, ...rest }: ViewProps) {
   return (
     <View
-      className={`w-full mx-auto ${className}`}
+      className={`w-full mx-auto${className ? ` ${className}` : ''}`}
       style={[{ maxWidth: READING_MAX }, style]}
       {...rest}
     >

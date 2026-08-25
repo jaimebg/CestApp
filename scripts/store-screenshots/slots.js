@@ -11,18 +11,15 @@ export const PLAY_IMAGES = path.join('fastlane', 'metadata', 'android', 'images'
 /**
  * Canvas insets as fractions of the tile, per device kind.
  *
- * Tablets get a shallower caption band and tighter margins: their captures are
- * squatter than the 3:4 store canvas, so every point of stage height buys real
- * device size instead of gutter.
- *
- * `tabletLandscape` is its own set rather than a reuse of `tablet`: the iPad
- * capture is now wider than it is tall, so the canvas is too (2732x2048), and
- * a landscape device needs a taller caption band relative to its own width to
- * keep two-line captions from crowding the frame.
+ * Tablets get a shallower caption band and tighter margins than phones: their
+ * captures are squatter than the 3:4 store canvas, so every point of stage
+ * height buys real device size instead of gutter. The iPad slots are
+ * permanently landscape (2732x2048), so the only tablet entry is
+ * `tabletLandscape`: a landscape device needs a taller caption band relative
+ * to its own width to keep two-line captions from crowding the frame.
  */
 const INSETS = {
   phone: { top: 0.215, bottom: 0.045, left: 0.08, right: 0.08 },
-  tablet: { top: 0.19, bottom: 0.036, left: 0.07, right: 0.07 },
   tabletLandscape: { top: 0.225, bottom: 0.05, left: 0.05, right: 0.05 },
 };
 

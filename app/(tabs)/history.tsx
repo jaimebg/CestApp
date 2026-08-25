@@ -33,6 +33,7 @@ import { ReadingColumn } from '@/src/components/ui/ReadingColumn';
 import { useAppColors } from '@/src/hooks/useAppColors';
 import { useEntering, staggerDelay } from '@/src/hooks/useEntering';
 import { ICON_HIT_SLOP, MIN_TARGET } from '@/src/theme/a11y';
+import { READING_MAX } from '@/src/theme/layout';
 import { createScopedLogger } from '@/src/utils/debug';
 import { mergePages } from '@/src/utils/pagination';
 import { categoryLabel } from '@/src/utils/categoryLabel';
@@ -570,7 +571,7 @@ export default function HistoryScreen() {
           paddingHorizontal: 16,
           paddingBottom: insets.bottom + 20,
           width: '100%',
-          maxWidth: 640,
+          maxWidth: READING_MAX,
           alignSelf: 'center',
         }}
         ListEmptyComponent={renderEmptyState}

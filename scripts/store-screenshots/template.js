@@ -3,14 +3,13 @@ import { statusBarHtml, STATUS_BAR_CSS } from './devices.js';
 import { fitDevice, screenBands, stageBox } from './geometry.js';
 
 /**
- * Caption band proportions, per device kind — and, for tablets, per
- * orientation. `tabletLandscape` covers the iPad tile once it turns landscape:
- * the canvas is wider, so `size` (a fraction of canvas width) drops relative
- * to `tablet`'s to keep the caption from overrunning two lines.
+ * Caption band proportions, per device kind. The iPad slots are permanently
+ * landscape, so the tablet entry is `tabletLandscape`, not `tablet`: the
+ * canvas is wider, so `size` (a fraction of canvas width) is smaller than a
+ * portrait tablet's would be, to keep the caption from overrunning two lines.
  */
 const CAPTION = {
   phone: { top: 0.062, band: 0.105, gap: 0.022, size: 0.082, rule: 0.005 },
-  tablet: { top: 0.05, band: 0.095, gap: 0.018, size: 0.062, rule: 0.004 },
   tabletLandscape: { top: 0.06, band: 0.105, gap: 0.022, size: 0.045, rule: 0.005 },
 };
 

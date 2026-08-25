@@ -28,7 +28,11 @@ export const DEVICES = {
     statusStrip: 48, //                     24pt status bar @2x
     kind: 'tablet',
     bezelRatio: 0.02,
-    cornerRatio: 0.055,
+    // Fraction of device WIDTH. Width is the longer side in this landscape
+    // profile, so 0.055 (sized for portrait, where width is the short side)
+    // would render ~8.2% of the short side — visibly rounder than approved.
+    // 0.037 restores roughly that original short-side proportion.
+    cornerRatio: 0.037,
   },
 };
 

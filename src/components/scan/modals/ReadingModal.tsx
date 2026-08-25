@@ -49,7 +49,8 @@ export function ReadingModal({
   const [viewport, setViewport] = useState<{ width: number; height: number } | null>(null);
 
   const language = i18n.language.startsWith('es') ? 'es' : 'en';
-  const aspectRatio = dimensions.height > 0 ? dimensions.width / dimensions.height : 1.5;
+  const aspectRatio =
+    dimensions.width > 0 && dimensions.height > 0 ? dimensions.width / dimensions.height : 1.5;
   const preview = viewport
     ? fitInBox({
         aspect: aspectRatio,
