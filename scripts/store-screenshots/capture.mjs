@@ -29,7 +29,27 @@ const ask = async (question) => {
   rl.close();
 };
 
+/**
+ * `simctl` has no rotate command, so this drives the Simulator UI directly:
+ * Cmd+Right (key code 124) rotates the frontmost simulator one turn clockwise.
+ * That needs Accessibility permission for the terminal running this script, so
+ * a manual fallback prompt covers the case where it isn't granted.
+ */
+const rotateToLandscape = async (device) => {
+  if (device.key !== 'ipad') return;
+  try {
+    execSync(
+      `osascript -e 'tell application "Simulator" to activate' ` +
+        `-e 'tell application "System Events" to key code 124 using command down'`,
+      { stdio: 'ignore' }
+    );
+  } catch {
+    await ask('Rotate the iPad simulator to landscape (Cmd+Right arrow), then Enter…');
+  }
+};
+
 for (const device of DEVICES) {
+  await rotateToLandscape(device);
   const appPath = await ask(
     `Path to the installed ${device.key} .app bundle (drag into terminal, empty to skip reinstall): `
   );
