@@ -2,7 +2,7 @@ import '../styles/global.css';
 import '@/src/i18n';
 import { useState, useEffect, useLayoutEffect, type ReactNode } from 'react';
 import { Stack, useSegments, useRootNavigationState, useRouter } from 'expo-router';
-import { ActivityIndicator, InteractionManager, View } from 'react-native';
+import { ActivityIndicator, Dimensions, InteractionManager, Platform, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -11,6 +11,7 @@ import { Toaster } from 'sonner-native';
 import { useTranslation } from 'react-i18next';
 import { ErrorBoundary } from '@/src/components/ErrorBoundary';
 import * as SplashScreen from 'expo-splash-screen';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import { useFonts } from '@expo-google-fonts/inter';
 import { DatabaseProvider, useDatabaseReady } from '@/src/db/provider';
 import { usePreferencesStore, type ColorScheme } from '@/src/store/preferences';
@@ -19,6 +20,7 @@ import { fontModules } from '@/src/theme/type';
 import { ErrorState } from '@/src/components/ui/EmptyState';
 import { useAppColors } from '@/src/hooks/useAppColors';
 import { installGlobalErrorHandlers } from '@/src/utils/errorLog';
+import { resolveLayout } from '@/src/theme/layout';
 
 installGlobalErrorHandlers();
 
@@ -112,6 +114,17 @@ export default function RootLayout() {
     });
     return () => handle.cancel();
   }, [appReady, isNavigationReady, hasCompletedOnboarding, isOnOnboardingScreen, router]);
+
+  /**
+   * Tablets rotate, phones do not. iOS handles this in Info.plist; Android has no
+   * manifest attribute that varies by device size, so it is locked here instead.
+   */
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    const { width, height } = Dimensions.get('window');
+    if (resolveLayout({ width, height }).isTablet) return;
+    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
+  }, []);
 
   if (!appReady) {
     return null;

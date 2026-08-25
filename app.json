@@ -3,7 +3,7 @@
     "name": "CestApp",
     "slug": "CestApp",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/images/cestapp-logo.png",
     "scheme": "cestapp",
     "userInterfaceStyle": "automatic",
@@ -16,7 +16,14 @@
       "bundleIdentifier": "com.jbgsoft.CestApp",
       "infoPlist": {
         "NSCameraUsageDescription": "CestApp needs access to your camera to capture receipt photos.",
-        "NSPhotoLibraryUsageDescription": "CestApp needs access to your photos to select receipt images."
+        "NSPhotoLibraryUsageDescription": "CestApp needs access to your photos to select receipt images.",
+        "UISupportedInterfaceOrientations": ["UIInterfaceOrientationPortrait"],
+        "UISupportedInterfaceOrientations~ipad": [
+          "UIInterfaceOrientationPortrait",
+          "UIInterfaceOrientationPortraitUpsideDown",
+          "UIInterfaceOrientationLandscapeLeft",
+          "UIInterfaceOrientationLandscapeRight"
+        ]
       }
     },
     "android": {
