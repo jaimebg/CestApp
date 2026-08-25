@@ -1,10 +1,11 @@
 import { useRef, useState, useCallback } from 'react';
-import { View, useWindowDimensions } from 'react-native';
+import { View } from 'react-native';
 import { Image } from 'expo-image';
 import Svg, { Rect } from 'react-native-svg';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSharedValue, runOnJS } from 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
+import { fitInBox } from '@/src/theme/layout';
 import {
   type ZoneDefinition,
   type ZoneType,
@@ -44,7 +45,6 @@ export function ZoneSelectionCanvas({
   onSelectZone,
   imageDimensions,
 }: ZoneSelectionCanvasProps) {
-  const { width: screenWidth } = useWindowDimensions();
   const { t } = useTranslation();
   const containerRef = useRef<View>(null);
   const [containerLayout, setContainerLayout] = useState<{
@@ -54,9 +54,21 @@ export function ZoneSelectionCanvas({
     y: number;
   } | null>(null);
 
+  /** Padding between the receipt and the edges of the space it is given. */
+  const CANVAS_INSET = 16;
+
+  const [availableBox, setAvailableBox] = useState<{ width: number; height: number } | null>(null);
+
   const aspectRatio = imageDimensions.width / imageDimensions.height;
-  const displayWidth = screenWidth - 32;
-  const displayHeight = displayWidth / aspectRatio;
+  const display = availableBox
+    ? fitInBox({
+        aspect: aspectRatio,
+        maxWidth: availableBox.width - CANVAS_INSET * 2,
+        maxHeight: availableBox.height - CANVAS_INSET * 2,
+      })
+    : null;
+  const displayWidth = display?.width ?? 0;
+  const displayHeight = display?.height ?? 0;
 
   const startX = useSharedValue(0);
   const startY = useSharedValue(0);
@@ -282,73 +294,81 @@ export function ZoneSelectionCanvas({
   const composedGesture = Gesture.Race(drawPanGesture, movePanGesture, tapGesture);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <View
-        className="items-center"
-        accessible={true}
-        accessibilityLabel={`${t('scan.zonesTitleDefine')} - ${t('scan.zonesInstructionsDefine')}`}
-        accessibilityHint={t('scan.zonesInstructionsDefine')}
-      >
-        <GestureDetector gesture={composedGesture}>
-          <View
-            ref={containerRef}
-            style={{ width: displayWidth, height: displayHeight }}
-            onLayout={(event) => {
-              const { width, height, x, y } = event.nativeEvent.layout;
-              setContainerLayout({ width, height, x, y });
-            }}
-          >
-            <Image
-              source={{ uri: imageUri }}
+    <GestureHandlerRootView
+      style={{ flex: 1 }}
+      onLayout={(event) => {
+        const { width, height } = event.nativeEvent.layout;
+        setAvailableBox({ width, height });
+      }}
+    >
+      {display && (
+        <View
+          className="items-center"
+          accessible={true}
+          accessibilityLabel={`${t('scan.zonesTitleDefine')} - ${t('scan.zonesInstructionsDefine')}`}
+          accessibilityHint={t('scan.zonesInstructionsDefine')}
+        >
+          <GestureDetector gesture={composedGesture}>
+            <View
+              ref={containerRef}
               style={{ width: displayWidth, height: displayHeight }}
-              contentFit="fill"
-            />
-
-            <Svg
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: displayWidth,
-                height: displayHeight,
+              onLayout={(event) => {
+                const { width, height, x, y } = event.nativeEvent.layout;
+                setContainerLayout({ width, height, x, y });
               }}
             >
-              {zones.map((zone) => {
-                // Use moving position if this zone is being moved
-                const isBeingMoved = moveState?.zoneId === zone.id && movingZonePosition;
-                const bb = isBeingMoved ? movingZonePosition : zone.boundingBox;
-                const isSelected = selectedZoneId === zone.id;
-                return (
-                  <Rect
-                    key={zone.id}
-                    x={bb.x * displayWidth}
-                    y={bb.y * displayHeight}
-                    width={bb.width * displayWidth}
-                    height={bb.height * displayHeight}
-                    fill={`${ZONE_COLORS[zone.type]}${isBeingMoved ? '60' : '40'}`}
-                    stroke={ZONE_COLORS[zone.type]}
-                    strokeWidth={isSelected ? 3 : 2}
-                    strokeDasharray={isSelected ? '5,3' : '0'}
-                  />
-                );
-              })}
+              <Image
+                source={{ uri: imageUri }}
+                style={{ width: displayWidth, height: displayHeight }}
+                contentFit="fill"
+              />
 
-              {tempZone && (
-                <Rect
-                  x={tempZone.x * displayWidth}
-                  y={tempZone.y * displayHeight}
-                  width={tempZone.width * displayWidth}
-                  height={tempZone.height * displayHeight}
-                  fill={`${ZONE_COLORS[activeZoneType]}40`}
-                  stroke={ZONE_COLORS[activeZoneType]}
-                  strokeWidth={2}
-                  strokeDasharray="5,5"
-                />
-              )}
-            </Svg>
-          </View>
-        </GestureDetector>
-      </View>
+              <Svg
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: displayWidth,
+                  height: displayHeight,
+                }}
+              >
+                {zones.map((zone) => {
+                  // Use moving position if this zone is being moved
+                  const isBeingMoved = moveState?.zoneId === zone.id && movingZonePosition;
+                  const bb = isBeingMoved ? movingZonePosition : zone.boundingBox;
+                  const isSelected = selectedZoneId === zone.id;
+                  return (
+                    <Rect
+                      key={zone.id}
+                      x={bb.x * displayWidth}
+                      y={bb.y * displayHeight}
+                      width={bb.width * displayWidth}
+                      height={bb.height * displayHeight}
+                      fill={`${ZONE_COLORS[zone.type]}${isBeingMoved ? '60' : '40'}`}
+                      stroke={ZONE_COLORS[zone.type]}
+                      strokeWidth={isSelected ? 3 : 2}
+                      strokeDasharray={isSelected ? '5,3' : '0'}
+                    />
+                  );
+                })}
+
+                {tempZone && (
+                  <Rect
+                    x={tempZone.x * displayWidth}
+                    y={tempZone.y * displayHeight}
+                    width={tempZone.width * displayWidth}
+                    height={tempZone.height * displayHeight}
+                    fill={`${ZONE_COLORS[activeZoneType]}40`}
+                    stroke={ZONE_COLORS[activeZoneType]}
+                    strokeWidth={2}
+                    strokeDasharray="5,5"
+                  />
+                )}
+              </Svg>
+            </View>
+          </GestureDetector>
+        </View>
+      )}
     </GestureHandlerRootView>
   );
 }
