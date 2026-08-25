@@ -256,82 +256,82 @@ export default function DashboardScreen() {
               </Pressable>
             </Animated.View>
           )}
-
-          {/* Recent Receipts */}
-          <Animated.View
-            entering={entering(FadeInUp, 400, 400)}
-            className="mt-8"
-            onLayout={(event) => setListTop(event.nativeEvent.layout.y)}
-          >
-            <View className="flex-row items-center justify-between mb-4">
-              <Text
-                className="text-lg text-text dark:text-text-dark"
-                style={{ fontFamily: 'Inter_600SemiBold' }}
-              >
-                {t('dashboard.recentReceipts')}
-              </Text>
-              {hasReceipts && (
-                <Pressable
-                  onPress={handleViewAllPress}
-                  className="flex-row items-center"
-                  accessibilityRole="button"
-                  accessibilityLabel={t('common.all')}
-                >
-                  <Text className="text-action dark:text-action-dark text-sm mr-1">
-                    {t('common.all')}
-                  </Text>
-                  <Ionicons name="chevron-forward" size={16} color={colors.action} />
-                </Pressable>
-              )}
-            </View>
-
-            {hasReceipts ? (
-              <View className={layout.columns === 2 ? 'flex-row flex-wrap -mx-1.5' : ''}>
-                {visibleReceipts.map((item, index) => (
-                  <Animated.View
-                    key={item.receipt.id}
-                    entering={entering(FadeInDown, 500 + staggerDelay(index, 100), 400)}
-                    style={
-                      layout.columns === 2 ? { width: '50%', paddingHorizontal: 6 } : undefined
-                    }
-                  >
-                    <ReceiptCard
-                      receipt={item.receipt}
-                      store={item.store}
-                      itemCount={item.itemCount}
-                      onPress={() => handleReceiptPress(item.receipt.id)}
-                    />
-                  </Animated.View>
-                ))}
-              </View>
-            ) : (
-              <Animated.View entering={entering(FadeIn, 500, 400)}>
-                <Card variant="outlined" padding="md">
-                  <View className="flex-row items-center">
-                    <View className="bg-primary/20 rounded-full p-3 mr-4">
-                      <Ionicons name="receipt-outline" size={24} color={colors.action} />
-                    </View>
-                    <View className="flex-1">
-                      <Text
-                        className="text-base text-text dark:text-text-dark"
-                        style={{ fontFamily: 'Inter_500Medium' }}
-                      >
-                        {t('dashboard.noReceipts')}
-                      </Text>
-                      <Text
-                        className="text-sm text-text-secondary dark:text-text-dark-secondary mt-0.5"
-                        style={{ fontFamily: 'Inter_400Regular' }}
-                      >
-                        {t('dashboard.startScanning')}
-                      </Text>
-                    </View>
-                  </View>
-                </Card>
-              </Animated.View>
-            )}
-          </Animated.View>
         </View>
       </ReadingColumn>
+
+      {/* Recent Receipts */}
+      <View
+        className="w-full mx-auto px-6 mt-8"
+        style={{ maxWidth: layout.gridWidth }}
+        onLayout={(event) => setListTop(event.nativeEvent.layout.y)}
+      >
+        <Animated.View entering={entering(FadeInUp, 400, 400)}>
+          <View className="flex-row items-center justify-between mb-4">
+            <Text
+              className="text-lg text-text dark:text-text-dark"
+              style={{ fontFamily: 'Inter_600SemiBold' }}
+            >
+              {t('dashboard.recentReceipts')}
+            </Text>
+            {hasReceipts && (
+              <Pressable
+                onPress={handleViewAllPress}
+                className="flex-row items-center"
+                accessibilityRole="button"
+                accessibilityLabel={t('common.all')}
+              >
+                <Text className="text-action dark:text-action-dark text-sm mr-1">
+                  {t('common.all')}
+                </Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.action} />
+              </Pressable>
+            )}
+          </View>
+
+          {hasReceipts ? (
+            <View className={layout.columns === 2 ? 'flex-row flex-wrap -mx-1.5' : ''}>
+              {visibleReceipts.map((item, index) => (
+                <Animated.View
+                  key={item.receipt.id}
+                  entering={entering(FadeInDown, 500 + staggerDelay(index, 100), 400)}
+                  style={layout.columns === 2 ? { width: '50%', paddingHorizontal: 6 } : undefined}
+                >
+                  <ReceiptCard
+                    receipt={item.receipt}
+                    store={item.store}
+                    itemCount={item.itemCount}
+                    onPress={() => handleReceiptPress(item.receipt.id)}
+                  />
+                </Animated.View>
+              ))}
+            </View>
+          ) : (
+            <Animated.View entering={entering(FadeIn, 500, 400)}>
+              <Card variant="outlined" padding="md">
+                <View className="flex-row items-center">
+                  <View className="bg-primary/20 rounded-full p-3 mr-4">
+                    <Ionicons name="receipt-outline" size={24} color={colors.action} />
+                  </View>
+                  <View className="flex-1">
+                    <Text
+                      className="text-base text-text dark:text-text-dark"
+                      style={{ fontFamily: 'Inter_500Medium' }}
+                    >
+                      {t('dashboard.noReceipts')}
+                    </Text>
+                    <Text
+                      className="text-sm text-text-secondary dark:text-text-dark-secondary mt-0.5"
+                      style={{ fontFamily: 'Inter_400Regular' }}
+                    >
+                      {t('dashboard.startScanning')}
+                    </Text>
+                  </View>
+                </View>
+              </Card>
+            </Animated.View>
+          )}
+        </Animated.View>
+      </View>
     </ScrollView>
   );
 }
