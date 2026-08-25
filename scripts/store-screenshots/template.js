@@ -42,7 +42,14 @@ function fontFace(weight, ttfPath) {
 const escapeHtml = (text) =>
   text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-export function slotHtml({ caption, shotDataUri, width, height, fonts = DEFAULT_FONTS }) {
+export function slotHtml({
+  caption,
+  shotDataUri,
+  width,
+  height,
+  fit = 'cover',
+  fonts = DEFAULT_FONTS,
+}) {
   const captionSize = Math.round(height * 0.021);
   return `<!doctype html>
 <html>
@@ -100,12 +107,12 @@ export function slotHtml({ caption, shotDataUri, width, height, fonts = DEFAULT_
         border: 2px solid rgba(61, 107, 35, 0.25);
         box-shadow: 0 24px 60px rgba(61, 107, 35, 0.18);
         overflow: hidden;
-        background: #ffffff;
+        background: ${fit === 'contain' ? '#fffde1' : '#ffffff'};
       }
       .frame img {
         width: 100%;
         height: 100%;
-        object-fit: cover;
+        object-fit: ${fit};
         display: block;
       }
       .strip {

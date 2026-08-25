@@ -35,6 +35,7 @@ const SLOTS = [
     device: 'ipad',
     width: 2048,
     height: 2732,
+    fit: 'contain',
     dirFor: (store) => path.join(PLAY_IMAGES, store, 'tenInchScreenshots'),
   },
 ];
@@ -169,6 +170,7 @@ try {
           shotDataUri: shots[shotKey],
           width: slot.width,
           height: slot.height,
+          fit: slot.fit,
           fonts: DEFAULT_FONTS,
         });
         const outPath = path.join(slot.dirFor(locale.store), `${screenId}.png`);
