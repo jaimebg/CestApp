@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { View, Text, ScrollView, Pressable, RefreshControl } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,7 +10,7 @@ import { Badge } from '@/src/components/ui/Badge';
 import { Amount } from '@/src/components/ui/Amount';
 import { Skeleton } from '@/src/components/ui/Skeleton';
 import { ReadingColumn } from '@/src/components/ui/ReadingColumn';
-import { ReceiptCard } from '@/src/components/receipt/ReceiptCard';
+import { ReceiptCard, RECEIPT_CARD_BLOCK } from '@/src/components/receipt/ReceiptCard';
 import { ReceiptCardSkeleton } from '@/src/components/receipt/ReceiptCardSkeleton';
 import { createScopedLogger } from '@/src/utils/debug';
 import { useDatabaseReady } from '@/src/db/provider';
@@ -19,11 +19,17 @@ import { getTotalSpending, getReceiptCount } from '@/src/db/queries/analytics';
 import { useFormatPrice } from '@/src/store/preferences';
 import { useAppColors } from '@/src/hooks/useAppColors';
 import { useEntering, staggerDelay } from '@/src/hooks/useEntering';
+import { useLayout } from '@/src/hooks/useLayout';
 import { MIN_TARGET } from '@/src/theme/a11y';
 import type { Receipt } from '@/src/db/schema/receipts';
 import type { Store } from '@/src/db/schema/stores';
 
 const logger = createScopedLogger('Dashboard');
+
+/** Never show fewer than this, even on a short screen. */
+const MIN_RECEIPT_ROWS = 3;
+/** Beyond this the dashboard stops being a summary. */
+const MAX_RECEIPT_ROWS = 8;
 
 type ReceiptWithStore = {
   receipt: Receipt;
@@ -39,12 +45,27 @@ export default function DashboardScreen() {
   const { formatPrice } = useFormatPrice();
   const colors = useAppColors();
   const entering = useEntering();
+  const layout = useLayout();
 
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [monthlyTotal, setMonthlyTotal] = useState(0);
   const [receiptCount, setReceiptCount] = useState(0);
   const [recentReceipts, setRecentReceipts] = useState<ReceiptWithStore[]>([]);
+  const [viewportHeight, setViewportHeight] = useState(0);
+  const [listTop, setListTop] = useState(0);
+
+  const visibleReceipts = useMemo(() => {
+    const available = viewportHeight - listTop;
+    const rows =
+      available > 0
+        ? Math.min(
+            MAX_RECEIPT_ROWS,
+            Math.max(MIN_RECEIPT_ROWS, Math.floor(available / RECEIPT_CARD_BLOCK))
+          )
+        : MIN_RECEIPT_ROWS;
+    return recentReceipts.slice(0, rows * layout.columns);
+  }, [recentReceipts, viewportHeight, listTop, layout.columns]);
 
   const loadData = useCallback(async () => {
     if (!isReady) return;
@@ -58,7 +79,7 @@ export default function DashboardScreen() {
 
       setMonthlyTotal(total);
       setReceiptCount(count);
-      setRecentReceipts(receipts.slice(0, 3)); // Show only 3 recent
+      setRecentReceipts(receipts);
     } catch (error) {
       logger.error('Failed to load dashboard data:', error);
     } finally {
@@ -145,6 +166,7 @@ export default function DashboardScreen() {
     <ScrollView
       className="flex-1 bg-background dark:bg-background-dark"
       contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 32 }}
+      onLayout={(event) => setViewportHeight(event.nativeEvent.layout.height)}
       refreshControl={
         <RefreshControl
           refreshing={isRefreshing}
@@ -236,7 +258,11 @@ export default function DashboardScreen() {
           )}
 
           {/* Recent Receipts */}
-          <Animated.View entering={entering(FadeInUp, 400, 400)} className="mt-8">
+          <Animated.View
+            entering={entering(FadeInUp, 400, 400)}
+            className="mt-8"
+            onLayout={(event) => setListTop(event.nativeEvent.layout.y)}
+          >
             <View className="flex-row items-center justify-between mb-4">
               <Text
                 className="text-lg text-text dark:text-text-dark"
@@ -260,19 +286,24 @@ export default function DashboardScreen() {
             </View>
 
             {hasReceipts ? (
-              recentReceipts.map((item, index) => (
-                <Animated.View
-                  key={item.receipt.id}
-                  entering={entering(FadeInDown, 500 + staggerDelay(index, 100), 400)}
-                >
-                  <ReceiptCard
-                    receipt={item.receipt}
-                    store={item.store}
-                    itemCount={item.itemCount}
-                    onPress={() => handleReceiptPress(item.receipt.id)}
-                  />
-                </Animated.View>
-              ))
+              <View className={layout.columns === 2 ? 'flex-row flex-wrap -mx-1.5' : ''}>
+                {visibleReceipts.map((item, index) => (
+                  <Animated.View
+                    key={item.receipt.id}
+                    entering={entering(FadeInDown, 500 + staggerDelay(index, 100), 400)}
+                    style={
+                      layout.columns === 2 ? { width: '50%', paddingHorizontal: 6 } : undefined
+                    }
+                  >
+                    <ReceiptCard
+                      receipt={item.receipt}
+                      store={item.store}
+                      itemCount={item.itemCount}
+                      onPress={() => handleReceiptPress(item.receipt.id)}
+                    />
+                  </Animated.View>
+                ))}
+              </View>
             ) : (
               <Animated.View entering={entering(FadeIn, 500, 400)}>
                 <Card variant="outlined" padding="md">

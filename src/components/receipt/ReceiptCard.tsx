@@ -10,6 +10,13 @@ import { formatShortDate, formatLocalizedTime } from '../../utils/dateTime';
 import { Amount } from '../ui/Amount';
 import { fonts } from '../../theme/type';
 
+/**
+ * Vertical space one card occupies, including its `mb-3` gap. Used by the
+ * dashboard to decide how many recent receipts fit. Confirm against a measured
+ * card if the card's padding or type sizes change.
+ */
+export const RECEIPT_CARD_BLOCK = 108;
+
 interface ReceiptCardProps {
   receipt: Receipt;
   store: Store | null;
