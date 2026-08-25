@@ -3,7 +3,7 @@ import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl } 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useFocusEffect } from 'expo-router';
-import { BarChart, PieChart } from 'react-native-gifted-charts';
+import { BarChart, PieChart, type pieDataItem } from 'react-native-gifted-charts';
 import { useDatabaseReady } from '@/src/db/provider';
 import { getAnalyticsSummary, TimePeriod } from '@/src/db/queries/analytics';
 import { useFormatPrice, usePreferencesStore } from '@/src/store/preferences';
@@ -31,6 +31,127 @@ function monthLabel(language: 'en' | 'es', monthKey: string): string {
 }
 
 type AnalyticsData = Awaited<ReturnType<typeof getAnalyticsSummary>>;
+
+interface AnalyticsCardProps {
+  data: AnalyticsData;
+  colors: ReturnType<typeof useAppColors>;
+  formatPrice: ReturnType<typeof useFormatPrice>['formatPrice'];
+  t: ReturnType<typeof useTranslation>['t'];
+}
+
+function CategoryCard({
+  data,
+  colors,
+  formatPrice,
+  t,
+  pieChartData,
+}: AnalyticsCardProps & { pieChartData: pieDataItem[] }) {
+  return (
+    <>
+      <Text
+        className="text-base text-text dark:text-text-dark mb-4"
+        style={{ fontFamily: 'Inter_600SemiBold' }}
+      >
+        {t('analytics.byCategory')}
+      </Text>
+      <View className="flex-row items-center">
+        <View className="items-center" style={{ flex: 1 }}>
+          <PieChart
+            data={pieChartData}
+            donut
+            radius={70}
+            innerRadius={45}
+            innerCircleColor={colors.surface}
+            centerLabelComponent={() => (
+              <View className="items-center">
+                <Text
+                  className="text-xs text-text-secondary dark:text-text-dark-secondary"
+                  style={{ fontFamily: 'Inter_400Regular' }}
+                >
+                  {t('analytics.total')}
+                </Text>
+                <Amount size="sm" weight="semibold">
+                  {formatPrice(data.total)}
+                </Amount>
+              </View>
+            )}
+          />
+        </View>
+        <View className="flex-1 pl-2">
+          {data.spendingByCategory.slice(0, 5).map((category, index) => (
+            <View key={category.categoryId} className="flex-row items-center mb-2">
+              <View
+                className="w-3 h-3 rounded-full mr-2"
+                style={{
+                  backgroundColor:
+                    category.categoryColor || chartSeries[index % chartSeries.length],
+                }}
+              />
+              <Text
+                className="flex-1 text-xs text-text dark:text-text-dark"
+                style={{ fontFamily: 'Inter_400Regular' }}
+                numberOfLines={1}
+              >
+                {category.categoryIcon} {categoryLabel(category.categoryName, t)}
+              </Text>
+              <Text
+                className="text-xs text-text-secondary dark:text-text-dark-secondary ml-1"
+                style={{ fontFamily: 'Inter_500Medium' }}
+              >
+                {category.percentage.toFixed(0)}%
+              </Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    </>
+  );
+}
+
+function StoreCard({ data, formatPrice, t }: AnalyticsCardProps) {
+  return (
+    <>
+      <Text
+        className="text-base text-text dark:text-text-dark mb-4"
+        style={{ fontFamily: 'Inter_600SemiBold' }}
+      >
+        {t('analytics.byStore')}
+      </Text>
+      {data.spendingByStore.slice(0, 5).map((store, index) => (
+        <View key={store.storeId} className="mb-3">
+          <View className="flex-row justify-between mb-1">
+            <Text
+              className="text-sm text-text dark:text-text-dark flex-1"
+              style={{ fontFamily: 'Inter_500Medium' }}
+              numberOfLines={1}
+            >
+              {store.storeName || t('scan.unknownStore')}
+            </Text>
+            <Amount size="sm" weight="semibold">
+              {formatPrice(store.amount)}
+            </Amount>
+          </View>
+          <View className="h-2 bg-border dark:bg-border-dark rounded-full overflow-hidden">
+            <View
+              className="h-full rounded-full"
+              style={{
+                width: `${store.percentage}%`,
+                backgroundColor: chartSeries[index % chartSeries.length],
+              }}
+            />
+          </View>
+          <Text
+            className="text-xs text-text-secondary dark:text-text-dark-secondary mt-1"
+            style={{ fontFamily: 'Inter_400Regular' }}
+          >
+            {store.receiptCount}{' '}
+            {store.receiptCount === 1 ? t('analytics.receipt') : t('analytics.receipts')}
+          </Text>
+        </View>
+      ))}
+    </>
+  );
+}
 
 export default function AnalyticsScreen() {
   const insets = useSafeAreaInsets();
@@ -280,117 +401,43 @@ export default function AnalyticsScreen() {
                   </View>
                 </View>
               )}
-
-              {/* Category Breakdown */}
-              {pieChartData.length > 0 && (
-                <View className="mx-4 mb-4 bg-surface dark:bg-surface-dark rounded-2xl p-4">
-                  <Text
-                    className="text-base text-text dark:text-text-dark mb-4"
-                    style={{ fontFamily: 'Inter_600SemiBold' }}
-                  >
-                    {t('analytics.byCategory')}
-                  </Text>
-                  <View className="flex-row items-center">
-                    <View className="items-center" style={{ flex: 1 }}>
-                      <PieChart
-                        data={pieChartData}
-                        donut
-                        radius={70}
-                        innerRadius={45}
-                        innerCircleColor={colors.surface}
-                        centerLabelComponent={() => (
-                          <View className="items-center">
-                            <Text
-                              className="text-xs text-text-secondary dark:text-text-dark-secondary"
-                              style={{ fontFamily: 'Inter_400Regular' }}
-                            >
-                              {t('analytics.total')}
-                            </Text>
-                            <Amount size="sm" weight="semibold">
-                              {formatPrice(data.total)}
-                            </Amount>
-                          </View>
-                        )}
-                      />
-                    </View>
-                    <View className="flex-1 pl-2">
-                      {data.spendingByCategory.slice(0, 5).map((category, index) => (
-                        <View key={category.categoryId} className="flex-row items-center mb-2">
-                          <View
-                            className="w-3 h-3 rounded-full mr-2"
-                            style={{
-                              backgroundColor:
-                                category.categoryColor || chartSeries[index % chartSeries.length],
-                            }}
-                          />
-                          <Text
-                            className="flex-1 text-xs text-text dark:text-text-dark"
-                            style={{ fontFamily: 'Inter_400Regular' }}
-                            numberOfLines={1}
-                          >
-                            {category.categoryIcon} {categoryLabel(category.categoryName, t)}
-                          </Text>
-                          <Text
-                            className="text-xs text-text-secondary dark:text-text-dark-secondary ml-1"
-                            style={{ fontFamily: 'Inter_500Medium' }}
-                          >
-                            {category.percentage.toFixed(0)}%
-                          </Text>
-                        </View>
-                      ))}
-                    </View>
-                  </View>
-                </View>
-              )}
-
-              {/* Store Comparison */}
-              {data.spendingByStore.length > 0 && (
-                <View className="mx-4 mb-4 bg-surface dark:bg-surface-dark rounded-2xl p-4">
-                  <Text
-                    className="text-base text-text dark:text-text-dark mb-4"
-                    style={{ fontFamily: 'Inter_600SemiBold' }}
-                  >
-                    {t('analytics.byStore')}
-                  </Text>
-                  {data.spendingByStore.slice(0, 5).map((store, index) => (
-                    <View key={store.storeId} className="mb-3">
-                      <View className="flex-row justify-between mb-1">
-                        <Text
-                          className="text-sm text-text dark:text-text-dark flex-1"
-                          style={{ fontFamily: 'Inter_500Medium' }}
-                          numberOfLines={1}
-                        >
-                          {store.storeName || t('scan.unknownStore')}
-                        </Text>
-                        <Amount size="sm" weight="semibold">
-                          {formatPrice(store.amount)}
-                        </Amount>
-                      </View>
-                      <View className="h-2 bg-border dark:bg-border-dark rounded-full overflow-hidden">
-                        <View
-                          className="h-full rounded-full"
-                          style={{
-                            width: `${store.percentage}%`,
-                            backgroundColor: chartSeries[index % chartSeries.length],
-                          }}
-                        />
-                      </View>
-                      <Text
-                        className="text-xs text-text-secondary dark:text-text-dark-secondary mt-1"
-                        style={{ fontFamily: 'Inter_400Regular' }}
-                      >
-                        {store.receiptCount}{' '}
-                        {store.receiptCount === 1
-                          ? t('analytics.receipt')
-                          : t('analytics.receipts')}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              )}
             </>
           )}
         </ReadingColumn>
+
+        {hasData && data && (pieChartData.length > 0 || data.spendingByStore.length > 0) && (
+          <View
+            className="w-full mx-auto"
+            style={{ maxWidth: layout.columns === 2 ? layout.gridWidth : layout.readingWidth }}
+          >
+            <View className={layout.columns === 2 ? 'flex-row mx-2 mb-4' : ''}>
+              {pieChartData.length > 0 && (
+                <View
+                  className={`bg-surface dark:bg-surface-dark rounded-2xl p-4 ${
+                    layout.columns === 2 ? 'flex-1 mx-2' : 'mx-4 mb-4'
+                  }`}
+                >
+                  <CategoryCard
+                    data={data}
+                    colors={colors}
+                    formatPrice={formatPrice}
+                    t={t}
+                    pieChartData={pieChartData}
+                  />
+                </View>
+              )}
+              {data.spendingByStore.length > 0 && (
+                <View
+                  className={`bg-surface dark:bg-surface-dark rounded-2xl p-4 ${
+                    layout.columns === 2 ? 'flex-1 mx-2' : 'mx-4 mb-4'
+                  }`}
+                >
+                  <StoreCard data={data} colors={colors} formatPrice={formatPrice} t={t} />
+                </View>
+              )}
+            </View>
+          </View>
+        )}
       </ScrollView>
     </View>
   );
