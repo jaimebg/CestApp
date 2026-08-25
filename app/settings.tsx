@@ -20,6 +20,7 @@ import { showSuccessToast, showErrorToast } from '@/src/utils/toast';
 import { useAppColors } from '@/src/hooks/useAppColors';
 import { ModalHeader } from '@/src/components/ui/ModalHeader';
 import { ConfirmationModal } from '@/src/components/ui/ConfirmationModal';
+import { ReadingColumn } from '@/src/components/ui/ReadingColumn';
 import { MIN_TARGET } from '@/src/theme/a11y';
 import { isLlmAvailable } from '@/src/services/llm';
 import { getBackupData } from '@/src/db/queries/backup';
@@ -178,7 +179,7 @@ export default function SettingsScreen() {
         contentContainerStyle={{ paddingBottom: 32 }}
         showsVerticalScrollIndicator={false}
       >
-        <View className="w-full max-w-[640px] mx-auto">
+        <ReadingColumn>
           {/* Language Section */}
           <Text
             accessibilityRole="header"
@@ -500,7 +501,7 @@ export default function SettingsScreen() {
             </Text>
             <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
           </Pressable>
-        </View>
+        </ReadingColumn>
       </ScrollView>
 
       {/* Dev Menu Modal */}

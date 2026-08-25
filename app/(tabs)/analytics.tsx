@@ -1,13 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  ActivityIndicator,
-  RefreshControl,
-  useWindowDimensions,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useFocusEffect } from 'expo-router';
@@ -16,9 +8,11 @@ import { useDatabaseReady } from '@/src/db/provider';
 import { getAnalyticsSummary, TimePeriod } from '@/src/db/queries/analytics';
 import { useFormatPrice, usePreferencesStore } from '@/src/store/preferences';
 import { useAppColors } from '@/src/hooks/useAppColors';
+import { useLayout } from '@/src/hooks/useLayout';
 import { chartSeries } from '@/src/theme/colors';
 import { EmptyState } from '@/src/components/ui/EmptyState';
 import { Amount } from '@/src/components/ui/Amount';
+import { ReadingColumn } from '@/src/components/ui/ReadingColumn';
 import { MIN_TARGET } from '@/src/theme/a11y';
 import { createScopedLogger } from '@/src/utils/debug';
 import { formatDayLabel } from '@/src/utils/dateTime';
@@ -45,12 +39,11 @@ export default function AnalyticsScreen() {
   const { isReady } = useDatabaseReady();
   const { formatPrice } = useFormatPrice();
   const language = usePreferencesStore((state) => state.language);
-  const { width: windowWidth } = useWindowDimensions();
+  const layout = useLayout();
 
   // The chart card is mx-4 (32) inside p-4 (32). A fixed 280 clipped its right
-  // edge on a 320pt phone and left ~86pt of dead card on a Pro Max. Capped at
-  // the tablet reading column so the bars never outgrow their card.
-  const chartWidth = Math.max(240, Math.min(windowWidth, 640) - 64 - 24);
+  // edge on a 320pt phone and left ~86pt of dead card on a Pro Max.
+  const chartWidth = Math.max(240, layout.readingWidth - 64 - 24);
 
   const [period, setPeriod] = useState<TimePeriod>('month');
   const [data, setData] = useState<AnalyticsData | null>(null);
@@ -166,7 +159,7 @@ export default function AnalyticsScreen() {
           />
         }
       >
-        <View className="w-full max-w-[640px] mx-auto">
+        <ReadingColumn>
           {/* Header */}
           <View className="px-6 pt-4 pb-2">
             <Text
@@ -397,7 +390,7 @@ export default function AnalyticsScreen() {
               )}
             </>
           )}
-        </View>
+        </ReadingColumn>
       </ScrollView>
     </View>
   );

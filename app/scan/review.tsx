@@ -19,6 +19,7 @@ import { CategoryPickerModal } from '@/src/components/scan/modals/CategoryPicker
 import { TotalEditModal } from '@/src/components/scan/modals/TotalEditModal';
 import { ReadingModal } from '@/src/components/scan/modals/ReadingModal';
 import { ConfirmationModal } from '@/src/components/ui/ConfirmationModal';
+import { ReadingColumn } from '@/src/components/ui/ReadingColumn';
 import type { Category } from '@/src/components/scan/types';
 import {
   createManualParsedReceipt,
@@ -809,7 +810,7 @@ export default function ScanReviewScreen() {
       </View>
 
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
-        <View className="w-full max-w-[640px] mx-auto">
+        <ReadingColumn>
           {parsedData ? (
             <>
               {isManualEntry && (
@@ -1286,12 +1287,12 @@ export default function ScanReviewScreen() {
               </View>
             </Card>
           )}
-        </View>
+        </ReadingColumn>
       </ScrollView>
 
       {/* Action Buttons */}
       <View className="px-4 pb-4" style={{ paddingBottom: insets.bottom > 0 ? insets.bottom : 16 }}>
-        <View className="w-full max-w-[640px] mx-auto">
+        <ReadingColumn>
           {parsedData ? (
             <View className="flex-row gap-3">
               <View className="flex-1">
@@ -1315,7 +1316,7 @@ export default function ScanReviewScreen() {
               {t('common.done')}
             </Button>
           )}
-        </View>
+        </ReadingColumn>
       </View>
 
       <StoreEditModal

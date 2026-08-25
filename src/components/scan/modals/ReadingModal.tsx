@@ -22,6 +22,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { ModalHeader } from '../../ui/ModalHeader';
 import { Button } from '../../ui/Button';
+import { ReadingColumn } from '../../ui/ReadingColumn';
 import { ZONE_COLORS, ZONE_LABELS, type ZoneDefinition, type ZoneType } from '@/src/types/zones';
 import type { ReviewColors } from '../types';
 
@@ -81,7 +82,7 @@ export function ReadingModal({
         <ModalHeader title={t('scan.readingTitle')} onClose={onClose} />
 
         <ScrollView className="flex-1 p-4">
-          <View className="w-full max-w-[640px] mx-auto">
+          <ReadingColumn>
             {imageUri && (
               <View className="items-center">
                 {/* The receipt is shown in the geometry the zones were read in, so
@@ -196,16 +197,16 @@ export function ReadingModal({
                 ))}
               </View>
             )}
-          </View>
+          </ReadingColumn>
         </ScrollView>
 
         {onEditZones && (
           <View className="px-4 pb-2">
-            <View className="w-full max-w-[640px] mx-auto">
+            <ReadingColumn>
               <Button variant="secondary" size="lg" onPress={onEditZones}>
                 {t('scan.editZones')}
               </Button>
-            </View>
+            </ReadingColumn>
           </View>
         )}
       </View>

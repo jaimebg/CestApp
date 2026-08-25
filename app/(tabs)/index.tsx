@@ -9,6 +9,7 @@ import { Card } from '@/src/components/ui/Card';
 import { Badge } from '@/src/components/ui/Badge';
 import { Amount } from '@/src/components/ui/Amount';
 import { Skeleton } from '@/src/components/ui/Skeleton';
+import { ReadingColumn } from '@/src/components/ui/ReadingColumn';
 import { ReceiptCard } from '@/src/components/receipt/ReceiptCard';
 import { ReceiptCardSkeleton } from '@/src/components/receipt/ReceiptCardSkeleton';
 import { createScopedLogger } from '@/src/utils/debug';
@@ -104,7 +105,7 @@ export default function DashboardScreen() {
         className="flex-1 bg-background dark:bg-background-dark"
         contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 32 }}
       >
-        <View className="w-full max-w-[640px] mx-auto">
+        <ReadingColumn>
           <View className="px-6 pt-4">
             <Text
               className="text-3xl text-text dark:text-text-dark"
@@ -133,7 +134,7 @@ export default function DashboardScreen() {
               <ReceiptCardSkeleton />
             </View>
           </View>
-        </View>
+        </ReadingColumn>
       </ScrollView>
     );
   }
@@ -153,7 +154,7 @@ export default function DashboardScreen() {
         />
       }
     >
-      <View className="w-full max-w-[640px] mx-auto">
+      <ReadingColumn>
         <View className="px-6 pt-4">
           <View className="flex-row items-start justify-between">
             <View className="flex-1">
@@ -299,7 +300,7 @@ export default function DashboardScreen() {
             )}
           </Animated.View>
         </View>
-      </View>
+      </ReadingColumn>
     </ScrollView>
   );
 }
