@@ -110,8 +110,23 @@ export function statusBarHtml({ platform, kind, width, height }) {
   const ios = platform === 'ios';
   const phone = kind === 'phone';
 
-  const padLeft = width * (ios ? (phone ? 0.09 : 0.035) : phone ? 0.062 : 0.035);
-  const padRight = width * (ios ? (phone ? 0.063 : 0.035) : phone ? 0.052 : 0.035);
+  /*
+   * On a real iPad the status bar's side inset is close to constant in
+   * points regardless of orientation — it is not a percentage of screen
+   * width. `TABLET_STATUS_PAD_RATIO` is that inset expressed as a multiple
+   * of the bar's own height instead, so it holds its proportion whichever
+   * way the device is turned. The multiplier reproduces the padding of the
+   * portrait iPad tile that was already reviewed and accepted: on the
+   * 2048x2732 portrait canvas the bar rendered at 43.6px tall with a 47.3px
+   * pad (screenWidth * 0.035), a 1.085 ratio. Applied to the ~45.0px bar of
+   * the 2732x2048 landscape canvas that gives a ~48.9px pad — close to the
+   * old 47.3px, as intended, instead of the ~74.4px that width * 0.035
+   * would have produced on the wider landscape screen.
+   */
+  const TABLET_STATUS_PAD_RATIO = 1.085;
+
+  const padLeft = phone ? width * (ios ? 0.09 : 0.062) : height * TABLET_STATUS_PAD_RATIO;
+  const padRight = phone ? width * (ios ? 0.063 : 0.052) : height * TABLET_STATUS_PAD_RATIO;
   const fontSize = height * (phone ? (ios ? 0.274 : 0.235) : 0.46);
   const glyph = height * (phone ? (ios ? 0.185 : 0.16) : 0.3);
   const gap = width * (phone ? 0.017 : 0.011);
