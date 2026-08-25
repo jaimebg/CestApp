@@ -5,9 +5,8 @@ import { DEFAULT_CATEGORIES } from './categoryDefaults';
 /**
  * Inserts the default categories on first launch only.
  *
- * `name` goes in as the canonical English string. It is the row's identity, not
- * display text — the UI renders `categoryLabel()` instead — so it must stay
- * stable no matter what language the app is in.
+ * `name` goes in as the canonical English string and stays that way in every
+ * language. The UI renders `categoryLabel()` instead.
  */
 export async function seedCategories() {
   const existingCategories = await db.select().from(categories).limit(1);

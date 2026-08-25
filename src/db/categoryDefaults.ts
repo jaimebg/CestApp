@@ -4,12 +4,12 @@
  * UI renders instead, and the multilingual keywords auto-categorisation matches
  * against.
  *
- * `name` is deliberately not localised. It is a row identity, so translating it
- * would rewrite user data every time the language changed. `translationKey`
- * points at `categories.*` in the locale files; `categoryLabel()` resolves it.
+ * `name` is deliberately not localised: translating a row identity would rewrite
+ * user data every time the language changed. `translationKey` points at
+ * `categories.*` in the locale files, and `categoryLabel()` resolves it.
  *
- * Data only — no database import — so both the seeder and the label helper can
- * read it without pulling in the SQLite client.
+ * Data only, with no database import, so both the seeder and the label helper
+ * can read it without pulling in the SQLite client.
  */
 export const DEFAULT_CATEGORIES = [
   {

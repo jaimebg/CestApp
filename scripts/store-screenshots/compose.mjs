@@ -80,9 +80,8 @@ async function renderPage(browser, html, outPath, width, height, prepare) {
 }
 
 /**
- * The composition's own contract: the whole capture is on the tile, at its own
- * aspect ratio, inside the canvas. Violating any of it means a cropped or
- * clipped screenshot, which is the defect this rewrite exists to remove.
+ * Checks that the whole capture is on the tile, at its own aspect ratio, inside
+ * the canvas. A violation means a cropped or clipped screenshot.
  */
 function verifyTile({ label, report, slot, raw }) {
   const faults = [];

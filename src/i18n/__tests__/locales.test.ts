@@ -31,9 +31,8 @@ describe('locale bundles', () => {
 
   /**
    * Category rows store an English name and the UI renders `categories.*`
-   * instead. A seeded category with no entry here would fall back to that raw
-   * English name in the Spanish app, which is how the namespace came to exist
-   * fully translated and entirely unused.
+   * instead. A seeded category with no entry here falls back to that raw English
+   * name in the Spanish app.
    */
   it('translate every seeded category', () => {
     const keys = Object.keys(flatEn);

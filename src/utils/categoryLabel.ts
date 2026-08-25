@@ -2,9 +2,9 @@ import type { TFunction } from 'i18next';
 import { DEFAULT_CATEGORIES } from '@/src/db/categoryDefaults';
 
 /**
- * Category rows store a canonical English `name` — it is the row's identity, not
- * display text. Every surface that shows a category to the user resolves it
- * through here instead of rendering the stored string.
+ * A category row's `name` is its identity in the database, and English no matter
+ * what language the app is in. Every surface that shows a category to the user
+ * resolves it through here instead of rendering that stored string.
  */
 const KEY_BY_NAME = new Map(
   DEFAULT_CATEGORIES.map((category) => [category.name, category.translationKey])

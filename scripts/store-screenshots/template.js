@@ -11,10 +11,10 @@ const CAPTION = {
 /**
  * One store tile: caption, rule, and a framed device holding the whole capture.
  *
- * Nothing here picks a crop. `fitDevice` sizes the screen to the capture's own
- * aspect ratio, so the shot is always rendered complete; the only pixels removed
- * are the capture's system status bar, which `screenBands` replaces with a
- * synthetic one of exactly the same height.
+ * `fitDevice` sizes the screen to the capture's own aspect ratio, so the shot is
+ * always rendered complete. The only pixels removed are the capture's system
+ * status bar, which `screenBands` replaces with a synthetic one of the same
+ * height.
  */
 export function slotHtml({ caption, shotDataUri, slot, device, raw }) {
   const { width, height, insets, platform } = slot;

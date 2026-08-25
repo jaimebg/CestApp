@@ -1,11 +1,11 @@
 /**
  * Layout maths for a framed device on a store tile.
  *
- * The whole point of this module is that the frame is derived from the capture,
- * never the other way round. The previous template gave the frame fixed
- * percentages of the canvas and then `object-fit: cover`-ed the capture into it,
- * which sliced ~13% off the top and bottom of every phone shot. Here the screen
- * is built at the capture's exact aspect ratio, so nothing is ever cropped.
+ * The frame is derived from the capture, not the other way round. The previous
+ * template gave the frame fixed percentages of the canvas and then
+ * `object-fit: cover`-ed the capture into it, slicing ~13% off the top and
+ * bottom of every phone shot. Here the screen is built at the capture's exact
+ * aspect ratio, so nothing is cropped.
  *
  * Pure functions: no DOM, no filesystem, no CSS.
  */

@@ -36,11 +36,11 @@
 
 ## Why CestApp?
 
-- **100% on-device** — ML Kit OCR runs locally. No cloud uploads.
-- **Any format** — Document scanner, gallery, or PDF.
-- **Smart categories** — Auto-sorts items. Learns from your corrections.
-- **Spanish supermarkets** — Pre-trained templates for Mercadona, Carrefour, Lidl, and more.
-- **Multi-language** — English & Spanish UI.
+- **100% on-device**: ML Kit OCR runs locally. No cloud uploads.
+- **Any format**: Document scanner, gallery, or PDF.
+- **Smart categories**: Auto-sorts items. Learns from your corrections.
+- **Spanish supermarkets**: Pre-trained templates for Mercadona, Carrefour, Lidl, and more.
+- **Multi-language**: English & Spanish UI.
 
 ## Features
 
@@ -48,13 +48,13 @@
 
 **Smart Parsing**: Chain-specific templates detect Mercadona, Carrefour, Lidl, Eroski, Dia, Consum, Alcampo, Aldi, HiperDino by NIF/name patterns.
 
-**Organize**: 10 built-in categories, auto-categorization, user learning, store detection.
+**Organize**: 11 built-in categories, auto-categorization, user learning, store detection.
 
 **Analyze**: Monthly trends, category breakdowns, store comparisons, top items.
 
 **Privacy**: Offline-first, local SQLite, no tracking, no ads. Full policy: [jbgsoft.com/cestapp/privacy](https://jbgsoft.com/cestapp/privacy).
 
-**Details**: Dark mode, Spanish regional formats (EUR, DD/MM/YYYY, decimal comma), smooth animations.
+**Details**: Dark mode, Spanish regional formats (EUR, DD/MM/YYYY, decimal comma), animations that respect Reduce Motion.
 
 ## Installation
 
@@ -99,10 +99,10 @@ src/
 
 ## How It Works
 
-1. **Detect Chain** — Identifies supermarket by NIF (tax ID), store name patterns, or fingerprints (brand names like "Hacendado" for Mercadona)
-2. **Apply Template** — Uses chain-specific parsing rules (layout, item patterns, OCR corrections)
-3. **Extract** — ML Kit OCR for images, custom parser for PDFs
-4. **Categorize** — User corrections → keyword matching → default
+1. **Detect Chain**: Identifies supermarket by NIF (tax ID), store name patterns, or fingerprints (brand names like "Hacendado" for Mercadona)
+2. **Apply Template**: Uses chain-specific parsing rules (layout, item patterns, OCR corrections)
+3. **Extract**: ML Kit OCR for images, custom parser for PDFs
+4. **Categorize**: User corrections → keyword matching → default
 
 Learning is store-aware: same item can have different categories at different stores.
 
@@ -118,7 +118,7 @@ Learning is store-aware: same item can have different categories at different st
 
 ## License
 
-MIT — see [LICENSE](LICENSE)
+MIT. See [LICENSE](LICENSE).
 
 ---
 

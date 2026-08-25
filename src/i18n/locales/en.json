@@ -60,7 +60,7 @@
     "reviewZones": "Review detected zones",
     "reviewTitle": "Review Receipt",
     "reviewPlaceholder": "The extracted data will appear here for review.",
-    "ocrSuccess": "Text Extracted Successfully",
+    "ocrSuccess": "Text extracted",
     "linesDetected": "{{count}} lines detected",
     "parsedData": "Parsed Data",
     "parsingPending": "Could not parse this receipt automatically",
@@ -73,7 +73,7 @@
     "unknownPayment": "Unknown",
     "noItemsFound": "No items found",
     "confidence": "Confidence",
-    "lowConfidence": "Low confidence - please review",
+    "lowConfidence": "Low confidence, check it before saving",
     "editStore": "Edit Store",
     "editDate": "Edit Date",
     "saveReceipt": "Save Receipt",
@@ -87,7 +87,7 @@
     "storeName": "Store Name",
     "selectCategory": "Select Category",
     "saving": "Saving...",
-    "receiptSaved": "Receipt saved successfully!",
+    "receiptSaved": "Receipt saved",
     "day": "Day",
     "month": "Month",
     "year": "Year",
@@ -95,7 +95,7 @@
     "monthPlaceholder": "MM",
     "yearPlaceholder": "YYYY",
     "itemsSum": "Items Sum",
-    "totalsMismatch": "Total doesn't match items sum. Please adjust items or edit the total.",
+    "totalsMismatch": "Total doesn't match the items sum. Adjust the items or edit the total.",
     "matchToItemsSum": "Set total to items sum",
     "configureZonesDesc": "Define zones to help parse PDF receipts better",
     "templateApplied": "Template Applied",
@@ -104,7 +104,7 @@
     "zoneTypes": "Zone Types",
     "hasTemplate": "Template Available",
     "hasTemplateDesc": "This store has a saved parsing template",
-    "templateDeleted": "Template deleted successfully",
+    "templateDeleted": "Template deleted",
     "itemsFound_one": "{{count}} item found",
     "itemsFound_other": "{{count}} items found",
     "itemCount_one": "{{count}} item",
@@ -113,7 +113,7 @@
     "zoneCount_other": "{{count}} zones",
     "zonesMinimumError": "Must define at least one zone",
     "storeNotSpecified": "Store not specified",
-    "templateSaved": "Template saved successfully",
+    "templateSaved": "Template saved",
     "zonesTitlePreview": "Define Parsing Zones",
     "zonesTitleEdit": "Edit Zones",
     "zonesTitleDefine": "Define Zones",
@@ -285,7 +285,7 @@
     "spanishDefaults": "Spanish Region Settings",
     "spanishDefaultsDesc": "Date format DD/MM/YYYY, decimal comma, and Euro (€) are set automatically.",
     "devMenu": "Developer Options",
-    "devMenuDesc": "These options are for development and testing purposes.",
+    "devMenuDesc": "These options are for development and testing.",
     "addDemoData": "Add Demo Data",
     "addDemoDataDesc": "Add sample receipts for screenshots and testing",
     "clearAllData": "Clear All Data",
@@ -312,7 +312,7 @@
     "somethingWentWrong": "This screen ran into a problem",
     "backupFailed": "Couldn't create the backup. Try again.",
     "databaseFailed": "Couldn't open your data",
-    "databaseFailedDesc": "CestApp couldn't start its local database. Retry to try again."
+    "databaseFailedDesc": "CestApp couldn't start its local database. Try again."
   },
   "onboarding": {
     "welcome": "Welcome to CestApp",
@@ -320,7 +320,7 @@
     "preferencesTitle": "Set Your Preferences",
     "continue": "Continue",
     "features": {
-      "subtitle": "Your personal receipt tracker that keeps your data private",
+      "subtitle": "A receipt tracker that keeps your data on your phone",
       "scan": {
         "title": "Scan Receipts",
         "short": "Scan",
@@ -334,7 +334,7 @@
       "analytics": {
         "title": "View Spending Insights",
         "short": "Insights",
-        "desc": "See where your money goes with charts and analytics by category or store"
+        "desc": "See where your money goes, by category or store"
       },
       "privacy": {
         "title": "100% Private & Local",

@@ -73,7 +73,7 @@
     "unknownPayment": "Desconocido",
     "noItemsFound": "No se han encontrado artículos",
     "confidence": "Confianza",
-    "lowConfidence": "Confianza baja: revísalo",
+    "lowConfidence": "Confianza baja, revísalo antes de guardar",
     "editStore": "Editar tienda",
     "editDate": "Editar fecha",
     "saveReceipt": "Guardar ticket",
@@ -320,7 +320,7 @@
     "preferencesTitle": "Configura tus preferencias",
     "continue": "Continuar",
     "features": {
-      "subtitle": "Tu gestor de tickets, con tus datos siempre privados",
+      "subtitle": "Un gestor de tickets que guarda tus datos en tu móvil",
       "scan": {
         "title": "Escanea tickets",
         "short": "Escanear",
@@ -334,7 +334,7 @@
       "analytics": {
         "title": "Consulta tus estadísticas",
         "short": "Estadísticas",
-        "desc": "Mira a dónde va tu dinero con gráficos por categoría o por tienda"
+        "desc": "Mira a dónde va tu dinero, por categoría o por tienda"
       },
       "privacy": {
         "title": "100% privado y local",
