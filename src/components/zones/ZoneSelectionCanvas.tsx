@@ -59,14 +59,19 @@ export function ZoneSelectionCanvas({
 
   const [availableBox, setAvailableBox] = useState<{ width: number; height: number } | null>(null);
 
-  const aspectRatio = imageDimensions.width / imageDimensions.height;
-  const display = availableBox
-    ? fitInBox({
-        aspect: aspectRatio,
-        maxWidth: availableBox.width - CANVAS_INSET * 2,
-        maxHeight: availableBox.height - CANVAS_INSET * 2,
-      })
-    : null;
+  /** `fitInBox` rejects a non-positive aspect, and this is a render path. */
+  const aspectRatio =
+    imageDimensions.width > 0 && imageDimensions.height > 0
+      ? imageDimensions.width / imageDimensions.height
+      : null;
+  const display =
+    availableBox && aspectRatio
+      ? fitInBox({
+          aspect: aspectRatio,
+          maxWidth: availableBox.width - CANVAS_INSET * 2,
+          maxHeight: availableBox.height - CANVAS_INSET * 2,
+        })
+      : null;
   const displayWidth = display?.width ?? 0;
   const displayHeight = display?.height ?? 0;
 

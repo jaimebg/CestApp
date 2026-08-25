@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { ReadingColumn } from '@/src/components/ui/ReadingColumn';
 import { usePreferencesStore, type ColorScheme } from '@/src/store/preferences';
 import { useAppColors } from '@/src/hooks/useAppColors';
 import { MIN_TARGET } from '@/src/theme/a11y';
@@ -125,7 +126,7 @@ export default function OnboardingScreen() {
 
   return (
     <View className="flex-1" style={{ backgroundColor: colors.background, paddingTop: insets.top }}>
-      <View className="flex-1 px-6 justify-center">
+      <ReadingColumn className="flex-1 px-6 justify-center">
         <View className="items-center mb-6">
           <Image
             source={require('@/assets/images/cestapp-logo.png')}
@@ -213,9 +214,9 @@ export default function OnboardingScreen() {
             colors={colors}
           />
         </View>
-      </View>
+      </ReadingColumn>
 
-      <View className="px-6 pt-4" style={{ paddingBottom: insets.bottom + 16 }}>
+      <ReadingColumn className="px-6 pt-4" style={{ paddingBottom: insets.bottom + 16 }}>
         <Pressable
           onPress={handleGetStarted}
           accessibilityRole="button"
@@ -227,7 +228,7 @@ export default function OnboardingScreen() {
             {t('onboarding.getStarted')}
           </Text>
         </Pressable>
-      </View>
+      </ReadingColumn>
     </View>
   );
 }

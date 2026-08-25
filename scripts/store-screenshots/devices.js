@@ -129,11 +129,22 @@ export function statusBarHtml({ platform, kind, width, height }) {
    */
   const TABLET_STATUS_PAD_RATIO = 1.085;
 
+  /*
+   * Glyph spacing is the same bug class as the padding above, so it takes the
+   * same cure. On the accepted portrait tile the screen rendered 1351.4px wide
+   * (47.3px pad / 0.035) with a 43.6px bar, so the old width * 0.011 gave a
+   * 14.87px gap — 0.341 of the bar's height. The landscape screen renders
+   * 2126.2px wide with a 45.04px bar, where width * 0.011 would be 23.39px:
+   * 1.573x the approved spacing, for a bar that is barely taller. Off the bar
+   * height it is 45.04 * 0.341 = 15.36px, which holds the reviewed proportion.
+   */
+  const TABLET_STATUS_GAP_RATIO = 0.341;
+
   const padLeft = phone ? width * (ios ? 0.09 : 0.062) : height * TABLET_STATUS_PAD_RATIO;
   const padRight = phone ? width * (ios ? 0.063 : 0.052) : height * TABLET_STATUS_PAD_RATIO;
   const fontSize = height * (phone ? (ios ? 0.274 : 0.235) : 0.46);
   const glyph = height * (phone ? (ios ? 0.185 : 0.16) : 0.3);
-  const gap = width * (phone ? 0.017 : 0.011);
+  const gap = phone ? width * 0.017 : height * TABLET_STATUS_GAP_RATIO;
 
   const cluster = ios
     ? [cellularIos(glyph), wifiIos(glyph), batteryIos(glyph * 1.05)]

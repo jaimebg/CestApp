@@ -163,8 +163,9 @@ export default function AnalyticsScreen() {
   const layout = useLayout();
 
   // The chart card is mx-4 (32) inside p-4 (32). A fixed 280 clipped its right
-  // edge on a 320pt phone and left ~86pt of dead card on a Pro Max.
-  const chartWidth = Math.max(240, layout.readingWidth - 64 - 24);
+  // edge on a 320pt phone and left ~86pt of dead card on a Pro Max. It follows
+  // contentWidth, so the card and the chart in it widen together.
+  const chartWidth = Math.max(240, layout.contentWidth - 64 - 24);
 
   const [period, setPeriod] = useState<TimePeriod>('month');
   const [data, setData] = useState<AnalyticsData | null>(null);
@@ -328,8 +329,10 @@ export default function AnalyticsScreen() {
               ))}
             </View>
           </View>
+        </ReadingColumn>
 
-          {!hasData ? (
+        {!hasData || !data ? (
+          <ReadingColumn>
             <View className="py-20">
               <EmptyState
                 icon="stats-chart-outline"
@@ -337,105 +340,100 @@ export default function AnalyticsScreen() {
                 description={t('analytics.noDataDesc')}
               />
             </View>
-          ) : (
-            <>
-              {/* Summary Cards */}
-              <View className="flex-row px-4 gap-3 mb-4">
-                <View className="flex-1 bg-surface dark:bg-surface-dark rounded-2xl p-4">
-                  <Text
-                    className="text-xs text-text-secondary dark:text-text-dark-secondary mb-1"
-                    style={{ fontFamily: 'Inter_500Medium' }}
-                  >
-                    {t('analytics.total')}
-                  </Text>
-                  <Amount size="xl">{formatPrice(data.total)}</Amount>
-                </View>
-                <View className="flex-1 bg-surface dark:bg-surface-dark rounded-2xl p-4">
-                  <Text
-                    className="text-xs text-text-secondary dark:text-text-dark-secondary mb-1"
-                    style={{ fontFamily: 'Inter_500Medium' }}
-                  >
-                    {t('analytics.average')}
-                  </Text>
-                  <Amount size="xl">{formatPrice(data.average)}</Amount>
-                </View>
-              </View>
-
-              {/* Spending Over Time Chart */}
-              {barChartData.length > 0 && (
-                <View className="mx-4 mb-4 bg-surface dark:bg-surface-dark rounded-2xl p-4">
-                  <Text
-                    className="text-base text-text dark:text-text-dark mb-4"
-                    style={{ fontFamily: 'Inter_600SemiBold' }}
-                  >
-                    {t('analytics.spendingOverTime')}
-                  </Text>
-                  <View style={{ marginLeft: -10 }}>
-                    <BarChart
-                      data={barChartData}
-                      width={chartWidth}
-                      height={180}
-                      barWidth={barLayout.barWidth}
-                      spacing={barLayout.spacing}
-                      barBorderRadius={4}
-                      noOfSections={4}
-                      yAxisThickness={0}
-                      xAxisThickness={1}
-                      xAxisColor={colors.border}
-                      yAxisTextStyle={{
-                        color: colors.textSecondary,
-                        fontSize: 10,
-                        fontFamily: 'Inter_400Regular',
-                      }}
-                      xAxisLabelTextStyle={{
-                        color: colors.textSecondary,
-                        fontSize: 9,
-                        fontFamily: 'Inter_400Regular',
-                      }}
-                      hideRules
-                      maxValue={Math.ceil(maxValue)}
-                      formatYLabel={(label) => formatPrice(Number(label))}
-                      isAnimated={barChartData.length <= 31}
-                      animationDuration={500}
-                    />
-                  </View>
-                </View>
-              )}
-            </>
-          )}
-        </ReadingColumn>
-
-        {hasData && data && (pieChartData.length > 0 || data.spendingByStore.length > 0) && (
-          <View
-            className="w-full mx-auto"
-            style={{ maxWidth: layout.columns === 2 ? layout.gridWidth : layout.readingWidth }}
-          >
-            <View className={layout.columns === 2 ? 'flex-row mx-2 mb-4' : ''}>
-              {pieChartData.length > 0 && (
-                <View
-                  className={`bg-surface dark:bg-surface-dark rounded-2xl p-4 ${
-                    layout.columns === 2 ? 'flex-1 mx-2' : 'mx-4 mb-4'
-                  }`}
+          </ReadingColumn>
+        ) : (
+          <View className="w-full mx-auto" style={{ maxWidth: layout.contentWidth }}>
+            {/* Summary Cards */}
+            <View className="flex-row px-4 gap-3 mb-4">
+              <View className="flex-1 bg-surface dark:bg-surface-dark rounded-2xl p-4">
+                <Text
+                  className="text-xs text-text-secondary dark:text-text-dark-secondary mb-1"
+                  style={{ fontFamily: 'Inter_500Medium' }}
                 >
-                  <CategoryCard
-                    data={data}
-                    colors={colors}
-                    formatPrice={formatPrice}
-                    t={t}
-                    pieChartData={pieChartData}
+                  {t('analytics.total')}
+                </Text>
+                <Amount size="xl">{formatPrice(data.total)}</Amount>
+              </View>
+              <View className="flex-1 bg-surface dark:bg-surface-dark rounded-2xl p-4">
+                <Text
+                  className="text-xs text-text-secondary dark:text-text-dark-secondary mb-1"
+                  style={{ fontFamily: 'Inter_500Medium' }}
+                >
+                  {t('analytics.average')}
+                </Text>
+                <Amount size="xl">{formatPrice(data.average)}</Amount>
+              </View>
+            </View>
+
+            {/* Spending Over Time Chart */}
+            {barChartData.length > 0 && (
+              <View className="mx-4 mb-4 bg-surface dark:bg-surface-dark rounded-2xl p-4">
+                <Text
+                  className="text-base text-text dark:text-text-dark mb-4"
+                  style={{ fontFamily: 'Inter_600SemiBold' }}
+                >
+                  {t('analytics.spendingOverTime')}
+                </Text>
+                <View style={{ marginLeft: -10 }}>
+                  <BarChart
+                    data={barChartData}
+                    width={chartWidth}
+                    height={180}
+                    barWidth={barLayout.barWidth}
+                    spacing={barLayout.spacing}
+                    barBorderRadius={4}
+                    noOfSections={4}
+                    yAxisThickness={0}
+                    xAxisThickness={1}
+                    xAxisColor={colors.border}
+                    yAxisTextStyle={{
+                      color: colors.textSecondary,
+                      fontSize: 10,
+                      fontFamily: 'Inter_400Regular',
+                    }}
+                    xAxisLabelTextStyle={{
+                      color: colors.textSecondary,
+                      fontSize: 9,
+                      fontFamily: 'Inter_400Regular',
+                    }}
+                    hideRules
+                    maxValue={Math.ceil(maxValue)}
+                    formatYLabel={(label) => formatPrice(Number(label))}
+                    isAnimated={barChartData.length <= 31}
+                    animationDuration={500}
                   />
                 </View>
-              )}
-              {data.spendingByStore.length > 0 && (
-                <View
-                  className={`bg-surface dark:bg-surface-dark rounded-2xl p-4 ${
-                    layout.columns === 2 ? 'flex-1 mx-2' : 'mx-4 mb-4'
-                  }`}
-                >
-                  <StoreCard data={data} colors={colors} formatPrice={formatPrice} t={t} />
-                </View>
-              )}
-            </View>
+              </View>
+            )}
+
+            {(pieChartData.length > 0 || data.spendingByStore.length > 0) && (
+              <View className={layout.columns === 2 ? 'flex-row mx-2 mb-4' : ''}>
+                {pieChartData.length > 0 && (
+                  <View
+                    className={`bg-surface dark:bg-surface-dark rounded-2xl p-4 ${
+                      layout.columns === 2 ? 'flex-1 mx-2' : 'mx-4 mb-4'
+                    }`}
+                  >
+                    <CategoryCard
+                      data={data}
+                      colors={colors}
+                      formatPrice={formatPrice}
+                      t={t}
+                      pieChartData={pieChartData}
+                    />
+                  </View>
+                )}
+                {data.spendingByStore.length > 0 && (
+                  <View
+                    className={`bg-surface dark:bg-surface-dark rounded-2xl p-4 ${
+                      layout.columns === 2 ? 'flex-1 mx-2' : 'mx-4 mb-4'
+                    }`}
+                  >
+                    <StoreCard data={data} colors={colors} formatPrice={formatPrice} t={t} />
+                  </View>
+                )}
+              </View>
+            )}
           </View>
         )}
       </ScrollView>

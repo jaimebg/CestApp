@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Card } from '@/src/components/ui/Card';
+import { ReadingColumn } from '@/src/components/ui/ReadingColumn';
 import { useAppColors } from '@/src/hooks/useAppColors';
 import { selectFromGallery, selectPdf, scanDocument, CaptureResult } from '@/src/services/capture';
 import { deleteReceiptFile, isPdfFile } from '@/src/services/storage';
@@ -129,7 +130,7 @@ export default function ScanScreen() {
       className="flex-1 bg-background dark:bg-background-dark"
       style={{ paddingTop: insets.top }}
     >
-      <View className="flex-1 px-6 pt-4">
+      <ReadingColumn className="flex-1 px-6 pt-4">
         <Text
           className="text-3xl text-text dark:text-text-dark"
           style={{ fontFamily: 'Inter_700Bold' }}
@@ -276,7 +277,7 @@ export default function ScanScreen() {
             </View>
           </Card>
         </View>
-      </View>
+      </ReadingColumn>
     </View>
   );
 }

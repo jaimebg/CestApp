@@ -17,6 +17,7 @@ import { upsertStoreTemplate, getTemplateByStoreId } from '@/src/db/queries/stor
 import { useAppColors } from '@/src/hooks/useAppColors';
 import { useScanDraftStore } from '@/src/store/scanDraft';
 import { Button } from '@/src/components/ui/Button';
+import { ReadingColumn } from '@/src/components/ui/ReadingColumn';
 import { isPdfFile } from '@/src/services/storage';
 
 const logger = createScopedLogger('Zones');
@@ -223,40 +224,43 @@ export default function ZoneSelectionScreen() {
   return (
     <View className="flex-1" style={{ backgroundColor: colors.background, paddingTop: insets.top }}>
       {/* Header */}
-      <View
-        className="flex-row items-center justify-between px-4 py-3 border-b"
-        style={{ borderColor: colors.border }}
-      >
-        <Text className="text-lg" style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}>
-          {isPreviewMode
-            ? t('scan.zonesTitlePreview')
-            : isEditing
-              ? t('scan.zonesTitleEdit')
-              : t('scan.zonesTitleDefine')}
-        </Text>
-        <Text
-          className="text-sm"
-          style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-        >
-          {t('scan.zoneCount', { count: zones.length })}
-        </Text>
+      <View className="border-b" style={{ borderColor: colors.border }}>
+        <ReadingColumn className="flex-row items-center justify-between px-4 py-3">
+          <Text className="text-lg" style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}>
+            {isPreviewMode
+              ? t('scan.zonesTitlePreview')
+              : isEditing
+                ? t('scan.zonesTitleEdit')
+                : t('scan.zonesTitleDefine')}
+          </Text>
+          <Text
+            className="text-sm"
+            style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
+          >
+            {t('scan.zoneCount', { count: zones.length })}
+          </Text>
+        </ReadingColumn>
       </View>
 
       {/* Instructions */}
-      <View className="px-4 py-2" style={{ backgroundColor: colors.surface }}>
-        <Text
-          className="text-xs text-center"
-          style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-        >
-          {isPreviewMode
-            ? t('scan.zonesInstructionsPreview')
-            : isEditing
-              ? t('scan.zonesInstructionsEdit')
-              : t('scan.zonesInstructionsDefine')}
-        </Text>
+      <View style={{ backgroundColor: colors.surface }}>
+        <ReadingColumn className="px-4 py-2">
+          <Text
+            className="text-xs text-center"
+            style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
+          >
+            {isPreviewMode
+              ? t('scan.zonesInstructionsPreview')
+              : isEditing
+                ? t('scan.zonesInstructionsEdit')
+                : t('scan.zonesInstructionsDefine')}
+          </Text>
+        </ReadingColumn>
       </View>
 
-      {/* Canvas */}
+      {/* The canvas is deliberately not capped: ZoneSelectionCanvas fits the
+          receipt to the box it is given, and a 640pt cap would shrink the
+          surface the user draws zones on. */}
       <View className="flex-1">
         <ZoneSelectionCanvas
           imageUri={uri}

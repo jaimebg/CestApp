@@ -25,17 +25,26 @@ export interface Layout {
   readingWidth: number;
   gridWidth: number;
   columns: 1 | 2;
+  /**
+   * Width of a screen's main column: widen only where a grid actually forms,
+   * otherwise stay at `readingWidth`. Extra width buys a second card, never a
+   * longer line of prose.
+   */
+  contentWidth: number;
 }
 
 export function resolveLayout({ width, height }: Viewport): Layout {
   const gridWidth = Math.min(width, GRID_MAX);
+  const readingWidth = Math.min(width, READING_MAX);
+  const columns = gridWidth >= TWO_COLUMN_MIN ? 2 : 1;
   return {
     /** Shortest side, so a tablet is still a tablet once it rotates. */
     isTablet: Math.min(width, height) >= TABLET_MIN_SIDE,
     isLandscape: width > height,
-    readingWidth: Math.min(width, READING_MAX),
+    readingWidth,
     gridWidth,
-    columns: gridWidth >= TWO_COLUMN_MIN ? 2 : 1,
+    columns,
+    contentWidth: columns === 2 ? gridWidth : readingWidth,
   };
 }
 

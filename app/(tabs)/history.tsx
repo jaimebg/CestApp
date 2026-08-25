@@ -439,7 +439,7 @@ export default function HistoryScreen() {
       {/* Filter chips */}
       <View className="px-6 pb-2">
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <ReadingColumn className="flex-row gap-2">
+          <View className="flex-row gap-2">
             {/* Filter button */}
             <Pressable
               onPress={() => setShowFilters(true)}
@@ -558,7 +558,7 @@ export default function HistoryScreen() {
                 </Text>
               </Pressable>
             )}
-          </ReadingColumn>
+          </View>
         </ScrollView>
       </View>
 

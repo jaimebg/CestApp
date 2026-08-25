@@ -121,10 +121,14 @@ export default function RootLayout() {
   /**
    * Tablets rotate, phones do not. iOS handles this in Info.plist; Android has no
    * manifest attribute that varies by device size, so it is locked here instead.
+   *
+   * Measured from 'screen', not 'window': the window is the app's share of the
+   * display, so a tablet launched into a narrow split-screen pane would classify
+   * itself as a phone and lock to portrait for the rest of the session.
    */
   useEffect(() => {
     if (Platform.OS !== 'android') return;
-    const { width, height } = Dimensions.get('window');
+    const { width, height } = Dimensions.get('screen');
     if (resolveLayout({ width, height }).isTablet) return;
     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch((error) => {
       logger.error('Failed to lock orientation:', error);

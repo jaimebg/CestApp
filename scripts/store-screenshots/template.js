@@ -24,8 +24,7 @@ const CAPTION = {
 export function slotHtml({ caption, shotDataUri, slot, device, raw }) {
   const { width, height, insets, platform } = slot;
   const kind = device.kind;
-  const captionKey =
-    device.kind === 'tablet' && slot.width > slot.height ? 'tabletLandscape' : device.kind;
+  const captionKey = device.kind === 'tablet' ? 'tabletLandscape' : device.kind;
   const c = CAPTION[captionKey];
 
   const { stageWidth, stageHeight, stageLeft, stageTop } = stageBox({ width, height, insets });

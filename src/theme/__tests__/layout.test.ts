@@ -26,6 +26,16 @@ describe('resolveLayout', () => {
     expect(resolveLayout({ width: 900, height: 600 }).columns).toBe(2);
   });
 
+  it('widens the content column only once a grid forms', () => {
+    expect(resolveLayout({ width: 899, height: 600 }).contentWidth).toBe(640);
+    expect(resolveLayout({ width: 900, height: 600 }).contentWidth).toBe(900);
+  });
+
+  it('caps the content column at the grid maximum, never the screen', () => {
+    expect(resolveLayout({ width: 1133, height: 744 }).contentWidth).toBe(1080);
+    expect(resolveLayout({ width: 390, height: 844 }).contentWidth).toBe(390);
+  });
+
   it('reports orientation', () => {
     expect(resolveLayout({ width: 1133, height: 744 }).isLandscape).toBe(true);
     expect(resolveLayout({ width: 744, height: 1133 }).isLandscape).toBe(false);

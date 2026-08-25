@@ -262,7 +262,7 @@ export default function DashboardScreen() {
       {/* Recent Receipts */}
       <View
         className="w-full mx-auto px-6 mt-8"
-        style={{ maxWidth: layout.columns === 2 ? layout.gridWidth : layout.readingWidth }}
+        style={{ maxWidth: layout.contentWidth }}
         onLayout={(event) => setListTop(event.nativeEvent.layout.y)}
       >
         <Animated.View entering={entering(FadeInUp, 400, 400)}>
