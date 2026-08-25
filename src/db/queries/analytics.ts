@@ -95,7 +95,7 @@ export async function getSpendingByCategory(period: TimePeriod): Promise<
       categoryName: categories.name,
       categoryIcon: categories.icon,
       categoryColor: categories.color,
-      amount: sql<number>`COALESCE(SUM(${items.price} * ${items.quantity}), 0)`.as('amount'),
+      amount: sql<number>`COALESCE(SUM(${items.price}), 0)`.as('amount'),
     })
     .from(items)
     .innerJoin(receipts, eq(items.receiptId, receipts.id))

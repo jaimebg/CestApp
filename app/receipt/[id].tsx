@@ -192,9 +192,7 @@ export default function ReceiptDetailScreen() {
         return;
       }
 
-      const itemsTotal = Math.round(
-        editedItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
-      );
+      const itemsTotal = Math.round(editedItems.reduce((sum, item) => sum + item.price, 0));
 
       await updateReceipt(receiptId, {
         storeId: newStoreId,
@@ -783,9 +781,7 @@ export default function ReceiptDetailScreen() {
                 {t('receipt.total')}
               </Text>
               <Amount size="xl">
-                {formatPrice(
-                  editedItems.reduce((sum, item) => sum + item.price * item.quantity, 0) / 100
-                )}
+                {formatPrice(editedItems.reduce((sum, item) => sum + item.price, 0) / 100)}
               </Amount>
             </View>
           </View>
