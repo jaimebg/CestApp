@@ -1,4 +1,4 @@
-import { containsKeyword, parsePrice, parseTime, TOTAL_KEYWORDS } from '../parseUtils';
+import { containsKeyword, parsePrice, parseTime } from '../parseUtils';
 
 describe('containsKeyword', () => {
   it('matches a keyword standing on its own', () => {
@@ -105,19 +105,5 @@ describe('parseTime', () => {
   it('rejects invalid times', () => {
     expect(parseTime('25:99')).toBeNull();
     expect(parseTime('no time here')).toBeNull();
-  });
-});
-
-describe('TOTAL_KEYWORDS', () => {
-  it('covers the Spanish and English words a receipt uses for its total', () => {
-    for (const word of ['total', 'subtotal', 'iva', 'importe', 'suma']) {
-      expect(TOTAL_KEYWORDS).toContain(word);
-    }
-  });
-
-  it('is lower case, so callers can compare against normalised text', () => {
-    for (const word of TOTAL_KEYWORDS) {
-      expect(word).toBe(word.toLowerCase());
-    }
   });
 });

@@ -121,24 +121,3 @@ export function parseTime(text: string): string | null {
 
   return null;
 }
-
-/**
- * Words a receipt uses to label its total, across the languages the app reads.
- * Shared because both zone detection and region detection anchor on them.
- */
-export const TOTAL_KEYWORDS = [
-  'total',
-  'subtotal',
-  'tax',
-  'iva',
-  'vat',
-  'sum',
-  'amount',
-  'balance',
-  'due',
-  'suma',
-  'importe',
-  'gesamt',
-  'somme',
-  'montant',
-];

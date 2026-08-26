@@ -7,7 +7,7 @@ import type { OcrBlock } from './index';
 import type { ZoneDefinition, ZoneType, NormalizedBoundingBox } from '../../types/zones';
 import { createScopedLogger } from '../../utils/debug';
 import { detectRegionFromText, type RegionalPreset } from '../../config/regionalPresets';
-import { containsKeyword, TOTAL_KEYWORDS } from './parseUtils';
+import { containsKeyword } from './parseUtils';
 
 const logger = createScopedLogger('AutoZoneDetector');
 
@@ -22,6 +22,24 @@ interface NormalizedBlock {
     normalizedHeight: number;
   }[];
 }
+
+// Keywords that indicate totals section
+const TOTAL_KEYWORDS = [
+  'total',
+  'subtotal',
+  'tax',
+  'iva',
+  'vat',
+  'sum',
+  'amount',
+  'balance',
+  'due',
+  'suma',
+  'importe',
+  'gesamt',
+  'somme',
+  'montant',
+];
 
 // Keywords to skip (not product names)
 const SKIP_KEYWORDS = [
