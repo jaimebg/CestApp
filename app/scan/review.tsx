@@ -67,6 +67,8 @@ const NO_BLOCKS: OcrBlock[] = [];
 const NO_ZONES: ZoneDefinition[] = [];
 const FALLBACK_DIMENSIONS = { width: 1000, height: 1500 };
 
+type RereadOrigin = 'zones' | 'crop';
+
 /**
  * The timestamp a receipt is stored under. Falls back to now when the receipt
  * carries no readable date, and keeps the date when it carries no time.
@@ -255,9 +257,10 @@ export default function ScanReviewScreen() {
   const [templateApplied, setTemplateApplied] = useState(false);
   const [showReading, setShowReading] = useState(false);
   const [hasManualEdits, setHasManualEdits] = useState(false);
-  const [zonesAwaitingConfirmation, setZonesAwaitingConfirmation] = useState<
-    ZoneDefinition[] | null
-  >(null);
+  const [pendingReread, setPendingReread] = useState<{
+    zones: ZoneDefinition[];
+    origin: RereadOrigin;
+  } | null>(null);
 
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
   const [forceLeave, setForceLeave] = useState(false);
@@ -286,9 +289,14 @@ export default function ScanReviewScreen() {
     }
   };
 
-  // The draft zones this screen has already reacted to. Only the zone editor
-  // replaces that array, so a change of identity means zones were redrawn.
+  // The draft zones this screen has already reacted to. Both the zone editor
+  // and the crop screen replace that array — the crop by replacing the whole
+  // draft — so a change of identity means the receipt should be read again.
   const seenZonesRef = useRef<ZoneDefinition[]>(draft?.zones ?? NO_ZONES);
+
+  // Which screen the pending re-read came back from, so its copy names what
+  // the user actually did.
+  const cropRequestedRef = useRef(false);
 
   const markEdited = useCallback(() => {
     setHasManualEdits(true);
@@ -296,33 +304,39 @@ export default function ScanReviewScreen() {
   }, [refinement]);
 
   const applyZones = useCallback(
-    (zones: ZoneDefinition[]) => {
+    (zones: ZoneDefinition[], origin: RereadOrigin) => {
       setAppliedZones(zones);
       setHasManualEdits(false);
 
       const reread = readReceipt(zones);
       if (reread) {
         updateParsedData(reread);
-        showSuccessToast(t('common.success'), t('scan.zonesReapplied'));
+        showSuccessToast(
+          t('common.success'),
+          origin === 'crop' ? t('scan.cropApplied') : t('scan.zonesReapplied')
+        );
       }
     },
     [readReceipt, updateParsedData, t]
   );
 
-  // Zones redrawn in the editor land in the draft; the receipt is read again
-  // through them when the editor closes.
+  // Zones redrawn in the editor, or detected over a crop, land in the draft;
+  // the receipt is read again through them when that screen closes.
   useFocusEffect(
     useCallback(() => {
+      const origin: RereadOrigin = cropRequestedRef.current ? 'crop' : 'zones';
+      cropRequestedRef.current = false;
+
       const zones = useScanDraftStore.getState().draft?.zones;
       if (!zones || zones === seenZonesRef.current) return;
       seenZonesRef.current = zones;
 
       if (hasManualEdits) {
-        setZonesAwaitingConfirmation(zones);
+        setPendingReread({ zones, origin });
         return;
       }
 
-      applyZones(zones);
+      applyZones(zones, origin);
     }, [hasManualEdits, applyZones])
   );
 
@@ -331,7 +345,7 @@ export default function ScanReviewScreen() {
     // applied ones back keeps what is drawn and what is shown in agreement.
     useScanDraftStore.getState().setZones(appliedZones);
     seenZonesRef.current = appliedZones;
-    setZonesAwaitingConfirmation(null);
+    setPendingReread(null);
   }, [appliedZones]);
 
   // Re-check for template when returning from zones screen (PDF only)
@@ -713,6 +727,7 @@ export default function ScanReviewScreen() {
   // corrections made by hand once the crop comes back, so entering the crop
   // screen itself needs no guard of its own.
   const navigateToCrop = () => {
+    cropRequestedRef.current = true;
     router.push({
       pathname: '/scan/crop',
       params: { uri, imageDimensions: JSON.stringify(dimensions) },
@@ -870,7 +885,7 @@ export default function ScanReviewScreen() {
               )}
 
               {hasOcrResult &&
-                parsedData.confidence < 70 &&
+                (parsedData.confidence < 70 || totalsDiffer) &&
                 !isManualEntry &&
                 uri !== '' &&
                 !isPdf && (
@@ -878,15 +893,16 @@ export default function ScanReviewScreen() {
                     onPress={navigateToCrop}
                     accessibilityRole="button"
                     accessibilityLabel={t('scan.cropHint')}
-                    style={{ minHeight: MIN_TARGET, justifyContent: 'center' }}
-                    className="mb-4"
+                    style={{ minHeight: MIN_TARGET }}
+                    className="mb-4 flex-row items-center justify-between"
                   >
                     <Text
-                      className="text-sm"
+                      className="text-sm flex-1 pr-2"
                       style={{ color: colors.warning, fontFamily: 'Inter_500Medium' }}
                     >
                       {t('scan.cropHint')}
                     </Text>
+                    <Ionicons name="chevron-forward" size={18} color={colors.warning} />
                   </Pressable>
                 )}
 
@@ -1433,15 +1449,17 @@ export default function ScanReviewScreen() {
       />
 
       <ConfirmationModal
-        visible={zonesAwaitingConfirmation !== null}
+        visible={pendingReread !== null}
         title={t('scan.rereadTitle')}
-        message={t('scan.rereadMessage')}
+        message={
+          pendingReread?.origin === 'crop' ? t('scan.cropRereadMessage') : t('scan.rereadMessage')
+        }
         confirmText={t('scan.rereadConfirm')}
         cancelText={t('common.cancel')}
         isDestructive
         onConfirm={() => {
-          if (zonesAwaitingConfirmation) applyZones(zonesAwaitingConfirmation);
-          setZonesAwaitingConfirmation(null);
+          if (pendingReread) applyZones(pendingReread.zones, pendingReread.origin);
+          setPendingReread(null);
         }}
         onCancel={keepManualEdits}
       />

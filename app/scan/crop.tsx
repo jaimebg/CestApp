@@ -11,6 +11,8 @@ import { ReceiptCropCanvas } from '@/src/components/zones/ReceiptCropCanvas';
 import { useAppColors } from '@/src/hooks/useAppColors';
 import { useScanDraftStore } from '@/src/store/scanDraft';
 import { processCapture } from '@/src/services/ocr/processCapture';
+import { autoDetectZones } from '@/src/services/ocr/autoZoneDetector';
+import { isPdfFile } from '@/src/services/storage';
 import { showErrorToast } from '@/src/utils/toast';
 import { createScopedLogger } from '@/src/utils/debug';
 import type { NormalizedBoundingBox } from '@/src/types/zones';
@@ -19,6 +21,8 @@ const logger = createScopedLogger('Crop');
 
 /** Below this fraction of either axis, a drag is a mis-tap, not a crop. */
 const MIN_CROP_FRACTION = 0.05;
+
+const DEFAULT_DIMENSIONS = { width: 1000, height: 1500 };
 
 export default function ReceiptCropScreen() {
   const { uri, imageDimensions } = useLocalSearchParams<{
@@ -31,10 +35,15 @@ export default function ReceiptCropScreen() {
   const colors = useAppColors();
   const setDraft = useScanDraftStore((state) => state.setDraft);
 
-  const parsedDimensions = useMemo(
-    () => (imageDimensions ? JSON.parse(imageDimensions) : { width: 1000, height: 1500 }),
-    [imageDimensions]
-  );
+  const parsedDimensions = useMemo(() => {
+    if (!imageDimensions) return DEFAULT_DIMENSIONS;
+    try {
+      return JSON.parse(imageDimensions) as { width: number; height: number };
+    } catch (error) {
+      logger.error('Malformed imageDimensions param:', error);
+      return DEFAULT_DIMENSIONS;
+    }
+  }, [imageDimensions]);
 
   const [crop, setCrop] = useState<NormalizedBoundingBox | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -69,16 +78,23 @@ export default function ReceiptCropScreen() {
         );
       });
 
+      if (inside.length === 0) {
+        showErrorToast(t('common.error'), t('scan.noTextDetectedDesc'));
+        return;
+      }
+
+      const detected = autoDetectZones(inside, processed.dimensions);
+
       setDraft({
         uri,
-        source: 'gallery',
+        source: useScanDraftStore.getState().draft?.source ?? 'gallery',
         isPdf: false,
         ocrText: processed.ocrText,
         lines: inside.map((b) => b.text),
         blocks: inside,
         dimensions: processed.dimensions,
-        zones: [],
-        detectedTotal: null,
+        zones: detected.zones,
+        detectedTotal: detected.detectedTotal,
       });
       router.back();
     } catch (error) {
@@ -89,18 +105,22 @@ export default function ReceiptCropScreen() {
     }
   };
 
-  if (!uri) {
+  if (!uri || isPdfFile(uri)) {
     return (
       <View
         className="flex-1 justify-center items-center px-6"
         style={{ backgroundColor: colors.background }}
       >
-        <Ionicons name="alert-circle" size={48} color={colors.textSecondary} />
+        <Ionicons
+          name={!uri ? 'alert-circle' : 'document-text-outline'}
+          size={48}
+          color={colors.textSecondary}
+        />
         <Text
           className="text-base mt-4 text-center"
           style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
         >
-          {t('errors.loadFailed')}
+          {!uri ? t('errors.loadFailed') : t('scan.zonesPdfUnsupported')}
         </Text>
         <View className="mt-6 w-48">
           <Button variant="primary" size="md" onPress={() => router.back()}>

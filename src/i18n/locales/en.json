@@ -146,7 +146,9 @@
     "cropIt": "Crop",
     "cropTitle": "Crop to the receipt",
     "cropInstructions": "Drag a box around the receipt. Anything outside it is ignored.",
-    "cropHint": "Read something that isn't on the receipt? Crop the image to just the receipt."
+    "cropHint": "Read something that isn't on the receipt? Crop the image to just the receipt.",
+    "cropApplied": "Ticket read again from the cropped image",
+    "cropRereadMessage": "The ticket will be read again from the cropped image, and the corrections you made by hand will be replaced."
   },
   "zones": {
     "draw": "Draw",

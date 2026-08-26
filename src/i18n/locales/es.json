@@ -146,7 +146,9 @@
     "cropIt": "Recortar",
     "cropTitle": "Recortar el ticket",
     "cropInstructions": "Dibuja un recuadro alrededor del ticket. Lo que quede fuera se ignora.",
-    "cropHint": "¿Ha leído algo que no está en el ticket? Recorta la imagen para dejar solo el ticket."
+    "cropHint": "¿Ha leído algo que no está en el ticket? Recorta la imagen para dejar solo el ticket.",
+    "cropApplied": "Ticket releído desde la imagen recortada",
+    "cropRereadMessage": "El ticket se leerá de nuevo desde la imagen recortada y se sustituirán las correcciones que has hecho a mano."
   },
   "zones": {
     "draw": "Dibujar",

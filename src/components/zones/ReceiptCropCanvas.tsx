@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Image } from 'expo-image';
 import Svg, { Rect } from 'react-native-svg';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -25,6 +26,7 @@ export function ReceiptCropCanvas({
   onCropChange,
 }: ReceiptCropCanvasProps) {
   const colors = useAppColors();
+  const { t } = useTranslation();
   const [availableBox, setAvailableBox] = useState<{ width: number; height: number } | null>(null);
 
   const startX = useSharedValue(0);
@@ -41,14 +43,14 @@ export function ReceiptCropCanvas({
         })
       : null;
 
-  const commit = (left: number, top: number, width: number, height: number) => {
+  const commit = (x1: number, y1: number, x2: number, y2: number) => {
     if (!usable) return;
-    onCropChange({
-      x: Math.max(0, Math.min(1, left / usable.width)),
-      y: Math.max(0, Math.min(1, top / usable.height)),
-      width: Math.min(1, width / usable.width),
-      height: Math.min(1, height / usable.height),
-    });
+    const normalize = (value: number, extent: number) => Math.max(0, Math.min(1, value / extent));
+    const left = normalize(Math.min(x1, x2), usable.width);
+    const right = normalize(Math.max(x1, x2), usable.width);
+    const top = normalize(Math.min(y1, y2), usable.height);
+    const bottom = normalize(Math.max(y1, y2), usable.height);
+    onCropChange({ x: left, y: top, width: right - left, height: bottom - top });
   };
 
   const pan = Gesture.Pan()
@@ -57,12 +59,7 @@ export function ReceiptCropCanvas({
       startY.value = event.y;
     })
     .onUpdate((event) => {
-      runOnJS(commit)(
-        Math.min(startX.value, event.x),
-        Math.min(startY.value, event.y),
-        Math.abs(event.x - startX.value),
-        Math.abs(event.y - startY.value)
-      );
+      runOnJS(commit)(startX.value, startY.value, event.x, event.y);
     });
 
   return (
@@ -74,7 +71,12 @@ export function ReceiptCropCanvas({
       }}
     >
       {usable && (
-        <View className="items-center">
+        <View
+          className="items-center"
+          accessible={true}
+          accessibilityLabel={t('scan.cropInstructions')}
+          accessibilityHint={t('scan.cropInstructions')}
+        >
           <GestureDetector gesture={pan}>
             <View style={{ width: usable.width, height: usable.height }}>
               <Image
