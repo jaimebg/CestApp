@@ -17,6 +17,9 @@ import type { NormalizedBoundingBox } from '@/src/types/zones';
 
 const logger = createScopedLogger('Crop');
 
+/** Below this fraction of either axis, a drag is a mis-tap, not a crop. */
+const MIN_CROP_FRACTION = 0.05;
+
 export default function ReceiptCropScreen() {
   const { uri, imageDimensions } = useLocalSearchParams<{
     uri: string;
@@ -36,8 +39,11 @@ export default function ReceiptCropScreen() {
   const [crop, setCrop] = useState<NormalizedBoundingBox | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  const hasValidCrop =
+    crop !== null && crop.width >= MIN_CROP_FRACTION && crop.height >= MIN_CROP_FRACTION;
+
   const handleConfirm = async () => {
-    if (!crop || !uri) return;
+    if (!hasValidCrop || !crop || !uri) return;
 
     setIsProcessing(true);
     try {
@@ -74,7 +80,7 @@ export default function ReceiptCropScreen() {
         zones: [],
         detectedTotal: null,
       });
-      router.replace('/scan/review');
+      router.back();
     } catch (error) {
       logger.error('Crop failed:', error);
       showErrorToast(t('common.error'), t('errors.ocrFailed'));
@@ -135,7 +141,7 @@ export default function ReceiptCropScreen() {
             variant="primary"
             size="lg"
             onPress={handleConfirm}
-            disabled={!crop}
+            disabled={!hasValidCrop}
             loading={isProcessing}
           >
             {t('scan.cropIt')}

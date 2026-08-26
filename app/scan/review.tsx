@@ -254,7 +254,6 @@ export default function ScanReviewScreen() {
   const [hasExistingTemplate, setHasExistingTemplate] = useState(false);
   const [templateApplied, setTemplateApplied] = useState(false);
   const [showReading, setShowReading] = useState(false);
-  const [showCropConfirm, setShowCropConfirm] = useState(false);
   const [hasManualEdits, setHasManualEdits] = useState(false);
   const [zonesAwaitingConfirmation, setZonesAwaitingConfirmation] = useState<
     ZoneDefinition[] | null
@@ -709,6 +708,10 @@ export default function ScanReviewScreen() {
     }, 150);
   };
 
+  // Applying a crop replaces the parsed receipt, same as redrawing zones
+  // does. The zone-change effect below already asks before discarding
+  // corrections made by hand once the crop comes back, so entering the crop
+  // screen itself needs no guard of its own.
   const navigateToCrop = () => {
     router.push({
       pathname: '/scan/crop',
@@ -716,21 +719,11 @@ export default function ScanReviewScreen() {
     });
   };
 
-  // Applying a crop replaces the parsed receipt, same as redrawing zones does,
-  // so it asks the same question before discarding corrections made by hand.
-  const handleCropRequest = () => {
-    if (hasManualEdits) {
-      setShowCropConfirm(true);
-      return;
-    }
-    navigateToCrop();
-  };
-
   const handleCropIt = () => {
     setShowReading(false);
 
     setTimeout(() => {
-      handleCropRequest();
+      navigateToCrop();
     }, 150);
   };
 
@@ -882,7 +875,7 @@ export default function ScanReviewScreen() {
                 uri !== '' &&
                 !isPdf && (
                   <Pressable
-                    onPress={handleCropRequest}
+                    onPress={navigateToCrop}
                     accessibilityRole="button"
                     accessibilityLabel={t('scan.cropHint')}
                     style={{ minHeight: MIN_TARGET, justifyContent: 'center' }}
@@ -1451,20 +1444,6 @@ export default function ScanReviewScreen() {
           setZonesAwaitingConfirmation(null);
         }}
         onCancel={keepManualEdits}
-      />
-
-      <ConfirmationModal
-        visible={showCropConfirm}
-        title={t('scan.rereadTitle')}
-        message={t('scan.rereadMessage')}
-        confirmText={t('scan.rereadConfirm')}
-        cancelText={t('common.cancel')}
-        isDestructive
-        onConfirm={() => {
-          setShowCropConfirm(false);
-          navigateToCrop();
-        }}
-        onCancel={() => setShowCropConfirm(false)}
       />
 
       <ConfirmationModal
