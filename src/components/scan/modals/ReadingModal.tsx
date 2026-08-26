@@ -29,6 +29,8 @@ interface ReadingModalProps {
   lines: string[];
   /** Absent where zones cannot be redrawn, as on a PDF page. */
   onEditZones: (() => void) | null;
+  /** Absent where the receipt has no image to crop, as on a PDF page. */
+  onCropIt: (() => void) | null;
   colors: ReviewColors;
 }
 
@@ -41,6 +43,7 @@ export function ReadingModal({
   dimensions,
   lines,
   onEditZones,
+  onCropIt,
   colors,
 }: ReadingModalProps) {
   const { t, i18n } = useTranslation();
@@ -206,12 +209,21 @@ export function ReadingModal({
           </ReadingColumn>
         </ScrollView>
 
-        {onEditZones && (
+        {(onEditZones || onCropIt) && (
           <View className="px-4 pb-2">
             <ReadingColumn>
-              <Button variant="secondary" size="lg" onPress={onEditZones}>
-                {t('scan.editZones')}
-              </Button>
+              <View className="gap-2">
+                {onEditZones && (
+                  <Button variant="secondary" size="lg" onPress={onEditZones}>
+                    {t('scan.editZones')}
+                  </Button>
+                )}
+                {onCropIt && (
+                  <Button variant="secondary" size="lg" onPress={onCropIt}>
+                    {t('scan.cropIt')}
+                  </Button>
+                )}
+              </View>
             </ReadingColumn>
           </View>
         )}

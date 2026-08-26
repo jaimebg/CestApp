@@ -39,7 +39,7 @@ import { parseAmountInput } from '@/src/config/currency';
 import { formatLocalizedDate } from '@/src/utils/dateTime';
 import { categoryLabelWithIcon } from '@/src/utils/categoryLabel';
 import { useAppColors } from '@/src/hooks/useAppColors';
-import { ICON_HIT_SLOP } from '@/src/theme/a11y';
+import { ICON_HIT_SLOP, MIN_TARGET } from '@/src/theme/a11y';
 import { ScanItemRow } from '@/src/components/scan/ScanItemRow';
 import { useLlmRefinement } from '@/src/hooks/useLlmRefinement';
 import { RefinementBanner } from '@/src/components/scan/RefinementBanner';
@@ -254,6 +254,7 @@ export default function ScanReviewScreen() {
   const [hasExistingTemplate, setHasExistingTemplate] = useState(false);
   const [templateApplied, setTemplateApplied] = useState(false);
   const [showReading, setShowReading] = useState(false);
+  const [showCropConfirm, setShowCropConfirm] = useState(false);
   const [hasManualEdits, setHasManualEdits] = useState(false);
   const [zonesAwaitingConfirmation, setZonesAwaitingConfirmation] = useState<
     ZoneDefinition[] | null
@@ -708,6 +709,31 @@ export default function ScanReviewScreen() {
     }, 150);
   };
 
+  const navigateToCrop = () => {
+    router.push({
+      pathname: '/scan/crop',
+      params: { uri, imageDimensions: JSON.stringify(dimensions) },
+    });
+  };
+
+  // Applying a crop replaces the parsed receipt, same as redrawing zones does,
+  // so it asks the same question before discarding corrections made by hand.
+  const handleCropRequest = () => {
+    if (hasManualEdits) {
+      setShowCropConfirm(true);
+      return;
+    }
+    navigateToCrop();
+  };
+
+  const handleCropIt = () => {
+    setShowReading(false);
+
+    setTimeout(() => {
+      handleCropRequest();
+    }, 150);
+  };
+
   const handleDeleteTemplate = async () => {
     if (!currentStoreId) return;
 
@@ -849,6 +875,27 @@ export default function ScanReviewScreen() {
                   )}
                 </View>
               )}
+
+              {hasOcrResult &&
+                parsedData.confidence < 70 &&
+                !isManualEntry &&
+                uri !== '' &&
+                !isPdf && (
+                  <Pressable
+                    onPress={handleCropRequest}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('scan.cropHint')}
+                    style={{ minHeight: MIN_TARGET, justifyContent: 'center' }}
+                    className="mb-4"
+                  >
+                    <Text
+                      className="text-sm"
+                      style={{ color: colors.warning, fontFamily: 'Inter_500Medium' }}
+                    >
+                      {t('scan.cropHint')}
+                    </Text>
+                  </Pressable>
+                )}
 
               {/* Template Applied Indicator (PDF only) */}
               {templateApplied && isPdf && (
@@ -1388,6 +1435,7 @@ export default function ScanReviewScreen() {
         dimensions={dimensions}
         lines={lines}
         onEditZones={isPdf ? null : handleEditZones}
+        onCropIt={isPdf ? null : handleCropIt}
         colors={colors}
       />
 
@@ -1403,6 +1451,20 @@ export default function ScanReviewScreen() {
           setZonesAwaitingConfirmation(null);
         }}
         onCancel={keepManualEdits}
+      />
+
+      <ConfirmationModal
+        visible={showCropConfirm}
+        title={t('scan.rereadTitle')}
+        message={t('scan.rereadMessage')}
+        confirmText={t('scan.rereadConfirm')}
+        cancelText={t('common.cancel')}
+        isDestructive
+        onConfirm={() => {
+          setShowCropConfirm(false);
+          navigateToCrop();
+        }}
+        onCancel={() => setShowCropConfirm(false)}
       />
 
       <ConfirmationModal

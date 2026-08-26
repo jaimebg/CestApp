@@ -22,6 +22,13 @@ export default function ScanLayout() {
           animation: 'slide_from_bottom',
         }}
       />
+      <Stack.Screen
+        name="crop"
+        options={{
+          presentation: 'fullScreenModal',
+          animation: 'slide_from_bottom',
+        }}
+      />
     </Stack>
   );
 }
