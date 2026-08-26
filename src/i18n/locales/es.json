@@ -142,7 +142,11 @@
     "zonesReapplied": "Ticket releído con las zonas nuevas",
     "rereadTitle": "¿Volver a leer el ticket?",
     "rereadMessage": "El ticket se leerá de nuevo con las zonas nuevas y se sustituirán las correcciones que has hecho a mano.",
-    "rereadConfirm": "Volver a leer"
+    "rereadConfirm": "Volver a leer",
+    "cropIt": "Recortar",
+    "cropTitle": "Recortar el ticket",
+    "cropInstructions": "Dibuja un recuadro alrededor del ticket. Lo que quede fuera se ignora.",
+    "cropHint": "¿Ha leído algo que no está en el ticket? Recorta la imagen para dejar solo el ticket."
   },
   "zones": {
     "draw": "Dibujar",

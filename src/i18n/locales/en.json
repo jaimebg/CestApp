@@ -142,7 +142,11 @@
     "zonesReapplied": "Receipt read again with the new zones",
     "rereadTitle": "Read the receipt again?",
     "rereadMessage": "The receipt will be read again through the new zones, and the corrections you made by hand will be replaced.",
-    "rereadConfirm": "Read again"
+    "rereadConfirm": "Read again",
+    "cropIt": "Crop",
+    "cropTitle": "Crop to the receipt",
+    "cropInstructions": "Drag a box around the receipt. Anything outside it is ignored.",
+    "cropHint": "Read something that isn't on the receipt? Crop the image to just the receipt."
   },
   "zones": {
     "draw": "Draw",
