@@ -437,7 +437,7 @@ export default function HistoryScreen() {
       </ReadingColumn>
 
       {/* Filter chips */}
-      <View className="px-6 pb-2">
+      <ReadingColumn className="px-6 pb-2">
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View className="flex-row gap-2">
             {/* Filter button */}
@@ -560,7 +560,7 @@ export default function HistoryScreen() {
             )}
           </View>
         </ScrollView>
-      </View>
+      </ReadingColumn>
 
       {/* Receipt list */}
       <FlashList
