@@ -5,7 +5,7 @@ import { imageSize } from 'image-size';
 import { CAPTIONS, SCREEN_ORDER } from './captions.js';
 import { deviceProfile } from './devices.js';
 import { featureGraphicHtml, iconHtml } from './graphics.js';
-import { LOCALES, PLAY_IMAGES, SLOTS } from './slots.js';
+import { LOCALES, PLAY_METADATA, SLOTS } from './slots.js';
 import { slotHtml } from './template.js';
 import { assertAssets } from './theme.js';
 
@@ -140,13 +140,19 @@ try {
     }
   }
 
-  const iconPath = path.join(ROOT, 'fastlane', 'metadata', 'android', 'icon.png');
-  await renderPage(browser, iconHtml(), iconPath, 512, 512);
-  written.push({ outPath: iconPath, width: 512, height: 512 });
+  // supply reads icon and feature graphic from <locale>/images, not from a
+  // shared folder, so each locale gets its own copy of both.
+  for (const locale of LOCALES) {
+    const images = path.join(ROOT, PLAY_METADATA, locale.store, 'images');
 
-  const featurePath = path.join(ROOT, PLAY_IMAGES, 'featureGraphic.png');
-  await renderPage(browser, featureGraphicHtml(), featurePath, 1024, 500);
-  written.push({ outPath: featurePath, width: 1024, height: 500 });
+    const iconPath = path.join(images, 'icon.png');
+    await renderPage(browser, iconHtml(), iconPath, 512, 512);
+    written.push({ outPath: iconPath, width: 512, height: 512 });
+
+    const featurePath = path.join(images, 'featureGraphic.png');
+    await renderPage(browser, featureGraphicHtml(), featurePath, 1024, 500);
+    written.push({ outPath: featurePath, width: 1024, height: 500 });
+  }
 } finally {
   await browser.close();
 }

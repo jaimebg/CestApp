@@ -6,7 +6,7 @@ export const LOCALES = [
 ];
 
 export const IOS_ROOT = path.join('fastlane', 'screenshots', 'ios');
-export const PLAY_IMAGES = path.join('fastlane', 'metadata', 'android', 'images');
+export const PLAY_METADATA = path.join('fastlane', 'metadata', 'android');
 
 /**
  * Canvas insets as fractions of the tile, per device kind.
@@ -59,7 +59,7 @@ export const SLOTS = [
     width: 1080,
     height: 2340,
     insets: INSETS.phone,
-    dirFor: (store) => path.join(PLAY_IMAGES, store, 'phoneScreenshots'),
+    dirFor: (store) => path.join(PLAY_METADATA, store, 'images', 'phoneScreenshots'),
     fileFor: (screenId) => `${screenId}.png`,
   },
   {
@@ -69,7 +69,7 @@ export const SLOTS = [
     width: 2732,
     height: 2048,
     insets: INSETS.tabletLandscape,
-    dirFor: (store) => path.join(PLAY_IMAGES, store, 'tenInchScreenshots'),
+    dirFor: (store) => path.join(PLAY_METADATA, store, 'images', 'tenInchScreenshots'),
     fileFor: (screenId) => `${screenId}.png`,
   },
 ];
