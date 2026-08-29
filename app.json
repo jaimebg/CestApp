@@ -23,8 +23,10 @@
           "UIInterfaceOrientationPortraitUpsideDown",
           "UIInterfaceOrientationLandscapeLeft",
           "UIInterfaceOrientationLandscapeRight"
-        ]
-      }
+        ],
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "buildNumber": "1"
     },
     "android": {
       "adaptiveIcon": {
@@ -34,7 +36,8 @@
       },
       "predictiveBackGestureEnabled": false,
       "blockedPermissions": ["android.permission.RECORD_AUDIO"],
-      "package": "com.jbgsoft.CestApp"
+      "package": "com.jbgsoft.cestapp",
+      "versionCode": 1
     },
     "web": {
       "output": "static",
