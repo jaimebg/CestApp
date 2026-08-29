@@ -1,4 +1,6 @@
 {
-  "NSCameraUsageDescription": "CestApp usa la cámara para fotografiar tus tickets.",
-  "NSPhotoLibraryUsageDescription": "CestApp accede a tus fotos para que elijas la imagen de un ticket."
+  "ios": {
+    "NSCameraUsageDescription": "CestApp usa la cámara para fotografiar tus tickets.",
+    "NSPhotoLibraryUsageDescription": "CestApp accede a tus fotos para que elijas la imagen de un ticket."
+  }
 }

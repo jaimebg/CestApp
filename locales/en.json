@@ -1,4 +1,6 @@
 {
-  "NSCameraUsageDescription": "CestApp needs access to your camera to capture receipt photos.",
-  "NSPhotoLibraryUsageDescription": "CestApp needs access to your photos to select receipt images."
+  "ios": {
+    "NSCameraUsageDescription": "CestApp needs access to your camera to capture receipt photos.",
+    "NSPhotoLibraryUsageDescription": "CestApp needs access to your photos to select receipt images."
+  }
 }
