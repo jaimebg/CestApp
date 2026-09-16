@@ -48,4 +48,4 @@ jobs:
         run: npx expo prebuild --no-install
 
       - name: Run expo-doctor
-        run: npx expo-doctor@latest
+        run: npx expo-doctor@1.20.4
