@@ -26,11 +26,7 @@
 ---
 
 <p align="center">
-  <img src="assets/screenshots/review.jpg" alt="Reviewing a scanned receipt" width="240" />
-  &nbsp;&nbsp;
-  <img src="assets/screenshots/reading.jpg" alt="The zones the receipt was read through" width="240" />
-  &nbsp;&nbsp;
-  <img src="assets/screenshots/analytics.jpg" alt="Spending analytics" width="240" />
+  <img src="assets/screenshots/panorama.png" alt="The dashboard, receipt review, history, analytics, how a receipt was read, and settings" width="100%" />
 </p>
 
 ---
