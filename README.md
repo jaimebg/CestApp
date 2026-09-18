@@ -13,6 +13,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/jaimebg/CestApp/releases/latest"><img src="https://img.shields.io/github/v/release/jaimebg/CestApp" alt="Latest release" /></a>
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT" />
   <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome" />
   <img src="https://img.shields.io/badge/platform-iOS%20%7C%20Android-lightgrey.svg" alt="Platform: iOS | Android" />
@@ -25,14 +26,18 @@
 ---
 
 <p align="center">
-  <img src="assets/screenshots/dashboard.jpg" alt="Dashboard" width="240" />
+  <img src="assets/screenshots/review.jpg" alt="Reviewing a scanned receipt" width="240" />
   &nbsp;&nbsp;
-  <img src="assets/screenshots/analytics.jpg" alt="Analytics" width="240" />
+  <img src="assets/screenshots/reading.jpg" alt="The zones the receipt was read through" width="240" />
   &nbsp;&nbsp;
-  <img src="assets/screenshots/scan-preview.jpg" alt="Scan Preview" width="240" />
+  <img src="assets/screenshots/analytics.jpg" alt="Spending analytics" width="240" />
 </p>
 
 ---
+
+## Status
+
+[1.0.0](https://github.com/jaimebg/CestApp/releases/tag/v1.0.0) is in review at the App Store and Google Play.
 
 ## Why CestApp?
 
@@ -44,17 +49,21 @@
 
 ## Features
 
-**Capture**: Document scanner (auto-crop & enhance), gallery import, PDF parsing via ML Kit OCR.
+**Capture**: Document scanner (auto-crop & enhance), gallery import, PDFs. CestApp reads a capture on the spot and opens it in review.
+
+**Review**: Edit the store, date, total and every line before saving. "How it was read" shows the zones over the receipt and the recognized text. If the reading is off, redraw the zones or crop the image to the receipt, and CestApp reads it again. It warns you before you save a duplicate.
 
 **Smart Parsing**: Chain-specific templates detect Mercadona, Carrefour, Lidl, Eroski, Dia, Consum, Alcampo, Aldi, HiperDino by NIF/name patterns.
+
+**Smart reading** (iOS): On iPhones with Apple Intelligence, an on-device model repairs receipts the OCR read badly. CestApp keeps only the items it can match to the OCR text, and checks that their prices add up to the total.
 
 **Organize**: 11 built-in categories, auto-categorization, user learning, store detection.
 
 **Analyze**: Monthly trends, category breakdowns, store comparisons, top items.
 
-**Privacy**: Offline-first, local SQLite, no tracking, no ads. Full policy: [jbgsoft.com/cestapp/privacy](https://jbgsoft.com/cestapp/privacy).
+**Privacy**: Offline-first, local SQLite, no tracking, no ads. Export everything to a JSON backup. Full policy: [jbgsoft.com/cestapp/privacy](https://jbgsoft.com/cestapp/privacy).
 
-**Details**: Dark mode, Spanish regional formats (EUR, DD/MM/YYYY, decimal comma), animations that respect Reduce Motion.
+**Details**: Phone and tablet layouts, dark mode, Spanish regional formats (EUR, DD/MM/YYYY, decimal comma), animations that respect Reduce Motion.
 
 ## Installation
 
@@ -80,6 +89,7 @@ npx expo run:android
 | Database   | Drizzle ORM + expo-sqlite         |
 | State      | Zustand v5                        |
 | OCR        | ML Kit (@infinitered)             |
+| LLM        | Apple Foundation Models (iOS)     |
 | PDF        | Custom parser + pako              |
 | i18n       | i18next                           |
 | Animations | Reanimated v4                     |
@@ -91,17 +101,33 @@ npx expo run:android
 app/           # Screens (Expo Router)
 src/
   components/  # UI components
-  db/          # Schema & queries
-  services/    # OCR, PDF, capture, storage
+  config/      # Chain templates, tax regions
+  db/          # Schema, migrations & queries
+  services/    # OCR, PDF, capture, storage, LLM
   store/       # Zustand state
+  theme/       # Palette & type
   i18n/        # Translations
+scripts/
+  store-screenshots/  # Frames raw captures into the store graphics
 ```
+
+## Development
+
+```bash
+npx tsc --noEmit   # Type check
+npm test           # Jest, including fixture-based parser tests
+npm run check      # ESLint + Prettier
+```
+
+CI runs all three on every push. If you change the parser, extend the fixtures in `src/services/ocr/__tests__/`.
+
+Releases build locally and ship through fastlane. The `fastlane/` folder holds credentials and store assets, so it stays out of the repo.
 
 ## How It Works
 
 1. **Detect Chain**: Identifies supermarket by NIF (tax ID), store name patterns, or fingerprints (brand names like "Hacendado" for Mercadona)
 2. **Apply Template**: Uses chain-specific parsing rules (layout, item patterns, OCR corrections)
-3. **Extract**: ML Kit OCR for images, custom parser for PDFs
+3. **Extract**: ML Kit OCR for images, custom parser for PDFs. The parser uses the capture's zones when it has them, then the geometry of its text blocks, then its lines alone
 4. **Categorize**: User corrections → keyword matching → default
 
 Learning is store-aware: same item can have different categories at different stores.
