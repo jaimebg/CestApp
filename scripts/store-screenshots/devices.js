@@ -23,16 +23,12 @@ export const DEVICES = {
     cornerRatio: 0.118, //                   55pt of 440pt
   },
   ipad: {
-    label: 'iPad Pro 11-inch (M4), landscape',
-    raw: { width: 2266, height: 1488 }, // 1133x744pt @2x
-    statusStrip: 48, //                     24pt status bar @2x
+    label: 'iPad mini (A17 Pro), portrait',
+    raw: { width: 1488, height: 2266 }, //  744x1133pt @2x
+    statusStrip: 48, //                      24pt status bar @2x
     kind: 'tablet',
     bezelRatio: 0.02,
-    // Fraction of device WIDTH. Width is the longer side in this landscape
-    // profile, so 0.055 (sized for portrait, where width is the short side)
-    // would render ~8.2% of the short side — visibly rounder than approved.
-    // 0.037 restores roughly that original short-side proportion.
-    cornerRatio: 0.037,
+    cornerRatio: 0.055,
   },
 };
 

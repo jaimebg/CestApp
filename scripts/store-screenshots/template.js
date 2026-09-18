@@ -2,15 +2,10 @@ import { BRAND, escapeHtml, fontFaces, px } from './theme.js';
 import { statusBarHtml, STATUS_BAR_CSS } from './devices.js';
 import { fitDevice, screenBands, stageBox } from './geometry.js';
 
-/**
- * Caption band proportions, per device kind. The iPad slots are permanently
- * landscape, so the tablet entry is `tabletLandscape`, not `tablet`: the
- * canvas is wider, so `size` (a fraction of canvas width) is smaller than a
- * portrait tablet's would be, to keep the caption from overrunning two lines.
- */
+/** Caption band proportions, per device kind. */
 const CAPTION = {
   phone: { top: 0.062, band: 0.105, gap: 0.022, size: 0.082, rule: 0.005 },
-  tabletLandscape: { top: 0.06, band: 0.105, gap: 0.022, size: 0.045, rule: 0.005 },
+  tablet: { top: 0.05, band: 0.095, gap: 0.018, size: 0.062, rule: 0.004 },
 };
 
 /**
@@ -24,8 +19,7 @@ const CAPTION = {
 export function slotHtml({ caption, shotDataUri, slot, device, raw }) {
   const { width, height, insets, platform } = slot;
   const kind = device.kind;
-  const captionKey = device.kind === 'tablet' ? 'tabletLandscape' : device.kind;
-  const c = CAPTION[captionKey];
+  const c = CAPTION[kind];
 
   const { stageWidth, stageHeight, stageLeft, stageTop } = stageBox({ width, height, insets });
   const screenAspect = raw.width / raw.height;

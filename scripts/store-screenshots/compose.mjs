@@ -5,7 +5,7 @@ import { imageSize } from 'image-size';
 import { CAPTIONS, SCREEN_ORDER } from './captions.js';
 import { deviceProfile } from './devices.js';
 import { featureGraphicHtml, iconHtml } from './graphics.js';
-import { LOCALES, PLAY_METADATA, SLOTS } from './slots.js';
+import { LOCALES, PLAY_METADATA, RAW_LOCALE, SLOTS } from './slots.js';
 import { slotHtml } from './template.js';
 import { assertAssets } from './theme.js';
 
@@ -30,32 +30,30 @@ function collectRaws() {
   const raws = new Map();
   const problems = [];
 
-  for (const locale of LOCALES) {
-    for (const deviceKey of devices) {
-      const profile = deviceProfile(deviceKey);
-      for (const screenId of SCREEN_ORDER) {
-        const file = path.join(RAW_ROOT, locale.raw, deviceKey, `${screenId}.png`);
-        if (!fs.existsSync(file)) {
-          problems.push(`missing: ${rel(file)}`);
-          continue;
-        }
-        const buffer = fs.readFileSync(file);
-        const size = imageSize(buffer);
-        if (size.width !== profile.raw.width || size.height !== profile.raw.height) {
-          problems.push(
-            `${rel(file)} is ${size.width}x${size.height}, expected ` +
-              `${profile.raw.width}x${profile.raw.height} (${profile.label}). ` +
-              `Recapture on that simulator, or update its profile in devices.js ` +
-              `— statusStrip must be remeasured too.`
-          );
-          continue;
-        }
-        raws.set(`${locale.raw}/${deviceKey}/${screenId}`, {
-          uri: `data:image/png;base64,${buffer.toString('base64')}`,
-          width: size.width,
-          height: size.height,
-        });
+  for (const deviceKey of devices) {
+    const profile = deviceProfile(deviceKey);
+    for (const screenId of SCREEN_ORDER) {
+      const file = path.join(RAW_ROOT, RAW_LOCALE, deviceKey, `${screenId}.png`);
+      if (!fs.existsSync(file)) {
+        problems.push(`missing: ${rel(file)}`);
+        continue;
       }
+      const buffer = fs.readFileSync(file);
+      const size = imageSize(buffer);
+      if (size.width !== profile.raw.width || size.height !== profile.raw.height) {
+        problems.push(
+          `${rel(file)} is ${size.width}x${size.height}, expected ` +
+            `${profile.raw.width}x${profile.raw.height} (${profile.label}). ` +
+            `Recapture on that simulator, or update its profile in devices.js ` +
+            `— statusStrip must be remeasured too.`
+        );
+        continue;
+      }
+      raws.set(`${deviceKey}/${screenId}`, {
+        uri: `data:image/png;base64,${buffer.toString('base64')}`,
+        width: size.width,
+        height: size.height,
+      });
     }
   }
 
@@ -119,9 +117,9 @@ try {
     for (const slot of SLOTS) {
       const device = deviceProfile(slot.device);
       for (const screenId of SCREEN_ORDER) {
-        const raw = raws.get(`${locale.raw}/${slot.device}/${screenId}`);
+        const raw = raws.get(`${slot.device}/${screenId}`);
         const html = slotHtml({
-          caption: CAPTIONS[screenId][locale.raw],
+          caption: CAPTIONS[screenId][locale.caption],
           shotDataUri: raw.uri,
           slot,
           device,
@@ -133,7 +131,7 @@ try {
           page.evaluate((y) => window.__prepare(y), sampleY)
         );
         faults.push(
-          ...verifyTile({ label: `${slot.id}/${locale.raw}/${screenId}`, report, slot, raw })
+          ...verifyTile({ label: `${slot.id}/${locale.store}/${screenId}`, report, slot, raw })
         );
         written.push({ outPath, width: slot.width, height: slot.height });
       }

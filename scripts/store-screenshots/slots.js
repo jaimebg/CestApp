@@ -1,8 +1,14 @@
 import path from 'node:path';
 
+/**
+ * The app is captured in Spanish only, its primary market. Both store locales
+ * frame those same captures, and differ in the caption above them.
+ */
+export const RAW_LOCALE = 'es';
+
 export const LOCALES = [
-  { raw: 'en', store: 'en-US' },
-  { raw: 'es', store: 'es-ES' },
+  { caption: 'en', store: 'en-US' },
+  { caption: 'es', store: 'es-ES' },
 ];
 
 export const IOS_ROOT = path.join('fastlane', 'screenshots', 'ios');
@@ -11,16 +17,13 @@ export const PLAY_METADATA = path.join('fastlane', 'metadata', 'android');
 /**
  * Canvas insets as fractions of the tile, per device kind.
  *
- * Tablets get a shallower caption band and tighter margins than phones: their
- * captures are squatter than the 3:4 store canvas, so every point of stage
- * height buys real device size instead of gutter. The iPad slots are
- * permanently landscape (2732x2048), so the only tablet entry is
- * `tabletLandscape`: a landscape device needs a taller caption band relative
- * to its own width to keep two-line captions from crowding the frame.
+ * Tablets get a shallower caption band and tighter margins: their captures are
+ * squatter than the 3:4 store canvas, so every point of stage height buys real
+ * device size instead of gutter.
  */
 const INSETS = {
   phone: { top: 0.215, bottom: 0.045, left: 0.08, right: 0.08 },
-  tabletLandscape: { top: 0.225, bottom: 0.05, left: 0.05, right: 0.05 },
+  tablet: { top: 0.19, bottom: 0.036, left: 0.07, right: 0.07 },
 };
 
 /**
@@ -46,9 +49,9 @@ export const SLOTS = [
     id: 'ios-tablet',
     device: 'ipad',
     platform: 'ios',
-    width: 2732,
-    height: 2048,
-    insets: INSETS.tabletLandscape,
+    width: 2048,
+    height: 2732,
+    insets: INSETS.tablet,
     dirFor: (store) => path.join(IOS_ROOT, store),
     fileFor: (screenId) => `${screenId}_ipad.png`,
   },
@@ -66,9 +69,9 @@ export const SLOTS = [
     id: 'play-tablet',
     device: 'ipad',
     platform: 'android',
-    width: 2732,
-    height: 2048,
-    insets: INSETS.tabletLandscape,
+    width: 2048,
+    height: 2732,
+    insets: INSETS.tablet,
     dirFor: (store) => path.join(PLAY_METADATA, store, 'images', 'tenInchScreenshots'),
     fileFor: (screenId) => `${screenId}.png`,
   },
