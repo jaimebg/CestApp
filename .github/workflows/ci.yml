@@ -47,5 +47,10 @@ jobs:
       - name: Generate native projects
         run: npx expo prebuild --no-install
 
+      # The version check compares against whatever Expo published last, so it
+      # fails the build whenever a patch release lands, with no change here.
+      # The other checks only fail when the repo changes.
       - name: Run expo-doctor
         run: npx expo-doctor@1.20.4
+        env:
+          EXPO_DOCTOR_SKIP_DEPENDENCY_VERSION_CHECK: 1
