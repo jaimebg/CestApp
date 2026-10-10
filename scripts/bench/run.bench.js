@@ -17,6 +17,17 @@ function readJsonFiles(dir) {
     .map((name) => ({ name, text: fs.readFileSync(path.join(dir, name), 'utf8') }));
 }
 
+// The repository is public, and receipts carry card digits, addresses and times.
+function refuseFolderInsideRepo(dir) {
+  const repo = execSync('git rev-parse --show-toplevel').toString().trim();
+  const resolved = path.resolve(dir);
+  if (resolved === repo || resolved.startsWith(`${repo}${path.sep}`)) {
+    throw new Error(
+      'BENCH_DIR is inside the repository, which is public. Use a folder outside it.'
+    );
+  }
+}
+
 function commit() {
   const sha = execSync('git rev-parse --short HEAD').toString().trim();
   const dirty = execSync('git status --porcelain').toString().trim().length > 0;
@@ -25,6 +36,7 @@ function commit() {
 
 test('reading benchmark', () => {
   if (!benchDir) throw new Error('Set BENCH_DIR to the local benchmark folder');
+  refuseFolderInsideRepo(benchDir);
 
   jest.spyOn(console, 'log').mockImplementation(() => {});
   jest.spyOn(console, 'warn').mockImplementation(() => {});

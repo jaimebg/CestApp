@@ -566,7 +566,9 @@ ios|android` moves them to `<folder>/captures`; `<folder>/truth/<ticket>.json`
 holds each ticket's real contents and lists its captures; `BENCH_DIR=<folder>
 npm run bench` replays them, prints correctness and stability per ticket, and
 compares with the previous report. Bench data never goes in the repo: it is
-public, and receipts carry card digits, addresses and times.
+public, and receipts carry card digits, addresses and times; both scripts refuse
+a folder inside it. `scripts/bench/test-pull.sh` checks the pull script against a
+stand-in `adb`.
 
 ## Commit Guidelines
 
