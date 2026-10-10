@@ -1,6 +1,7 @@
 import { Image } from 'react-native';
 import { createScopedLogger } from '../../utils/debug';
 import { recognizeText, type OcrBlock } from './index';
+import { detectImageZones } from './imageOcr';
 import { extractTextFromPdf } from '../pdf';
 import { autoDetectZones } from './autoZoneDetector';
 import type { ZoneDefinition } from '../../types/zones';
@@ -96,11 +97,8 @@ async function processImage(uri: string, known?: Dimensions): Promise<CapturePro
     return failure(false, 'ocr_failed');
   }
 
-  // Zones are placed against the geometry the recognizer reports, which is the
-  // one its own block coordinates live in.
-  const dimensions = result.inferredDimensions || measured;
-  const detected = autoDetectZones(result.blocks, dimensions);
-  logger.log('Blocks:', result.blocks.length, 'zones:', detected.zones.length);
+  const { dimensions, zones, detectedTotal } = detectImageZones(result, measured);
+  logger.log('Blocks:', result.blocks.length, 'zones:', zones.length);
 
   return {
     success: true,
@@ -109,8 +107,8 @@ async function processImage(uri: string, known?: Dimensions): Promise<CapturePro
     lines: result.lines,
     blocks: result.blocks,
     dimensions,
-    zones: detected.zones,
-    detectedTotal: detected.detectedTotal,
+    zones,
+    detectedTotal,
   };
 }
 

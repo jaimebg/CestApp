@@ -1,40 +1,11 @@
-import { recognizeText as mlkitRecognizeText } from '@infinitered/react-native-mlkit-text-recognition';
+import {
+  recognizeText as mlkitRecognizeText,
+  type Text as MlkitText,
+} from '@infinitered/react-native-mlkit-text-recognition';
 import { createScopedLogger } from '../../utils/debug';
-import { reconstructRows } from './rowReconstructor';
+import { toOcrResult } from './imageOcr';
 
 const logger = createScopedLogger('OCR');
-
-interface MlkitRect {
-  left: number;
-  top: number;
-  right: number;
-  bottom: number;
-}
-
-interface MlkitTextLine {
-  text: string;
-  frame: MlkitRect;
-}
-
-interface MlkitTextBlock {
-  text: string;
-  frame: MlkitRect;
-  lines: MlkitTextLine[];
-}
-
-interface MlkitTextResult {
-  text: string;
-  blocks: MlkitTextBlock[];
-}
-
-function rectToBoundingBox(frame: MlkitRect) {
-  return {
-    left: frame.left,
-    top: frame.top,
-    width: frame.right - frame.left,
-    height: frame.bottom - frame.top,
-  };
-}
 
 export interface OcrBlock {
   text: string;
@@ -65,6 +36,8 @@ export interface OcrResult {
   error?: string;
   /** Inferred image dimensions from OCR block coordinates - use this for zone alignment */
   inferredDimensions?: { width: number; height: number };
+  /** ML Kit's untouched result, kept so the reading benchmark can replay it. */
+  raw?: MlkitText;
 }
 
 /**
@@ -81,47 +54,8 @@ export async function recognizeText(
   knownDimensions?: { width: number; height: number }
 ): Promise<OcrResult> {
   try {
-    const result: MlkitTextResult = await mlkitRecognizeText(imageUri);
-
-    const blocks: OcrBlock[] = result.blocks.map((block) => ({
-      text: block.text,
-      lines: block.lines.map((line) => ({
-        text: line.text,
-        boundingBox: rectToBoundingBox(line.frame),
-      })),
-      boundingBox: rectToBoundingBox(block.frame),
-    }));
-
-    // Rebuild the printed rows from geometry. ML Kit emits one block per column on
-    // columnar receipts, so raw block order separates a product from its prices.
-    const lines: string[] = reconstructRows(blocks);
-
-    let inferredDimensions: { width: number; height: number } | undefined;
-
-    if (knownDimensions) {
-      inferredDimensions = knownDimensions;
-      logger.log('Using known image dimensions:', knownDimensions);
-    } else if (result.blocks.length > 0) {
-      let maxX = 0;
-      let maxY = 0;
-      result.blocks.forEach((b) => {
-        maxX = Math.max(maxX, b.frame.right);
-        maxY = Math.max(maxY, b.frame.bottom);
-      });
-      inferredDimensions = {
-        width: Math.ceil(maxX * 1.02),
-        height: Math.ceil(maxY * 1.02),
-      };
-      logger.log('Inferred dimensions from OCR blocks (fallback):', inferredDimensions);
-    }
-
-    return {
-      success: true,
-      text: result.text,
-      blocks,
-      lines,
-      inferredDimensions,
-    };
+    const raw = await mlkitRecognizeText(imageUri);
+    return toOcrResult(raw, knownDimensions);
   } catch (error) {
     logger.error('OCR error:', error);
     return {
