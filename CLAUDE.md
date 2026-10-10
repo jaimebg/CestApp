@@ -180,6 +180,7 @@ src/
   services/
     ocr/
       index.ts                 # ML Kit OCR wrapper
+      imageOcr.ts              # ML Kit result -> OcrResult, and zones for a photo
       processCapture.ts        # Capture -> text, geometry and detected zones
       parseCapture.ts          # Processed capture -> parsed receipt
       parser.ts                # Receipt parsing with chain detection
@@ -193,6 +194,12 @@ src/
       index.ts                 # Camera/Gallery/PDF picker
     storage/
       index.ts                 # File system management
+    bench/
+      recordCapture.ts         # Dev builds: saves each photo's raw OCR for the benchmark
+      replay.ts                # Re-reads a recorded capture through the app's pipeline
+      score.ts                 # Scores a reading against a ticket's ground truth
+      report.ts                # Per-ticket and overall metrics, table, deltas
+      runBench.ts              # Ties captures, truth and reports together
     llm/
       index.ts                 # On-device LLM receipt structuring
       types.ts                 # LLM and backend message types
@@ -551,6 +558,16 @@ Before committing:
 
 CI (`.github/workflows/ci.yml`) runs type check, lint, format check, and tests on every push/PR.
 
+### Reading benchmark
+
+Development builds save every photographed capture (ML Kit's raw result and the
+image) to the app's `Documents/bench/`. `BENCH_DIR=<folder> scripts/bench/pull.sh
+ios|android` moves them to `<folder>/captures`; `<folder>/truth/<ticket>.json`
+holds each ticket's real contents and lists its captures; `BENCH_DIR=<folder>
+npm run bench` replays them, prints correctness and stability per ticket, and
+compares with the previous report. Bench data never goes in the repo: it is
+public, and receipts carry card digits, addresses and times.
+
 ## Commit Guidelines
 
 - Use conventional commits: `feat:`, `fix:`, `refactor:`, `docs:`, `chore:`
@@ -596,14 +613,15 @@ npx tsc --noEmit
 
 ## Code Quality Scripts
 
-| Script                 | Description                      |
-| ---------------------- | -------------------------------- |
-| `npm run lint`         | Check for ESLint issues          |
-| `npm run lint:fix`     | Auto-fix ESLint issues           |
-| `npm run format`       | Format all files with Prettier   |
-| `npm run format:check` | Check formatting without changes |
-| `npm run check`        | Run both lint and format:check   |
-| `npm test`             | Run Jest unit tests              |
+| Script                 | Description                                           |
+| ---------------------- | ----------------------------------------------------- |
+| `npm run lint`         | Check for ESLint issues                               |
+| `npm run lint:fix`     | Auto-fix ESLint issues                                |
+| `npm run format`       | Format all files with Prettier                        |
+| `npm run format:check` | Check formatting without changes                      |
+| `npm run check`        | Run both lint and format:check                        |
+| `npm test`             | Run Jest unit tests                                   |
+| `npm run bench`        | Score reading on real captures (`BENCH_DIR=<folder>`) |
 
 ### Pre-commit Hook
 
