@@ -2,9 +2,13 @@ import { processCapture } from '../processCapture';
 import { recognizeText } from '../index';
 import { extractTextFromPdf } from '../../pdf';
 import { MERCADONA_PHOTO_BLOCKS } from './fixtures.mercadonaPhoto';
+import { recordCapture } from '../../bench/recordCapture';
 
 jest.mock('../index', () => ({ recognizeText: jest.fn() }));
 jest.mock('../../pdf', () => ({ extractTextFromPdf: jest.fn() }));
+jest.mock('../../bench/recordCapture', () => ({ recordCapture: jest.fn() }));
+
+const recordCaptureMock = recordCapture as jest.MockedFunction<typeof recordCapture>;
 
 const recognizeTextMock = recognizeText as jest.MockedFunction<typeof recognizeText>;
 const extractTextFromPdfMock = extractTextFromPdf as jest.MockedFunction<typeof extractTextFromPdf>;
@@ -134,5 +138,76 @@ describe('processCapture on a PDF', () => {
 
     expect(result.success).toBe(false);
     expect(result.error).toBe('no_text_content');
+  });
+});
+
+describe('processCapture recording for the benchmark', () => {
+  const RAW = { text: PHOTO_TEXT, blocks: [] };
+
+  it('records the raw reading with the size it was read at and where it came from', async () => {
+    recognizeTextMock.mockResolvedValue(ocrSuccess({ raw: RAW }));
+
+    await processCapture({
+      uri: 'file:///receipt.jpg',
+      isPdf: false,
+      knownDimensions: PHOTO_DIMS,
+      source: 'scanner',
+    });
+
+    expect(recordCaptureMock).toHaveBeenCalledWith({
+      uri: 'file:///receipt.jpg',
+      raw: RAW,
+      knownDimensions: PHOTO_DIMS,
+      source: 'scanner',
+    });
+  });
+
+  it('records a reading that found no text, since a blank read is a result too', async () => {
+    const blank = { text: '', blocks: [] };
+    recognizeTextMock.mockResolvedValue({
+      success: true,
+      text: '',
+      lines: [],
+      blocks: [],
+      raw: blank,
+    });
+
+    const result = await processCapture({
+      uri: 'file:///receipt.jpg',
+      isPdf: false,
+      knownDimensions: PHOTO_DIMS,
+    });
+
+    expect(result.success).toBe(false);
+    expect(recordCaptureMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('records nothing when the recognizer itself failed', async () => {
+    recognizeTextMock.mockResolvedValue({
+      success: false,
+      text: '',
+      lines: [],
+      blocks: [],
+      error: 'boom',
+    });
+
+    await processCapture({ uri: 'file:///receipt.jpg', isPdf: false, knownDimensions: PHOTO_DIMS });
+
+    expect(recordCaptureMock).not.toHaveBeenCalled();
+  });
+
+  it('records nothing for a PDF', async () => {
+    extractTextFromPdfMock.mockResolvedValue({
+      success: true,
+      text: PHOTO_TEXT,
+      lines: PHOTO_LINES,
+      pageCount: 1,
+      blocks: MERCADONA_PHOTO_BLOCKS,
+      dimensions: PHOTO_DIMS,
+    });
+
+    await processCapture({ uri: 'file:///receipt.pdf', isPdf: true });
+
+    expect(recordCaptureMock).not.toHaveBeenCalled();
   });
 });

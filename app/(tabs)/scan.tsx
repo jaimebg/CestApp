@@ -44,6 +44,7 @@ export default function ScanScreen() {
       const processed = await processCapture({
         uri,
         isPdf: isPdfFile(uri),
+        source: result.source,
         knownDimensions:
           result.width && result.height
             ? { width: result.width, height: result.height }

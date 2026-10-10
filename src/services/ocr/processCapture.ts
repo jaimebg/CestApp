@@ -2,6 +2,7 @@ import { Image } from 'react-native';
 import { createScopedLogger } from '../../utils/debug';
 import { recognizeText, type OcrBlock } from './index';
 import { detectImageZones } from './imageOcr';
+import { recordCapture } from '../bench/recordCapture';
 import { extractTextFromPdf } from '../pdf';
 import { autoDetectZones } from './autoZoneDetector';
 import type { ZoneDefinition } from '../../types/zones';
@@ -23,6 +24,8 @@ export interface CaptureProcessInput {
   isPdf: boolean;
   /** The size the capture service reported, when it reported one. */
   knownDimensions?: Dimensions;
+  /** Where the capture came from, saved with it for the reading benchmark. */
+  source?: string;
 }
 
 export interface CaptureProcessResult {
@@ -89,9 +92,17 @@ async function processPdf(uri: string): Promise<CaptureProcessResult> {
   };
 }
 
-async function processImage(uri: string, known?: Dimensions): Promise<CaptureProcessResult> {
+async function processImage(
+  uri: string,
+  known?: Dimensions,
+  source?: string
+): Promise<CaptureProcessResult> {
   const measured = known ?? (await measureImage(uri));
   const result = await recognizeText(uri, measured);
+
+  if (__DEV__ && result.raw) {
+    void recordCapture({ uri, raw: result.raw, knownDimensions: measured, source });
+  }
 
   if (!result.success || result.text.length === 0) {
     return failure(false, 'ocr_failed');
@@ -117,10 +128,10 @@ async function processImage(uri: string, known?: Dimensions): Promise<CapturePro
  * geometry that text was read in, and the zones detected over it.
  */
 export async function processCapture(input: CaptureProcessInput): Promise<CaptureProcessResult> {
-  const { uri, isPdf, knownDimensions } = input;
+  const { uri, isPdf, knownDimensions, source } = input;
 
   try {
-    return isPdf ? await processPdf(uri) : await processImage(uri, knownDimensions);
+    return isPdf ? await processPdf(uri) : await processImage(uri, knownDimensions, source);
   } catch (error) {
     logger.error('Processing error:', error);
     return failure(isPdf, 'ocr_failed');
