@@ -14,7 +14,7 @@ function readJsonFiles(dir) {
     .readdirSync(dir)
     .filter((name) => name.endsWith('.json'))
     .sort()
-    .map((name) => JSON.parse(fs.readFileSync(path.join(dir, name), 'utf8')));
+    .map((name) => ({ name, text: fs.readFileSync(path.join(dir, name), 'utf8') }));
 }
 
 function commit() {
@@ -31,9 +31,12 @@ test('reading benchmark', () => {
 
   const reportsDir = path.join(benchDir, 'reports');
   const io = {
-    captures: () => readJsonFiles(path.join(benchDir, 'captures')),
-    truths: () => readJsonFiles(path.join(benchDir, 'truth')),
-    previousReport: () => readJsonFiles(reportsDir).at(-1) ?? null,
+    captureFiles: () => readJsonFiles(path.join(benchDir, 'captures')),
+    truthFiles: () => readJsonFiles(path.join(benchDir, 'truth')),
+    previousReport: () => {
+      const latest = readJsonFiles(reportsDir).at(-1);
+      return latest ? JSON.parse(latest.text) : null;
+    },
     saveReport: (fileName, report) => {
       fs.mkdirSync(reportsDir, { recursive: true });
       fs.writeFileSync(path.join(reportsDir, fileName), JSON.stringify(report, null, 2));

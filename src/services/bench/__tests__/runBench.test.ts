@@ -1,6 +1,6 @@
 import { reportFileName, runBench } from '../runBench';
 import type { MlkitText } from '../../ocr/imageOcr';
-import { fakeIo, MERCADONA_TRUTH, mercadonaRecord } from './benchFixtures';
+import { fakeIo, ioFromFiles, MERCADONA_TRUTH, mercadonaRecord } from './benchFixtures';
 
 const META = { createdAt: new Date('2026-10-11T10:22:03.120Z'), commit: 'abc1234' };
 
@@ -50,6 +50,36 @@ describe('runBench', () => {
 
     expect(report.records.find((r) => r.id === 'm1')?.fullyCorrect).toBe(true);
     expect(report.records.find((r) => r.id === 'm2')?.error).toEqual(expect.any(String));
+  });
+
+  it('lists a capture file it cannot read and scores the rest', () => {
+    const { io } = ioFromFiles(
+      [
+        { name: 'm1.json', text: JSON.stringify(mercadonaRecord('m1')) },
+        { name: 'm2.json', text: '{"schemaVersion": 1, "id": "m2", "raw": {"te' },
+      ],
+      [{ name: 'mercadona-photo.json', text: JSON.stringify(MERCADONA_TRUTH) }]
+    );
+
+    const { report } = runBench(io, META);
+
+    expect(report.unreadable).toEqual([{ file: 'm2.json', error: expect.any(String) }]);
+    expect(report.records.map((r) => r.id)).toEqual(['m1']);
+    expect(report.missing).toEqual(['m2']);
+  });
+
+  it('names a truth file that is not valid JSON', () => {
+    const { io } = ioFromFiles([], [{ name: 'mercadona-photo.json', text: '{"ticket": ' }]);
+
+    expect(() => runBench(io, META)).toThrow('Truth file mercadona-photo.json is not valid JSON');
+  });
+
+  it('names a truth file without its lists', () => {
+    const { io } = ioFromFiles([], [{ name: 'mercadona-photo.json', text: '{"ticket": "x"}' }]);
+
+    expect(() => runBench(io, META)).toThrow(
+      'Truth file mercadona-photo.json needs "items" and "captures" lists'
+    );
   });
 
   it('compares against the previous report when there is one', () => {

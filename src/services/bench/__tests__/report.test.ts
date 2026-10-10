@@ -11,6 +11,7 @@ function report(overrides: Partial<BenchReport> = {}): BenchReport {
     records: scores,
     unassigned: [],
     missing: [],
+    unreadable: [],
     ...overrides,
   };
 }
@@ -66,6 +67,16 @@ describe('formatReport', () => {
     expect(text).toContain('x9');
     expect(text).toContain('m7');
     expect(text).toContain('Replay failed for a: boom');
+  });
+});
+
+describe('formatReport on files it could not read', () => {
+  it('names each unreadable capture with the reason', () => {
+    const text = formatReport(
+      report({ unreadable: [{ file: 'm2.json', error: 'Unexpected end' }] })
+    );
+
+    expect(text).toContain('Unreadable capture m2.json: Unexpected end');
   });
 });
 

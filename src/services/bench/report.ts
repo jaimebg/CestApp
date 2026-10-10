@@ -137,6 +137,9 @@ export function formatReport(report: BenchReport): string {
   for (const record of report.records) {
     if (record.error) notes.push(`Replay failed for ${record.id}: ${record.error}`);
   }
+  for (const unreadable of report.unreadable) {
+    notes.push(`Unreadable capture ${unreadable.file}: ${unreadable.error}`);
+  }
 
   return [table, '', ...notes].join('\n');
 }

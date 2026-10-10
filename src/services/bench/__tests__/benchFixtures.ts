@@ -1,6 +1,13 @@
 import { MERCADONA_PHOTO_BLOCKS } from '../../ocr/__tests__/fixtures.mercadonaPhoto';
 import { toMlkitText } from '../../ocr/__tests__/mlkitFixture';
-import type { BenchIo, BenchRecord, BenchReport, RecordScore, TruthTicket } from '../types';
+import type {
+  BenchFile,
+  BenchIo,
+  BenchRecord,
+  BenchReport,
+  RecordScore,
+  TruthTicket,
+} from '../types';
 
 export const MERCADONA_TRUTH: TruthTicket = {
   ticket: 'mercadona-photo',
@@ -53,19 +60,31 @@ export function score(overrides: Partial<RecordScore> = {}): RecordScore {
   };
 }
 
-export function fakeIo(
-  captures: BenchRecord[],
-  truths: TruthTicket[],
+export function ioFromFiles(
+  captureFiles: BenchFile[],
+  truthFiles: BenchFile[],
   previous: BenchReport | null = null
 ) {
   const saved: { fileName: string; report: BenchReport }[] = [];
   const io: BenchIo = {
-    captures: () => captures,
-    truths: () => truths,
+    captureFiles: () => captureFiles,
+    truthFiles: () => truthFiles,
     previousReport: () => previous,
     saveReport: (fileName, report) => {
       saved.push({ fileName, report });
     },
   };
   return { io, saved };
+}
+
+export function fakeIo(
+  captures: BenchRecord[],
+  truths: TruthTicket[],
+  previous: BenchReport | null = null
+) {
+  return ioFromFiles(
+    captures.map((record) => ({ name: `${record.id}.json`, text: JSON.stringify(record) })),
+    truths.map((truth) => ({ name: `${truth.ticket}.json`, text: JSON.stringify(truth) })),
+    previous
+  );
 }

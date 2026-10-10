@@ -100,12 +100,24 @@ export interface BenchReport {
   unassigned: string[];
   /** Captures a truth file lists that were not found. */
   missing: string[];
+  /** Capture files that could not be parsed, such as one cut short mid-write. */
+  unreadable: UnreadableFile[];
+}
+
+export interface BenchFile {
+  name: string;
+  text: string;
+}
+
+export interface UnreadableFile {
+  file: string;
+  error: string;
 }
 
 /** Everything the benchmark reads and writes, so the run itself stays pure. */
 export interface BenchIo {
-  captures(): BenchRecord[];
-  truths(): TruthTicket[];
+  captureFiles(): BenchFile[];
+  truthFiles(): BenchFile[];
   /** The newest report saved before this run, if any. */
   previousReport(): BenchReport | null;
   saveReport(fileName: string, report: BenchReport): void;
