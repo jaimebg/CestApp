@@ -26,3 +26,49 @@ export interface BenchRecord {
   knownDimensions: BenchDimensions;
   raw: MlkitText;
 }
+
+export interface TruthItem {
+  /** As printed on the ticket. */
+  name: string;
+  quantity?: number;
+  /** The line total in euros. */
+  totalPrice: number;
+}
+
+/** A ticket's real contents, checked by hand against the paper. */
+export interface TruthTicket {
+  ticket: string;
+  /** A chainId from src/config/spanishChains.ts. */
+  chain: string;
+  /** YYYY-MM-DD. */
+  date: string;
+  total: number;
+  items: TruthItem[];
+  /** Ids of the captures of this ticket. */
+  captures: string[];
+}
+
+/** What a reading said, in a form that compares across captures. */
+export interface RecordAnswers {
+  store: string | null;
+  date: string | null;
+  /** In cents. */
+  total: number | null;
+  /** The line totals in cents, sorted and joined. */
+  items: string;
+}
+
+export interface RecordScore {
+  id: string;
+  ticket: string;
+  /** Why the replay failed, when it did. */
+  error: string | null;
+  store: boolean;
+  date: boolean;
+  total: boolean;
+  itemsFound: number;
+  itemsMissing: number;
+  itemsExtra: number;
+  fullyCorrect: boolean;
+  answers: RecordAnswers;
+}
