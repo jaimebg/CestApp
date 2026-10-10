@@ -24,7 +24,11 @@ export interface CaptureProcessInput {
   isPdf: boolean;
   /** The size the capture service reported, when it reported one. */
   knownDimensions?: Dimensions;
-  /** Where the capture came from, saved with it for the reading benchmark. */
+  /**
+   * Where the capture came from. Development builds record captures that name
+   * one for the reading benchmark; a crop re-reads an image already recorded,
+   * so it names none.
+   */
   source?: string;
 }
 
@@ -100,8 +104,8 @@ async function processImage(
   const measured = known ?? (await measureImage(uri));
   const result = await recognizeText(uri, measured);
 
-  if (__DEV__ && result.raw) {
-    void recordCapture({ uri, raw: result.raw, knownDimensions: measured, source });
+  if (__DEV__ && source && result.raw) {
+    await recordCapture({ uri, raw: result.raw, knownDimensions: measured, source });
   }
 
   if (!result.success || result.text.length === 0) {

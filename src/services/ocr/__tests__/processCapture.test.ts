@@ -176,10 +176,37 @@ describe('processCapture recording for the benchmark', () => {
       uri: 'file:///receipt.jpg',
       isPdf: false,
       knownDimensions: PHOTO_DIMS,
+      source: 'scanner',
     });
 
     expect(result.success).toBe(false);
     expect(recordCaptureMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('finishes recording before handing the capture back, so the image is still there', async () => {
+    let recorded = false;
+    recordCaptureMock.mockImplementationOnce(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      recorded = true;
+    });
+    recognizeTextMock.mockResolvedValue(ocrSuccess({ raw: RAW }));
+
+    await processCapture({
+      uri: 'file:///receipt.jpg',
+      isPdf: false,
+      knownDimensions: PHOTO_DIMS,
+      source: 'scanner',
+    });
+
+    expect(recorded).toBe(true);
+  });
+
+  it('records nothing for a capture that names no source, such as a crop re-reading its image', async () => {
+    recognizeTextMock.mockResolvedValue(ocrSuccess({ raw: RAW }));
+
+    await processCapture({ uri: 'file:///receipt.jpg', isPdf: false, knownDimensions: PHOTO_DIMS });
+
+    expect(recordCaptureMock).not.toHaveBeenCalled();
   });
 
   it('records nothing when the recognizer itself failed', async () => {

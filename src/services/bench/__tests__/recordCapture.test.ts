@@ -94,13 +94,21 @@ describe('recordCapture', () => {
     expect(makeDirectory).toHaveBeenCalledWith('file:///docs/bench/', { intermediates: true });
   });
 
+  it('keeps the reading when the image is already gone', async () => {
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
+    copy.mockRejectedValue(new Error('no such file'));
+
+    await recordCapture({ uri: 'file:///receipts/abc.jpg', raw: RAW, knownDimensions: DIMS }, NOW);
+
+    expect(write).toHaveBeenCalledWith(`file:///docs/bench/${ID}.json`, expect.any(String));
+  });
+
   it('swallows a failure instead of breaking the scan', async () => {
     jest.spyOn(console, 'warn').mockImplementation(() => {});
-    copy.mockRejectedValue(new Error('disk full'));
+    write.mockRejectedValue(new Error('disk full'));
 
     await expect(
       recordCapture({ uri: 'file:///receipts/abc.jpg', raw: RAW, knownDimensions: DIMS }, NOW)
     ).resolves.toBeUndefined();
-    expect(write).not.toHaveBeenCalled();
   });
 });

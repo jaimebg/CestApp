@@ -59,7 +59,6 @@ export default function ReceiptCropScreen() {
       const processed = await processCapture({
         uri,
         isPdf: false,
-        source: 'crop',
         knownDimensions: parsedDimensions,
       });
       if (!processed.success) {

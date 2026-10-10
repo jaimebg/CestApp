@@ -33,8 +33,9 @@ function extensionOf(uri: string): string {
 
 /**
  * Saves a capture for the reading benchmark: the recognizer's untouched output
- * and a copy of the image it read. Development builds only. Never throws, so a
- * failure here cannot reach the scan.
+ * and a copy of the image it read. The reading is written first, since it is
+ * all a replay needs. Development builds only. Never throws, so a failure here
+ * cannot reach the scan.
  */
 export async function recordCapture(
   input: RecordCaptureInput,
@@ -48,7 +49,6 @@ export async function recordCapture(
 
     const id = benchRecordId(now);
     const image = `${id}.${extensionOf(input.uri)}`;
-    await copyAsync({ from: input.uri, to: `${BENCH_FOLDER}${image}` });
 
     const record: BenchRecord = {
       schemaVersion: BENCH_SCHEMA_VERSION,
@@ -63,6 +63,7 @@ export async function recordCapture(
       raw: input.raw,
     };
     await writeAsStringAsync(`${BENCH_FOLDER}${id}.json`, JSON.stringify(record));
+    await copyAsync({ from: input.uri, to: `${BENCH_FOLDER}${image}` });
     logger.log('Recorded capture', id);
   } catch (error) {
     logger.warn('Could not record the capture:', error);
