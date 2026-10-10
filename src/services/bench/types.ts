@@ -72,3 +72,41 @@ export interface RecordScore {
   fullyCorrect: boolean;
   answers: RecordAnswers;
 }
+
+export interface Metrics {
+  captures: number;
+  store: number;
+  date: number;
+  total: number;
+  itemRecall: number;
+  itemPrecision: number;
+  fullyCorrect: number;
+  /** Per field, the share of captures agreeing with the most common answer. */
+  stability: { store: number; date: number; total: number; items: number };
+}
+
+export interface TicketSummary {
+  ticket: string;
+  metrics: Metrics;
+}
+
+export interface BenchReport {
+  createdAt: string;
+  commit: string;
+  tickets: TicketSummary[];
+  overall: Metrics;
+  records: RecordScore[];
+  /** Captures no truth file lists. */
+  unassigned: string[];
+  /** Captures a truth file lists that were not found. */
+  missing: string[];
+}
+
+/** Everything the benchmark reads and writes, so the run itself stays pure. */
+export interface BenchIo {
+  captures(): BenchRecord[];
+  truths(): TruthTicket[];
+  /** The newest report saved before this run, if any. */
+  previousReport(): BenchReport | null;
+  saveReport(fileName: string, report: BenchReport): void;
+}
