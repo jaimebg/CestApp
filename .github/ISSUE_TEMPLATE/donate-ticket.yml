@@ -1,0 +1,45 @@
+name: Donate a ticket
+description: Send a photo of a supermarket receipt from your country so CestApp can learn to read it.
+title: '[Ticket] <chain> (<country>)'
+labels: ['ticket-donation']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you. You don't need to code or build anything: a clear photo is enough.
+        Someone with a development build turns it into a test fixture, and a template for the chain is written against it.
+
+        **This issue and its photo are public.** Cover the card number digits before uploading.
+        Store addresses are business addresses and can stay.
+  - type: input
+    id: country
+    attributes:
+      label: Country
+      placeholder: Portugal
+    validations:
+      required: true
+  - type: input
+    id: chain
+    attributes:
+      label: Supermarket chain
+      placeholder: Continente
+    validations:
+      required: true
+  - type: textarea
+    id: photo
+    attributes:
+      label: Photo
+      description: Drag the photo here. Flat, well lit, the whole receipt in frame.
+    validations:
+      required: true
+  - type: checkboxes
+    id: consent
+    attributes:
+      label: Before you submit
+      options:
+        - label: I covered the card number digits before uploading
+          required: true
+        - label: I release this photo under CC0 1.0 so CestApp can derive test data from it
+          required: true
+        - label: I understand this issue and its photo are public
+          required: true

@@ -5,11 +5,12 @@
 <h1 align="center">CestApp</h1>
 
 <p align="center">
-  <strong>Receipt scanner for Spanish supermarkets that respects your privacy.</strong>
+  <strong>Supermarket receipt scanner that respects your privacy.</strong>
 </p>
 
 <p align="center">
   Scan receipts from Mercadona, Carrefour, Lidl, and more. Track spending. Keep your data local.
+  Started in Spain, opening to more countries one chain at a time.
 </p>
 
 <p align="center">
@@ -40,7 +41,7 @@
 - **100% on-device**: ML Kit OCR runs locally. No cloud uploads.
 - **Any format**: Document scanner, gallery, or PDF.
 - **Smart categories**: Auto-sorts items. Learns from your corrections.
-- **Spanish supermarkets**: Pre-trained templates for Mercadona, Carrefour, Lidl, and more.
+- **Supermarket templates**: Pre-trained templates for Spanish chains, with a contribution path for every other country.
 - **Multi-language**: English & Spanish UI.
 
 ## Features
@@ -59,7 +60,7 @@
 
 **Privacy**: Offline-first, local SQLite, no tracking, no ads. Export everything to a JSON backup. Full policy: [jbgsoft.com/cestapp/privacy](https://jbgsoft.com/cestapp/privacy).
 
-**Details**: Phone and tablet layouts, dark mode, Spanish regional formats (EUR, DD/MM/YYYY, decimal comma), animations that respect Reduce Motion.
+**Details**: Phone and tablet layouts, dark mode, each receipt kept in its own currency and amounts written the way your language writes them, animations that respect Reduce Motion.
 
 ## Installation
 
@@ -85,6 +86,7 @@ npx expo run:android
 | Database   | Drizzle ORM + expo-sqlite         |
 | State      | Zustand v5                        |
 | OCR        | ML Kit (@infinitered)             |
+| Fiscal QR  | ZXing (Android), Vision (iOS)     |
 | LLM        | Apple Foundation Models (iOS)     |
 | PDF        | Custom parser + pako              |
 | i18n       | i18next                           |
@@ -97,14 +99,17 @@ npx expo run:android
 app/           # Screens (Expo Router)
 src/
   components/  # UI components
-  config/      # Chain templates, tax regions
+  config/      # Countries and their chain templates, currencies
   db/          # Schema, migrations & queries
-  services/    # OCR, PDF, capture, storage, LLM
+  services/    # OCR, fiscal QR, PDF, capture, storage, LLM
   store/       # Zustand state
   theme/       # Palette & type
   i18n/        # Translations
 scripts/
   store-screenshots/  # Frames raw captures into the store graphics
+  fixtures/           # Scrubs a recorded capture into a chain fixture
+modules/
+  qr-decoder/         # Native QR decoding for fiscal codes
 ```
 
 ## Development
@@ -115,28 +120,35 @@ npm test           # Jest, including fixture-based parser tests
 npm run check      # ESLint + Prettier
 ```
 
-CI runs all three on every push. If you change the parser, extend the fixtures in `src/services/ocr/__tests__/`.
+CI runs all three on every push. If you change the parser, extend the fixtures in `src/services/ocr/__tests__/`. Chain fixtures under `src/config/countries/*/__tests__/fixtures/` test themselves; `npm run fixture` makes one from a recorded capture (see [CONTRIBUTING.md](CONTRIBUTING.md)).
 
 Releases build locally and ship through fastlane. The `fastlane/` folder holds credentials and store assets, so it stays out of the repo.
 
 ## How It Works
 
-1. **Detect Chain**: Identifies supermarket by NIF (tax ID), store name patterns, or fingerprints (brand names like "Hacendado" for Mercadona)
+1. **Detect Chain and Country**: Identifies the supermarket and its country by tax ID, store name patterns, or fingerprints (brand names like "Hacendado" for Mercadona). Where the receipt carries a fiscal QR code readable offline (Portugal, Austria), its total, date and tax ID take precedence
 2. **Apply Template**: Uses chain-specific parsing rules (layout, item patterns, OCR corrections)
 3. **Extract**: ML Kit OCR for images, custom parser for PDFs. The parser uses the capture's zones when it has them, then the geometry of its text blocks, then its lines alone
 4. **Categorize**: User corrections → keyword matching → default
 
 Learning is store-aware: same item can have different categories at different stores.
 
-**Supported Chains**: Mercadona, Carrefour, Lidl, Eroski, Dia, Consum, Alcampo, Aldi, HiperDino (with IGIC tax for Canarias).
+## Supported Countries and Chains
+
+| Country  | Chains                                                                                                 |
+| -------- | ------------------------------------------------------------------------------------------------------ |
+| Spain    | Mercadona, Carrefour, Lidl, Eroski, Dia, Consum, Alcampo, Aldi, HiperDino (with IGIC tax for Canarias) |
+| Portugal | None yet: fiscal QR codes are read, chains are waiting for contributions                               |
+| Austria  | None yet: fiscal QR codes are read, chains are waiting for contributions                               |
+
+Your country or chain is missing? [Donate a ticket](../../issues/new?template=donate-ticket.yml): a photo is enough.
 
 ## Contributing
 
-1. Fork → branch → commit → PR
-2. TypeScript strict mode
-3. NativeWind for styling
-4. `useTranslation()` for all text
-5. Test iOS + Android + dark mode
+The most useful contributions are receipts and chain templates from countries CestApp can't read
+yet: [donate a ticket](../../issues/new?template=donate-ticket.yml) (no code needed), or write the
+template for a donated one. [CONTRIBUTING.md](CONTRIBUTING.md) covers both, plus adding a country
+or a UI language.
 
 ## License
 
