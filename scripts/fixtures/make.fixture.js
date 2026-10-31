@@ -8,7 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 const { test, expect } = require('@jest/globals');
-const { fixtureFromRecord } = require('../../src/services/bench/fixture');
+const { fixtureFromRecord, parsePrintedAmount } = require('../../src/services/bench/fixture');
 
 const BENCH_DIR = process.env.BENCH_DIR;
 const RECORD = process.env.RECORD;
@@ -50,8 +50,8 @@ test('makes a chain fixture', () => {
     chainId,
     donation: required(DONATION, 'DONATION'),
     printed: {
-      subtotal: SUBTOTAL ? Number(SUBTOTAL) : null,
-      total: Number(required(TOTAL, 'TOTAL')),
+      subtotal: SUBTOTAL ? parsePrintedAmount(SUBTOTAL) : null,
+      total: parsePrintedAmount(required(TOTAL, 'TOTAL')),
     },
   });
 

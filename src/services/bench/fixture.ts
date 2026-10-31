@@ -51,3 +51,14 @@ export function basketWithinTolerance(
   const sum = parsed.items.reduce((total, item) => total + item.totalPrice, 0);
   return Math.abs(sum - target) <= target * BASKET_TOLERANCE;
 }
+
+/**
+ * A figure typed by the person who read the photo, with either decimal
+ * separator ("23,45" or "23.45"). Throws rather than writing a fixture that
+ * would fail later with a confusing message.
+ */
+export function parsePrintedAmount(text: string): number {
+  const trimmed = text.trim();
+  if (!/^\d+([.,]\d{1,2})?$/.test(trimmed)) throw new Error(`"${text}" is not an amount`);
+  return Number(trimmed.replace(',', '.'));
+}

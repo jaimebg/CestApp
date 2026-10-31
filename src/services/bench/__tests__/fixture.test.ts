@@ -1,5 +1,10 @@
 import { createManualParsedReceipt } from '../../ocr/parser';
-import { basketWithinTolerance, fixtureFromRecord, readFixture } from '../fixture';
+import {
+  basketWithinTolerance,
+  fixtureFromRecord,
+  parsePrintedAmount,
+  readFixture,
+} from '../fixture';
 import { SCRUB_VERSION } from '../scrub';
 import { mercadonaRecord } from './benchFixtures';
 
@@ -45,4 +50,14 @@ test('the basket may miss the printed total by up to 2%', () => {
 
 test('the basket is held to the subtotal when one is printed', () => {
   expect(basketWithinTolerance(withItems([5, 5]), { subtotal: 10, total: 9 })).toBe(true);
+});
+
+test('reads a printed amount written with either decimal separator', () => {
+  expect(parsePrintedAmount('23,45')).toBe(23.45);
+  expect(parsePrintedAmount('23.45')).toBe(23.45);
+});
+
+test('refuses a printed amount that is not a number', () => {
+  expect(() => parsePrintedAmount('abc')).toThrow('not an amount');
+  expect(() => parsePrintedAmount('')).toThrow('not an amount');
 });
