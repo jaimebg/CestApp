@@ -1,4 +1,4 @@
-import { formatPrice, type Currency } from '@/src/config/currency';
+import { formatPrice, type Currency, type NumberLocale } from '@/src/config/currency';
 import type { ComparablePeriod } from './periods';
 
 export type Bucket = { key: string; amount: number; isCurrent: boolean };
@@ -62,17 +62,18 @@ export function fillBuckets(
 }
 
 /** `50 €` for a whole tick, `12,50 €` otherwise. */
-export function formatAxisAmount(value: number, currency: Currency): string {
+export function formatAxisAmount(value: number, currency: Currency, locale: NumberLocale): string {
   const decimals = Number.isInteger(value) ? 0 : currency.decimals;
-  return formatPrice(value, { ...currency, decimals });
+  return formatPrice(value, { ...currency, decimals }, locale);
 }
 
 /** Tick labels from the bottom of the axis up, fractional steps included. */
 export function axisLabels(
   scale: { step: number; sections: number },
-  currency: Currency
+  currency: Currency,
+  locale: NumberLocale
 ): string[] {
   return Array.from({ length: scale.sections + 1 }, (_, index) =>
-    formatAxisAmount(Math.round(index * scale.step * 100) / 100, currency)
+    formatAxisAmount(Math.round(index * scale.step * 100) / 100, currency, locale)
   );
 }

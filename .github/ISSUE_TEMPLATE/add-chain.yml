@@ -1,0 +1,29 @@
+name: Add a chain
+description: Propose or claim a template for a supermarket chain in a given country.
+title: '[Chain] <chain> (<country code>)'
+labels: ['new-chain']
+body:
+  - type: input
+    id: chain
+    attributes:
+      label: Chain
+      placeholder: Lidl
+    validations:
+      required: true
+  - type: input
+    id: country
+    attributes:
+      label: Country (ISO code)
+      placeholder: PT
+    validations:
+      required: true
+  - type: input
+    id: tax-ids
+    attributes:
+      label: Tax ID(s) printed on the receipt
+      placeholder: '503340855'
+  - type: textarea
+    id: donations
+    attributes:
+      label: Donated tickets
+      description: Links to the "Donate a ticket" issues this template will be tested against.

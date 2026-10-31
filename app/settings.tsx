@@ -1,7 +1,7 @@
 /**
  * Settings Screen
- * Simplified: Only language selection
- * Spanish defaults for currency, date format, and number format
+ * Language, appearance, smart reading and data. Currency and number format
+ * follow each receipt and the UI language, so there is nothing to set here.
  */
 
 import { ListGroup, ListRow } from '@/src/components/ui/ListGroup';
@@ -200,7 +200,7 @@ export default function SettingsScreen() {
       >
         <ReadingColumn>
           {sectionLabel(t('settings.preferences'), true)}
-          <ListGroup footer={t('settings.spanishDefaultsDesc')}>
+          <ListGroup>
             <ListRow title={t('settings.language')}>
               <SegmentedControl
                 options={SUPPORTED_LANGUAGES.map((lang) => ({

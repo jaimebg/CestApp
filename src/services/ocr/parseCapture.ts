@@ -1,6 +1,8 @@
 import { createScopedLogger } from '../../utils/debug';
 import { parseReceipt, type ParsedReceipt, type ParserOptions } from './parser';
 import { parseWithTemplate, parseWithSpatialCorrelation } from './templateParser';
+import { applyOrigin } from './origin';
+import type { FiscalReceipt } from '../fiscal/types';
 import type { StoreParsingTemplate } from '../../db/schema/storeParsingTemplates';
 import type { OcrBlock } from './index';
 import type { ZoneDefinition } from '../../types/zones';
@@ -22,6 +24,8 @@ export interface CaptureParseInput {
   /** The total the zone detector read straight off the receipt, if it found one. */
   detectedTotal: number | null;
   options?: ParserOptions;
+  /** A fiscal QR read from the same photo; it outranks OCR on total, date and country. */
+  fiscal?: FiscalReceipt | null;
 }
 
 /**
@@ -76,29 +80,38 @@ function resolveTotal(parsed: ParsedReceipt, detectedTotal: number): number {
  * lines alone.
  */
 export function parseCapture(input: CaptureParseInput): ParsedReceipt | null {
-  const { lines, blocks, ocrText, dimensions, zones, detectedTotal, options } = input;
+  const { lines, blocks, ocrText, dimensions, zones, detectedTotal, options, fiscal } = input;
 
   if (lines.length === 0) return null;
 
   const rawText = ocrText || lines.join('\n');
   const hasGeometry = blocks.length > 0 && dimensions.width > 0 && dimensions.height > 0;
 
+  const fiscalHint = { taxIdHint: fiscal?.merchantTaxId };
   let result: ParsedReceipt;
 
   if (zones.length > 0 && hasGeometry) {
     logger.log('Reading through', zones.length, 'zones');
-    result = parseWithTemplate(blocks, oneOffTemplate(zones, dimensions), rawText, dimensions);
+    result = parseWithTemplate(
+      blocks,
+      oneOffTemplate(zones, dimensions),
+      rawText,
+      dimensions,
+      fiscalHint
+    );
   } else if (hasGeometry) {
     logger.log('Reading through block geometry');
-    result = parseWithSpatialCorrelation(blocks, rawText, dimensions);
+    result = parseWithSpatialCorrelation(blocks, rawText, dimensions, {
+      parserOptions: fiscalHint,
+    });
   } else {
     logger.log('Reading through lines alone');
-    result = parseReceipt(lines, options);
+    result = parseReceipt(lines, { ...options, ...fiscalHint });
   }
 
   if (detectedTotal !== null) {
-    return { ...result, total: resolveTotal(result, detectedTotal) };
+    result = { ...result, total: resolveTotal(result, detectedTotal) };
   }
 
-  return result;
+  return applyOrigin(result, rawText, fiscal);
 }

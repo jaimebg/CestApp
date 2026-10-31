@@ -239,7 +239,8 @@
     "photoOf": "Foto del ticket de {{store}}",
     "showAllItems_one": "Ver 1 artículo más",
     "showAllItems_other": "Ver {{count}} artículos más",
-    "originalPhoto": "Foto original"
+    "originalPhoto": "Foto original",
+    "currency": "Moneda"
   },
   "item": {
     "name": "Nombre del artículo",
@@ -287,8 +288,6 @@
     "deleteTemplate": "Eliminar plantilla",
     "deleteTemplateConfirm": "¿Eliminar la plantilla de lectura de {{store}}? No se puede deshacer.",
     "confidence": "Confianza",
-    "spanishDefaults": "Ajustes para España",
-    "spanishDefaultsDesc": "Formato de fecha DD/MM/AAAA, coma decimal y euro (€) configurados automáticamente.",
     "devMenu": "Opciones de desarrollo",
     "devMenuDesc": "Estas opciones son para desarrollo y pruebas.",
     "addDemoData": "Añadir datos de prueba",

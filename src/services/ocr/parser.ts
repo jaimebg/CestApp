@@ -4,7 +4,8 @@
  * Enhanced with chain-specific templates for Spanish supermarkets
  */
 
-import { type RegionalPreset, SPAIN_PRESET } from '../../config/regionalPresets';
+import type { CountryCode } from '../../config/countries/types';
+import { type RegionalPreset, detectRegionFromText } from '../../config/regionalPresets';
 import { createScopedLogger } from '../../utils/debug';
 import { detectChainFromLines } from './chainDetector';
 import { parseWithChainTemplate, shouldUseChainParsing } from './chainParser';
@@ -40,6 +41,9 @@ export interface ParsedReceipt {
   chainName?: string | null;
   chainConfidence?: number;
   parsingMethod?: 'chain' | 'generic';
+  countryCode?: CountryCode;
+  /** ISO 4217 code of the currency the receipt was paid in. */
+  currency?: string;
 }
 
 export function createManualParsedReceipt(date: Date = new Date()): ParsedReceipt {
@@ -1002,6 +1006,8 @@ export interface ParserOptions {
   preferredDateFormat?: 'DMY' | 'MDY' | 'YMD';
   preferredDecimalSeparator?: '.' | ',';
   regionalPreset?: RegionalPreset;
+  /** A merchant tax ID read outside OCR (a fiscal QR), tried before the text. */
+  taxIdHint?: string | null;
 }
 
 /**
@@ -1208,7 +1214,7 @@ export function parseReceipt(lines: string[], options?: ParserOptions): ParsedRe
   const rawText = processedLines.join('\n');
 
   // Step 1: Try chain-specific parsing first
-  const chainDetection = detectChainFromLines(processedLines);
+  const chainDetection = detectChainFromLines(processedLines, { taxIdHint: options?.taxIdHint });
 
   if (shouldUseChainParsing(chainDetection)) {
     logger.log(
@@ -1235,8 +1241,7 @@ export function parseReceipt(lines: string[], options?: ParserOptions): ParsedRe
   }
 
   // Step 2: Fall back to generic parsing
-  // Always use Spain preset for Spanish-focused app
-  let preset = options?.regionalPreset || SPAIN_PRESET;
+  let preset = options?.regionalPreset || detectRegionFromText(rawText);
 
   const format = detectReceiptFormat(processedLines);
 
@@ -1496,5 +1501,9 @@ export type { ChainDetectionResult } from './chainDetector';
 export type { ChainParseResult } from './chainParser';
 export { detectChainFromLines, detectChainFromText } from './chainDetector';
 export { parseWithChainTemplate, shouldUseChainParsing } from './chainParser';
-export { getChainTemplate, getAllTemplates, type ChainTemplate } from '../../config/spanishChains';
-export { detectTaxRegion, type TaxRegion, type TaxRegionDetection } from '../../config/taxRegions';
+export { getChainTemplate, getAllTemplates, type ChainTemplate } from '../../config/countries';
+export {
+  detectTaxRegion,
+  type TaxRegion,
+  type TaxRegionDetection,
+} from '../../config/countries/es/taxRegions';

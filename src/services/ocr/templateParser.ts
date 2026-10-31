@@ -1,5 +1,5 @@
 import type { OcrBlock } from './index';
-import type { ParsedReceipt, ParsedItem } from './parser';
+import type { ParsedReceipt, ParsedItem, ParserOptions } from './parser';
 import { parseReceipt } from './parser';
 import { parseItemsSpatially } from './spatialCorrelator';
 import { reconstructRows } from './rowReconstructor';
@@ -549,7 +549,8 @@ export function parseWithTemplate(
   blocks: OcrBlock[],
   template: StoreParsingTemplate,
   rawText: string,
-  imageDimensions: { width: number; height: number }
+  imageDimensions: { width: number; height: number },
+  parserOptions?: ParserOptions
 ): ParsedReceipt {
   logger.log('Starting parseWithTemplate (hybrid approach)');
   logger.log('Provided image dimensions:', imageDimensions);
@@ -559,7 +560,7 @@ export function parseWithTemplate(
   // First, get the text-based parsing result as a baseline. Rows are rebuilt from
   // geometry so columnar receipts keep each product on one line with its prices.
   const allLines = reconstructRows(blocks);
-  const textBasedResult = parseReceipt(allLines);
+  const textBasedResult = parseReceipt(allLines, parserOptions);
   logger.log('Text-based baseline:', {
     items: textBasedResult.items.length,
     total: textBasedResult.total,
@@ -755,6 +756,11 @@ export function parseWithTemplate(
     paymentMethod: null,
     rawText,
     confidence,
+    chainId: textBasedResult.chainId,
+    chainName: textBasedResult.chainName,
+    chainConfidence: textBasedResult.chainConfidence,
+    parsingMethod: textBasedResult.parsingMethod,
+    countryCode: textBasedResult.countryCode,
   };
 }
 
@@ -800,6 +806,7 @@ export function parseWithSpatialCorrelation(
   options?: {
     preset?: RegionalPreset;
     template?: StoreParsingTemplate;
+    parserOptions?: ParserOptions;
   }
 ): ParsedReceipt {
   logger.log('Starting enhanced spatial parsing');
@@ -807,7 +814,7 @@ export function parseWithSpatialCorrelation(
   // First, get text-based result as baseline. Rows are rebuilt from geometry so
   // columnar receipts keep each product on one line with its prices.
   const allLines = reconstructRows(blocks);
-  const textBasedResult = parseReceipt(allLines);
+  const textBasedResult = parseReceipt(allLines, options?.parserOptions);
 
   // Detect regional preset if not provided
   const preset = options?.preset || detectRegionFromText(rawText);

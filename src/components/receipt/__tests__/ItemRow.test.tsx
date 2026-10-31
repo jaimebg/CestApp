@@ -19,13 +19,13 @@ const dairy = { id: 2, name: 'Dairy', icon: '🥛', color: '#5BA4D9' } as unknow
 
 describe('ItemRow', () => {
   it('prints the item as a ticket line with its amount', () => {
-    render(<ItemRow item={item} category={dairy} />);
-    expect(screen.getByLabelText(/^HUEVOS CAMPEROS, 12x · .+, 2,89/)).toBeTruthy();
+    render(<ItemRow item={item} currency="EUR" category={dairy} />);
+    expect(screen.getByLabelText(/^HUEVOS CAMPEROS, 12x · .+, .*2[.,]89/)).toBeTruthy();
     expect(screen.getByTestId('ticket-leader')).toBeTruthy();
   });
 
   it('shows quantity and category as plain text, without the category emoji', () => {
-    render(<ItemRow item={item} category={dairy} />);
+    render(<ItemRow item={item} currency="EUR" category={dairy} />);
     expect(screen.getByText(/^12x · /)).toBeTruthy();
     expect(screen.queryByText('🥛')).toBeNull();
   });

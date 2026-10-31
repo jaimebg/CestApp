@@ -11,6 +11,7 @@ const DRAFT: ScanDraft = {
   dimensions: { width: 612, height: 1122 },
   zones: [],
   detectedTotal: 5.42,
+  fiscal: null,
 };
 
 const ZONE: ZoneDefinition = {

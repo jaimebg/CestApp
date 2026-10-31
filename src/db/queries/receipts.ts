@@ -122,24 +122,6 @@ export async function deleteReceipt(id: number) {
   await db.delete(receipts).where(eq(receipts.id, id));
 }
 
-export async function getMonthlySpending(year: number, month: number) {
-  const startDate = new Date(year, month - 1, 1);
-  const endDate = new Date(year, month, 0, 23, 59, 59);
-
-  const result = await db
-    .select({
-      total: sql<number>`SUM(${receipts.totalAmount})`,
-      count: sql<number>`COUNT(*)`,
-    })
-    .from(receipts)
-    .where(and(gte(receipts.dateTime, startDate), lte(receipts.dateTime, endDate)));
-
-  return {
-    total: result[0]?.total || 0,
-    count: result[0]?.count || 0,
-  };
-}
-
 export async function getRecentReceipts(limit = 5) {
   return db
     .select({

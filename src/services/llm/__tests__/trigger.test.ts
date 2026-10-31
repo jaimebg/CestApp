@@ -23,6 +23,11 @@ function receipt(overrides: Partial<ParsedReceipt> = {}): ParsedReceipt {
 }
 
 describe('shouldRefine', () => {
+  it('does not refine a Portuguese receipt', () => {
+    expect(shouldRefine(receipt({ items: [], countryCode: 'PT' }))).toBe(false);
+    expect(shouldRefine(receipt({ items: [], countryCode: 'ES' }))).toBe(true);
+  });
+
   it('does not fire on a clean, confident parse', () => {
     expect(shouldRefine(receipt())).toBe(false);
   });

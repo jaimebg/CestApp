@@ -10,7 +10,7 @@ import { Modal, View, Text, ScrollView, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppColors } from '@/src/hooks/useAppColors';
-import { usePreferencesStore } from '@/src/store/preferences';
+import { useFormatPrice } from '@/src/store/preferences';
 import { Button } from '@/src/components/ui/Button';
 import { ModalHeader } from '@/src/components/ui/ModalHeader';
 import type { ParsedItem, ParsedReceipt } from '@/src/services/ocr/parser';
@@ -74,7 +74,7 @@ interface ColumnProps {
 function Column({ receipt, title, differingIndices, totalDiffers }: ColumnProps) {
   const { t } = useTranslation();
   const colors = useAppColors();
-  const formatPrice = usePreferencesStore((state) => state.formatPrice);
+  const { formatPrice } = useFormatPrice();
 
   return (
     <View className="flex-1">
@@ -112,7 +112,7 @@ function Column({ receipt, title, differingIndices, totalDiffers }: ColumnProps)
                 fontSize: 12,
               }}
             >
-              {formatPrice(item.totalPrice)}
+              {formatPrice(item.totalPrice, receipt.currency)}
             </Text>
           </View>
         );
@@ -125,7 +125,7 @@ function Column({ receipt, title, differingIndices, totalDiffers }: ColumnProps)
             fontSize: 13,
           }}
         >
-          {formatPrice(receipt.total)}
+          {formatPrice(receipt.total, receipt.currency)}
         </Text>
       </View>
     </View>

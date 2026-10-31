@@ -515,7 +515,7 @@ export default function ReceiptDetailScreen() {
                 }}
               >
                 {items.length > 0 ? (
-                  <CollapsibleItemList items={items} />
+                  <CollapsibleItemList items={items} currency={receipt.currency} />
                 ) : (
                   <Text
                     className="py-6 text-center"
@@ -529,6 +529,7 @@ export default function ReceiptDetailScreen() {
                   tax={receipt.taxAmount}
                   discount={receipt.discountAmount}
                   total={receipt.totalAmount}
+                  currency={receipt.currency}
                 />
               </Ticket>
 
@@ -632,7 +633,7 @@ export default function ReceiptDetailScreen() {
                         <TicketLine
                           key={item.id || `new-${index}`}
                           label={item.name || t('receipt.itemName')}
-                          amount={formatPrice(item.price / 100)}
+                          amount={formatPrice(item.price / 100, receipt.currency)}
                           meta={meta || undefined}
                           onPress={() => openItemEditor(item, index)}
                           accessibilityHint={t('receipt.editItem')}
@@ -672,7 +673,8 @@ export default function ReceiptDetailScreen() {
                     variant="total"
                     label={t('receipt.total')}
                     amount={formatPrice(
-                      editedItems.reduce((sum, item) => sum + item.price, 0) / 100
+                      editedItems.reduce((sum, item) => sum + item.price, 0) / 100,
+                      receipt.currency
                     )}
                   />
                 </Ticket>

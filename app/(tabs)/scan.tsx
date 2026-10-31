@@ -75,6 +75,7 @@ export default function ScanScreen() {
         dimensions: processed.dimensions,
         zones: processed.zones,
         detectedTotal: processed.detectedTotal,
+        fiscal: processed.fiscal,
       });
 
       router.push('/scan/review');
@@ -125,6 +126,7 @@ export default function ScanScreen() {
       dimensions: { width: 1000, height: 1500 },
       zones: [],
       detectedTotal: null,
+      fiscal: null,
     });
     router.push('/scan/review');
   };

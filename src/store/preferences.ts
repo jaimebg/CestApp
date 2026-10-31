@@ -1,20 +1,21 @@
 /**
  * User Preferences Store
- * Manages user preferences, simplified for Spanish-focused app
- * Defaults: DMY date format, comma decimal separator, EUR currency
+ * Language, appearance and the home currency the dashboard leads with.
+ * The parser hints (DMY dates, decimal comma) keep their Spanish defaults.
  */
 
+import { useMemo } from 'react';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Appearance } from 'react-native';
 import * as Localization from 'expo-localization';
 import {
-  Currency,
+  type Currency,
   getCurrency,
+  getNumberLocale,
   formatPrice as formatPriceUtil,
   formatAmountInput as formatAmountInputUtil,
-  DEFAULT_CURRENCY,
 } from '../config/currency';
 import {
   changeLanguage as i18nChangeLanguage,
@@ -29,8 +30,8 @@ export type DecimalSeparator = '.' | ',';
 interface PreferencesState {
   language: SupportedLanguage;
   colorScheme: ColorScheme;
-  currencyCode: string;
-  currency: Currency;
+  /** The device region's currency, or EUR; never persisted, so it follows the device. */
+  homeCurrency: Currency;
   dateFormat: DateFormat;
   decimalSeparator: DecimalSeparator;
 
@@ -43,7 +44,8 @@ interface PreferencesState {
   completeOnboarding: () => void;
   resetOnboarding: () => void;
 
-  formatPrice: (amount: number | null, options?: { showCode?: boolean }) => string;
+  /** Formats in `currencyCode`, or the home currency when omitted. */
+  formatPrice: (amount: number | null, currencyCode?: string | null) => string;
   formatAmountInput: (amount: number | null | undefined, decimals?: number) => string;
 }
 
@@ -53,8 +55,11 @@ interface PreferencesState {
 const SPAIN_DEFAULTS = {
   dateFormat: 'DMY' as DateFormat,
   decimalSeparator: ',' as DecimalSeparator,
-  currencyCode: DEFAULT_CURRENCY,
 };
+
+function deviceHomeCurrency(): Currency {
+  return getCurrency(Localization.getLocales()[0]?.currencyCode);
+}
 
 /**
  * Detect initial preferences from device locale
@@ -63,7 +68,6 @@ const SPAIN_DEFAULTS = {
 function getInitialPreferences(): {
   language: SupportedLanguage;
   colorScheme: ColorScheme;
-  currencyCode: string;
   dateFormat: DateFormat;
   decimalSeparator: DecimalSeparator;
 } {
@@ -81,7 +85,6 @@ function getInitialPreferences(): {
   return {
     language,
     colorScheme,
-    currencyCode: SPAIN_DEFAULTS.currencyCode,
     dateFormat: SPAIN_DEFAULTS.dateFormat,
     decimalSeparator: SPAIN_DEFAULTS.decimalSeparator,
   };
@@ -94,8 +97,7 @@ export const usePreferencesStore = create<PreferencesState>()(
     (set, get) => ({
       language: initialPrefs.language,
       colorScheme: initialPrefs.colorScheme,
-      currencyCode: initialPrefs.currencyCode,
-      currency: getCurrency(initialPrefs.currencyCode),
+      homeCurrency: deviceHomeCurrency(),
       dateFormat: initialPrefs.dateFormat,
       decimalSeparator: initialPrefs.decimalSeparator,
       hasCompletedOnboarding: false,
@@ -120,15 +122,17 @@ export const usePreferencesStore = create<PreferencesState>()(
         set({ hasCompletedOnboarding: false });
       },
 
-      formatPrice: (amount: number | null, options?: { showCode?: boolean }) => {
-        const { currency } = get();
-        return formatPriceUtil(amount, currency, options);
+      formatPrice: (amount: number | null, currencyCode?: string | null) => {
+        const { homeCurrency, language } = get();
+        return formatPriceUtil(
+          amount,
+          getCurrency(currencyCode ?? homeCurrency.code),
+          getNumberLocale(language)
+        );
       },
 
-      formatAmountInput: (amount: number | null | undefined, decimals?: number) => {
-        const { currency } = get();
-        return formatAmountInputUtil(amount, currency, decimals);
-      },
+      formatAmountInput: (amount: number | null | undefined, decimals?: number) =>
+        formatAmountInputUtil(amount, getNumberLocale(get().language), decimals),
     }),
     {
       name: 'user-preferences',
@@ -136,7 +140,6 @@ export const usePreferencesStore = create<PreferencesState>()(
       partialize: (state) => ({
         language: state.language,
         colorScheme: state.colorScheme,
-        currencyCode: state.currencyCode,
         dateFormat: state.dateFormat,
         decimalSeparator: state.decimalSeparator,
         hasCompletedOnboarding: state.hasCompletedOnboarding,
@@ -144,8 +147,7 @@ export const usePreferencesStore = create<PreferencesState>()(
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {
-          state.currency = getCurrency(state.currencyCode);
-          state.currencyCode = state.currency.code;
+          state.homeCurrency = deviceHomeCurrency();
           i18nChangeLanguage(state.language);
         }
       },
@@ -153,9 +155,23 @@ export const usePreferencesStore = create<PreferencesState>()(
   )
 );
 
+/**
+ * Amount formatters for the current UI language. They are rebuilt when the
+ * language or home currency changes, so memoised consumers (React Compiler)
+ * re-format instead of keeping the old language's output.
+ */
 export function useFormatPrice() {
-  const formatPrice = usePreferencesStore((state) => state.formatPrice);
-  const formatAmountInput = usePreferencesStore((state) => state.formatAmountInput);
-  const currency = usePreferencesStore((state) => state.currency);
-  return { formatPrice, formatAmountInput, currency };
+  const language = usePreferencesStore((state) => state.language);
+  const homeCurrency = usePreferencesStore((state) => state.homeCurrency);
+
+  return useMemo(() => {
+    const locale = getNumberLocale(language);
+    return {
+      formatPrice: (amount: number | null, currencyCode?: string | null) =>
+        formatPriceUtil(amount, getCurrency(currencyCode ?? homeCurrency.code), locale),
+      formatAmountInput: (amount: number | null | undefined, decimals?: number) =>
+        formatAmountInputUtil(amount, locale, decimals),
+      homeCurrency,
+    };
+  }, [language, homeCurrency]);
 }

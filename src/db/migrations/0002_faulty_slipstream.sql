@@ -1,0 +1,1 @@
+ALTER TABLE `receipts` ADD `currency` text DEFAULT 'EUR' NOT NULL;

@@ -5,7 +5,13 @@ import { useTranslation } from 'react-i18next';
 import { useFocusEffect } from 'expo-router';
 import { BarChart } from 'react-native-gifted-charts';
 import { useDatabaseReady } from '@/src/db/provider';
-import { getAnalyticsSummary, getPeriodComparison } from '@/src/db/queries/analytics';
+import {
+  getAnalyticsSummary,
+  getPeriodComparison,
+  getTotalsByCurrency,
+} from '@/src/db/queries/analytics';
+import { pickPrimaryCurrency } from '@/src/utils/currencyTotals';
+import { CurrencySelector } from '@/src/components/ui/CurrencySelector';
 import { useFormatPrice, usePreferencesStore } from '@/src/store/preferences';
 import { useAppColors } from '@/src/hooks/useAppColors';
 import { useLayout } from '@/src/hooks/useLayout';
@@ -17,7 +23,7 @@ import { SectionHeader } from '@/src/components/ui/SectionHeader';
 import { SegmentedControl } from '@/src/components/ui/SegmentedControl';
 import { RankedList } from '@/src/components/analytics/RankedList';
 import { fonts } from '@/src/theme/type';
-import { DEFAULT_CURRENCY, getCurrency } from '@/src/config/currency';
+import { getCurrency, getNumberLocale } from '@/src/config/currency';
 import { createScopedLogger } from '@/src/utils/debug';
 import { formatMonthName } from '@/src/utils/dateTime';
 import { categoryLabel } from '@/src/utils/categoryLabel';
@@ -26,7 +32,6 @@ import { describeChange, type ComparablePeriod } from '@/src/utils/periods';
 
 const logger = createScopedLogger('Analytics');
 
-const CURRENCY = getCurrency(DEFAULT_CURRENCY);
 const CHART_HEIGHT = 180;
 /** Wide enough for `31` or a narrow weekday, centred under a bar narrower than it. */
 const X_LABEL_WIDTH = 24;
@@ -60,7 +65,7 @@ export default function AnalyticsScreen() {
   const { t } = useTranslation();
   const colors = useAppColors();
   const { isReady } = useDatabaseReady();
-  const { formatPrice } = useFormatPrice();
+  const { formatPrice, homeCurrency } = useFormatPrice();
   const language = usePreferencesStore((state) => state.language);
   const layout = useLayout();
 
@@ -70,6 +75,8 @@ export default function AnalyticsScreen() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [previousTotal, setPreviousTotal] = useState(0);
   const [shownPeriod, setShownPeriod] = useState<ComparablePeriod>('month');
+  const [chosenCurrency, setChosenCurrency] = useState<string | null>(null);
+  const [activeCurrency, setActiveCurrency] = useState(homeCurrency.code);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const hasDataRef = useRef(false);
@@ -84,14 +91,20 @@ export default function AnalyticsScreen() {
         setIsLoading(true);
       }
       try {
+        const totals = await getTotalsByCurrency(period);
+        const currency =
+          chosenCurrency && totals.some((total) => total.currency === chosenCurrency)
+            ? chosenCurrency
+            : pickPrimaryCurrency(totals, homeCurrency.code);
         const [analyticsData, comparison] = await Promise.all([
-          getAnalyticsSummary(period),
-          getPeriodComparison(period),
+          getAnalyticsSummary(period, currency),
+          getPeriodComparison(period, currency),
         ]);
         hasDataRef.current = true;
         setData(analyticsData);
         setPreviousTotal(comparison.previous);
         setShownPeriod(period);
+        setActiveCurrency(currency);
       } catch (error) {
         logger.error('Failed to load analytics:', error);
       } finally {
@@ -99,8 +112,10 @@ export default function AnalyticsScreen() {
         setIsRefreshing(false);
       }
     },
-    [isReady, period]
+    [isReady, period, chosenCurrency, homeCurrency.code]
   );
+
+  const money = (amount: number | null) => formatPrice(amount, activeCurrency);
 
   useFocusEffect(
     useCallback(() => {
@@ -141,7 +156,7 @@ export default function AnalyticsScreen() {
   const change = data ? describeChange(data.total, previousTotal) : null;
   const comparisonText = change
     ? t(`comparison.${shownPeriod}.${change.direction}`, {
-        amount: formatPrice(change.delta),
+        amount: money(change.delta),
         month: formatMonthName(new Date(now.getFullYear(), now.getMonth() - 1, 1), language),
         year: now.getFullYear() - 1,
       })
@@ -155,14 +170,14 @@ export default function AnalyticsScreen() {
       .map((item) => ({
         key: String(item.categoryId),
         label: categoryLabel(item.categoryName, t),
-        amount: formatPrice(item.amount),
+        amount: money(item.amount),
         share: item.percentage,
       })) ?? [];
   const storeRows =
     data?.spendingByStore.slice(0, 5).map((store) => ({
       key: String(store.storeId),
       label: store.storeName || t('scan.unknownStore'),
-      amount: formatPrice(store.amount),
+      amount: money(store.amount),
       share: store.percentage,
       meta: t('common.receiptCount', { count: store.receiptCount }),
     })) ?? [];
@@ -187,13 +202,21 @@ export default function AnalyticsScreen() {
       >
         <ReadingColumn>
           <ScreenHeader title={t('analytics.title')} />
-          <View className="px-5 py-3">
+          <View className="px-5 py-3 gap-3">
             <SegmentedControl
               options={periodOptions}
               value={period}
               onChange={setPeriod}
               accessibilityLabel={t('analytics.title')}
             />
+            {data && data.currencies.length > 1 ? (
+              <CurrencySelector
+                currencies={data.currencies}
+                selected={activeCurrency}
+                onSelect={setChosenCurrency}
+                accessibilityLabel={t('receipt.currency')}
+              />
+            ) : null}
           </View>
         </ReadingColumn>
 
@@ -212,13 +235,13 @@ export default function AnalyticsScreen() {
             <View className="mt-3">
               <Text style={{ ...secondary, fontSize: 15 }}>{periodLabel}</Text>
               <Amount size="hero" className="mt-1">
-                {formatPrice(data.total)}
+                {money(data.total)}
               </Amount>
               {comparisonText ? (
                 <Text style={{ ...secondary, marginTop: 6 }}>{comparisonText}</Text>
               ) : null}
               <Text style={{ ...secondary, marginTop: comparisonText ? 2 : 6 }}>
-                {t('analytics.averagePerReceipt', { amount: formatPrice(data.average) })}
+                {t('analytics.averagePerReceipt', { amount: money(data.average) })}
               </Text>
             </View>
 
@@ -256,7 +279,11 @@ export default function AnalyticsScreen() {
                     marginLeft: (barWidth - X_LABEL_WIDTH) / 2,
                     textAlign: 'center',
                   }}
-                  yAxisLabelTexts={axisLabels(scale, CURRENCY)}
+                  yAxisLabelTexts={axisLabels(
+                    scale,
+                    getCurrency(activeCurrency),
+                    getNumberLocale(language)
+                  )}
                   isAnimated={false}
                   disablePress
                 />

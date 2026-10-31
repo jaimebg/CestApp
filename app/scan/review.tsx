@@ -96,7 +96,7 @@ export default function ScanReviewScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const colors = useAppColors();
-  const { formatPrice, formatAmountInput } = useFormatPrice();
+  const { formatPrice, formatAmountInput, homeCurrency } = useFormatPrice();
   const dateFormat = usePreferencesStore((state) => state.dateFormat);
   const decimalSeparator = usePreferencesStore((state) => state.decimalSeparator);
   const language = usePreferencesStore((state) => state.language);
@@ -108,6 +108,7 @@ export default function ScanReviewScreen() {
   const blocks = draft?.blocks ?? NO_BLOCKS;
   const dimensions = draft?.dimensions ?? FALLBACK_DIMENSIONS;
   const detectedTotal = draft?.detectedTotal ?? null;
+  const fiscal = draft?.fiscal ?? null;
   const hasOcrResult = ocrText.length > 0;
   const isManualEntry = draft !== null && uri === '';
 
@@ -158,8 +159,9 @@ export default function ScanReviewScreen() {
         zones,
         detectedTotal,
         options: parserOptions,
+        fiscal,
       }),
-    [lines, blocks, ocrText, dimensions, detectedTotal, parserOptions]
+    [lines, blocks, ocrText, dimensions, detectedTotal, parserOptions, fiscal]
   );
 
   const [initialParsedData] = useState(() =>
@@ -464,6 +466,7 @@ export default function ScanReviewScreen() {
   const [editItemQuantity, setEditItemQuantity] = useState('1');
   const [editItemCategoryId, setEditItemCategoryId] = useState<number | null>(null);
   const [editTotal, setEditTotal] = useState('');
+  const [editCurrency, setEditCurrency] = useState(homeCurrency.code);
 
   const itemsSum = useMemo(() => {
     if (!parsedData) return 0;
@@ -540,6 +543,7 @@ export default function ScanReviewScreen() {
         rawText: parsedData.rawText || lines.join('\n'),
         processingStatus: 'completed',
         confidence: isManualEntry ? 100 : parsedData.confidence,
+        currency: parsedData.currency ?? homeCurrency.code,
       };
 
       const categorizedItems = await Promise.all(
@@ -629,6 +633,7 @@ export default function ScanReviewScreen() {
 
   const openTotalEdit = () => {
     setEditTotal(formatAmountInput(parsedData?.total || 0, 2));
+    setEditCurrency(parsedData?.currency ?? homeCurrency.code);
     setShowTotalModal(true);
   };
 
@@ -638,6 +643,7 @@ export default function ScanReviewScreen() {
     updateParsedData({
       ...parsedData,
       total: newTotal,
+      currency: editCurrency,
     });
     markEdited();
     setShowTotalModal(false);
@@ -809,8 +815,10 @@ export default function ScanReviewScreen() {
       name={item.name}
       quantity={item.quantity}
       unit={item.unit}
-      unitPriceLabel={item.unitPrice != null ? formatPrice(item.unitPrice) : null}
-      totalPriceLabel={formatPrice(item.totalPrice)}
+      unitPriceLabel={
+        item.unitPrice != null ? formatPrice(item.unitPrice, parsedData?.currency) : null
+      }
+      totalPriceLabel={formatPrice(item.totalPrice, parsedData?.currency)}
       categoryName={getCategoryName(item.categoryId)}
       colors={colors}
       onEdit={openItemEdit}
@@ -955,7 +963,10 @@ export default function ScanReviewScreen() {
               {duplicateReceipt && (
                 <DuplicateBanner
                   dateLabel={formatLocalizedDate(new Date(duplicateReceipt.dateTime), language)}
-                  totalLabel={formatPrice(duplicateReceipt.totalAmount / 100)}
+                  totalLabel={formatPrice(
+                    duplicateReceipt.totalAmount / 100,
+                    duplicateReceipt.currency
+                  )}
                   onView={() => router.push(`/receipt/${duplicateReceipt.id}`)}
                 />
               )}
@@ -1017,33 +1028,33 @@ export default function ScanReviewScreen() {
                   <TicketLine
                     variant="subtotal"
                     label={t('scan.itemsSum')}
-                    amount={formatPrice(itemsSum)}
+                    amount={formatPrice(itemsSum, parsedData.currency)}
                   />
                   {parsedData.subtotal !== null && (
                     <TicketLine
                       variant="subtotal"
                       label={t('receipt.subtotal')}
-                      amount={formatPrice(parsedData.subtotal)}
+                      amount={formatPrice(parsedData.subtotal, parsedData.currency)}
                     />
                   )}
                   {parsedData.discount !== null && parsedData.discount > 0 && (
                     <TicketLine
                       variant="subtotal"
                       label={t('receipt.discount')}
-                      amount={`-${formatPrice(parsedData.discount)}`}
+                      amount={`-${formatPrice(parsedData.discount, parsedData.currency)}`}
                     />
                   )}
                   {parsedData.tax !== null && (
                     <TicketLine
                       variant="subtotal"
                       label={t('receipt.tax')}
-                      amount={formatPrice(parsedData.tax)}
+                      amount={formatPrice(parsedData.tax, parsedData.currency)}
                     />
                   )}
                   <TicketLine
                     variant="total"
                     label={t('receipt.total')}
-                    amount={formatPrice(parsedData.total)}
+                    amount={formatPrice(parsedData.total, parsedData.currency)}
                     danger={totalsDiffer}
                     onPress={openTotalEdit}
                     adornment={pencil}
@@ -1185,7 +1196,9 @@ export default function ScanReviewScreen() {
         onSave={saveTotalEdit}
         value={editTotal}
         onChangeText={setEditTotal}
-        itemsSumLabel={formatPrice(itemsSum)}
+        itemsSumLabel={formatPrice(itemsSum, parsedData?.currency)}
+        currency={editCurrency}
+        onCurrencyChange={setEditCurrency}
         colors={colors}
       />
 

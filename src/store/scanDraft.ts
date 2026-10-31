@@ -10,6 +10,7 @@
 
 import { create } from 'zustand';
 import type { CaptureSource } from '../services/capture';
+import type { FiscalReceipt } from '../services/fiscal/types';
 import type { OcrBlock } from '../services/ocr';
 import type { ZoneDefinition } from '../types/zones';
 
@@ -24,6 +25,8 @@ export interface ScanDraft {
   dimensions: { width: number; height: number };
   zones: ZoneDefinition[];
   detectedTotal: number | null;
+  /** A fiscal QR code read from the photo, if it carried one. */
+  fiscal: FiscalReceipt | null;
 }
 
 interface ScanDraftState {

@@ -16,6 +16,7 @@
     "check": "npm run lint && npm run format:check",
     "test": "jest",
     "bench": "jest -c jest.bench.config.js",
+    "fixture": "jest -c jest.fixture.config.js",
     "shots:fixture": "node scripts/store-screenshots/gen-fixture.mjs",
     "shots:capture": "node scripts/store-screenshots/capture.mjs",
     "shots:compose": "node scripts/store-screenshots/compose.mjs",

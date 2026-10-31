@@ -8,6 +8,7 @@ export const receipts = sqliteTable(
     storeId: integer('store_id').references(() => stores.id),
     dateTime: integer('date_time', { mode: 'timestamp' }).notNull(),
     totalAmount: integer('total_amount').notNull(), // Stored in cents
+    currency: text('currency').notNull().default('EUR'), // ISO 4217
     subtotal: integer('subtotal'), // Stored in cents
     taxAmount: integer('tax_amount'), // Stored in cents
     discountAmount: integer('discount_amount'), // Stored in cents

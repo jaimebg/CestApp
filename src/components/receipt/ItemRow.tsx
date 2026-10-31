@@ -8,11 +8,13 @@ import { categoryLabel } from '../../utils/categoryLabel';
 
 interface ItemRowProps {
   item: Item;
+  /** ISO 4217 code of the receipt the item belongs to. */
+  currency: string;
   category?: Category | null;
   showCategory?: boolean;
 }
 
-function ItemRowComponent({ item, category, showCategory = true }: ItemRowProps) {
+function ItemRowComponent({ item, currency, category, showCategory = true }: ItemRowProps) {
   const { t } = useTranslation();
   const { formatPrice } = useFormatPrice();
 
@@ -20,7 +22,7 @@ function ItemRowComponent({ item, category, showCategory = true }: ItemRowProps)
   const unitDisplay = item.unit && item.unit !== 'each' ? ` / ${item.unit}` : '';
   const quantity = hasQuantity
     ? item.unitPrice
-      ? `${item.quantity}x @ ${formatPrice(item.unitPrice / 100)}${unitDisplay}`
+      ? `${item.quantity}x @ ${formatPrice(item.unitPrice / 100, currency)}${unitDisplay}`
       : `${item.quantity}x`
     : null;
   const meta = [quantity, showCategory && category ? categoryLabel(category.name, t) : null]
@@ -28,7 +30,11 @@ function ItemRowComponent({ item, category, showCategory = true }: ItemRowProps)
     .join(' · ');
 
   return (
-    <TicketLine label={item.name} amount={formatPrice(item.price / 100)} meta={meta || undefined} />
+    <TicketLine
+      label={item.name}
+      amount={formatPrice(item.price / 100, currency)}
+      meta={meta || undefined}
+    />
   );
 }
 

@@ -16,7 +16,16 @@ import { ReceiptRowSkeleton } from '@/src/components/receipt/ReceiptRowSkeleton'
 import { createScopedLogger } from '@/src/utils/debug';
 import { useDatabaseReady } from '@/src/db/provider';
 import { getReceiptsWithItemCount } from '@/src/db/queries/receipts';
-import { getPeriodComparison, getReceiptCount } from '@/src/db/queries/analytics';
+import {
+  getPeriodComparison,
+  getReceiptCount,
+  getTotalsByCurrency,
+} from '@/src/db/queries/analytics';
+import {
+  otherCurrencyTotals,
+  pickPrimaryCurrency,
+  type CurrencyTotal,
+} from '@/src/utils/currencyTotals';
 import { useFormatPrice, usePreferencesStore } from '@/src/store/preferences';
 import { useAppColors } from '@/src/hooks/useAppColors';
 import { useEntering } from '@/src/hooks/useEntering';
@@ -48,7 +57,7 @@ export default function DashboardScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { isReady } = useDatabaseReady();
-  const { formatPrice } = useFormatPrice();
+  const { formatPrice, homeCurrency } = useFormatPrice();
   const language = usePreferencesStore((state) => state.language);
   const colors = useAppColors();
   const entering = useEntering();
@@ -56,7 +65,7 @@ export default function DashboardScreen() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [monthTotal, setMonthTotal] = useState(0);
+  const [monthlyTotals, setMonthlyTotals] = useState<CurrencyTotal[]>([]);
   const [previousTotal, setPreviousTotal] = useState(0);
   const [receiptCount, setReceiptCount] = useState(0);
   const [recentReceipts, setRecentReceipts] = useState<ReceiptWithStore[]>([]);
@@ -69,6 +78,8 @@ export default function DashboardScreen() {
     new Date(now.getFullYear(), now.getMonth() - 1, 1),
     language
   );
+  const primaryCurrency = pickPrimaryCurrency(monthlyTotals, homeCurrency.code);
+  const monthTotal = monthlyTotals.find((t) => t.currency === primaryCurrency)?.total ?? 0;
   const change = describeChange(monthTotal, previousTotal);
 
   const visibleReceipts = useMemo(() => {
@@ -87,13 +98,17 @@ export default function DashboardScreen() {
     if (!isReady) return;
 
     try {
-      const [comparison, count, receipts] = await Promise.all([
-        getPeriodComparison('month'),
+      const [totals, count, receipts] = await Promise.all([
+        getTotalsByCurrency('month'),
         getReceiptCount('month'),
         getReceiptsWithItemCount(),
       ]);
+      const comparison = await getPeriodComparison(
+        'month',
+        pickPrimaryCurrency(totals, homeCurrency.code)
+      );
 
-      setMonthTotal(comparison.current);
+      setMonthlyTotals(totals);
       setPreviousTotal(comparison.previous);
       setReceiptCount(count);
       setRecentReceipts(receipts);
@@ -102,7 +117,7 @@ export default function DashboardScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [isReady]);
+  }, [isReady, homeCurrency.code]);
 
   useEffect(() => {
     loadData();
@@ -182,12 +197,17 @@ export default function DashboardScreen() {
           <View className="px-5 mt-4">
             <Text style={secondary}>{t('dashboard.thisMonth')}</Text>
             <Amount size="hero" className="mt-1">
-              {formatPrice(monthTotal)}
+              {formatPrice(monthTotal, primaryCurrency)}
             </Amount>
+            {otherCurrencyTotals(monthlyTotals, primaryCurrency).map((other) => (
+              <Amount key={other.currency} size="base" className="mt-1">
+                {`+ ${formatPrice(other.total, other.currency)}`}
+              </Amount>
+            ))}
             {change ? (
               <Text style={{ ...secondary, fontSize: 13, marginTop: 6 }}>
                 {t(`comparison.month.${change.direction}`, {
-                  amount: formatPrice(change.delta),
+                  amount: formatPrice(change.delta, primaryCurrency),
                   month: previousMonth,
                 })}
               </Text>
@@ -231,7 +251,8 @@ export default function DashboardScreen() {
                     storeName={item.store?.name || t('scan.unknownStore')}
                     meta={receiptMeta(item.receipt.dateTime, item.itemCount, language, t)}
                     amount={formatPrice(
-                      item.receipt.totalAmount ? item.receipt.totalAmount / 100 : null
+                      item.receipt.totalAmount ? item.receipt.totalAmount / 100 : null,
+                      item.receipt.currency
                     )}
                     onPress={() => router.push(`/receipt/${item.receipt.id}`)}
                     accessibilityHint={t('history.openReceipt')}

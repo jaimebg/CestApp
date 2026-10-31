@@ -4,14 +4,16 @@ This document provides instructions for Claude when working on the CestApp proje
 
 ## Project Overview
 
-CestApp is a **Spain-focused** supermarket receipt scanner app built with React Native and Expo. It uses on-device ML Kit OCR to extract data from receipts, with **pre-trained chain-specific templates** for major Spanish supermarkets (Mercadona, Carrefour, Lidl, etc.).
+CestApp is a supermarket receipt scanner app built with React Native and Expo. It uses on-device ML Kit OCR to extract data from receipts, with **pre-trained chain-specific templates**. It started in Spain (Mercadona, Carrefour, Lidl, etc.) and opens to other countries through contributed chain templates.
 
 **Key Design Decisions:**
 
-- **Spain-only**: Hardcoded EUR currency, DD/MM/YYYY date format, decimal comma
-- **Pre-trained templates**: Chain knowledge is static in code, not learned at runtime
-- **Tax regions**: IVA (Peninsula/Baleares), IGIC (Canarias), IPSI (Ceuta/Melilla)
-- **Language**: English & Spanish UI only
+- **Countries as data**: `src/config/countries/<cc>/` holds a country's definition (currency, separators, date order, tax keywords, tax ID shapes) and its chain templates. Spain is the first; Portugal and Austria are defined without chains. Users never pick a country: chain and country are detected from the receipt
+- **Pre-trained templates**: Chain knowledge is static in code, keyed by chain + country (Lidl Spain and Lidl Portugal are separate templates), never learned at runtime
+- **Currency per receipt**: every receipt stores its ISO 4217 code; totals are kept per currency and never added across currencies; amounts are written the way the UI language writes numbers
+- **Fiscal QR codes**: where a receipt carries one readable offline (Portugal ATCUD, Austria RKSV), it is decoded from the same photo and outranks OCR on total, date and country; if it can't be read, nothing changes
+- **Tax regions**: Spain keeps IVA (Peninsula/Baleares), IGIC (Canarias), IPSI (Ceuta/Melilla)
+- **Language**: English & Spanish UI; more come as contributions (see `CONTRIBUTING.md`)
 
 **Current Status:** Production-ready. Core features implemented.
 
@@ -151,6 +153,7 @@ src/
     ui/                        # Reusable UI components
       Amount.tsx               # Monetary value, tabular mono
       Badge.tsx                # Status indicators (real states only)
+      CurrencySelector.tsx     # Segmented currency choice (total modal, analytics)
       Button.tsx               # Primary action button
       Card.tsx                 # Content container (rarely needed)
       Chip.tsx                 # Filter chip
@@ -222,7 +225,9 @@ src/
       parseCapture.ts          # Processed capture -> parsed receipt
       parser.ts                # Receipt parsing with chain detection
       parseUtils.ts            # Shared price/time parsing helpers
-      chainDetector.ts         # Detects chain by NIF/name/fingerprints
+      chainDetector.ts         # Detects chain + country by tax ID/name/fingerprints
+      countryDetector.ts       # Detects a receipt's country from tax IDs and signals
+      origin.ts                # Stamps country and currency; applies fiscal QR data
       chainParser.ts           # Chain-specific parsing using templates
       templateParser.ts        # Zone-based parsing
     pdf/
@@ -231,8 +236,14 @@ src/
       index.ts                 # Camera/Gallery/PDF picker
     storage/
       index.ts                 # File system management
+    fiscal/
+      portugal.ts              # Reads the ATCUD QR (Portaria 195/2020)
+      austria.ts               # Reads the RKSV QR
+      decodeQr.ts              # Native QR decoding from the photo, never throws
     bench/
       recordCapture.ts         # Dev builds: saves each photo's raw OCR for the benchmark
+      scrub.ts                 # Removes card digits, codes and times from a reading
+      fixture.ts               # Chain fixtures: scrubbed captures that test themselves
       replay.ts                # Re-reads a recorded capture through the app's pipeline
       score.ts                 # Scores a reading against a ticket's ground truth
       report.ts                # Per-ticket and overall metrics, table, deltas
@@ -277,10 +288,13 @@ src/
     stores.ts                  # Store types
 
   config/
-    currency.ts                # EUR currency (Spain-focused)
-    spanishChains.ts           # Pre-trained chain templates (Mercadona, Lidl, etc.)
-    taxRegions.ts              # IVA/IGIC/IPSI tax definitions
-    regionalPresets.ts         # Spain-only regional settings
+    currency.ts                # Currencies and how each UI language writes amounts
+    countries/
+      index.ts                 # Registry: countries, chain templates, lookups
+      types.ts                 # CountryDefinition, ChainTemplate, CountryCode
+      es/                      # Spain: country.ts, taxRegions.ts, chains/<chain>.ts
+      pt/, at/                 # Portugal, Austria: defined, no chains yet
+    regionalPresets.ts         # Preset helpers; detectRegionFromText picks the country
 
   i18n/
     index.ts                   # i18next setup
@@ -289,8 +303,12 @@ src/
       es.json                  # Spanish translations
 
   utils/
+    currencyTotals.ts          # Picks the headline currency; never sums across them
     toast.ts                   # Toast notification helper
     debug.ts                   # Scoped debug logging
+
+modules/
+  qr-decoder/                  # Local Expo module: QR decoding (ZXing on Android, Vision on iOS)
 ```
 
 ## UI Components
@@ -308,8 +326,9 @@ Available in `src/components/ui/`:
 | SegmentedControl    | `options`, `value`, `onChange`, `accessibilityLabel`                    | Short exclusive choice  |
 | Chip                | `label`, `selected`, `onPress`, `icon`                                  | Filter chip             |
 | ListGroup / ListRow | `footer` / `title`, `description`, `value`, `icon`, `destructive`, …    | Hairline-divided rows   |
+| CurrencySelector    | `currencies`, `selected`, `onSelect`, `accessibilityLabel`              | Currency choice         |
 | Amount              | `size` (sm, base, lg, xl, hero), `weight`                               | Monetary value          |
-| CollapsibleItemList | `items`                                                                 | Read-only receipt rows  |
+| CollapsibleItemList | `items`, `currency`                                                     | Read-only receipt rows  |
 | ModalHeader         | `title`, `onClose`, `closeLabel`, `confirmLabel`, `onConfirm`           | Shared modal header bar |
 | Skeleton            | `SkeletonText`, `SkeletonCircle`, `SkeletonCard`                        | Loading placeholders    |
 | ConfirmationModal   | `visible`, `title`, `message`, `onConfirm`, `onCancel`                  | Delete confirmation     |
@@ -394,7 +413,7 @@ parseTime(text: string): string | null
 
 ### Chain Detection (`src/services/ocr/chainDetector.ts`)
 
-Identifies Spanish supermarket chains using multiple strategies (in order of reliability):
+Identifies the chain and its country using multiple strategies (in order of reliability). When a name or brand matches the same chain in several countries, the receipt's country signals (`countryDetector.ts`) settle it; a tax ID read from a fiscal QR (`taxIdHint`) is tried first:
 
 1. **NIF Matching** (98% confidence): Tax ID like "A46103834" → Mercadona
 2. **Name Matching** (90% confidence): "MERCADONA S.A." patterns
@@ -406,9 +425,9 @@ detectChain(blocks: TextBlock[]): ChainDetectionResult
 detectChainFromText(text: string): ChainDetectionResult
 ```
 
-### Spanish Chain Templates (`src/config/spanishChains.ts`)
+### Chain Templates (`src/config/countries/`)
 
-Pre-trained templates for major Spanish supermarkets:
+One file per chain under `src/config/countries/<cc>/chains/`, listed in the country's `index.ts`. Spain's templates:
 
 | Chain     | Market Share | NIF       | Key Features                     |
 | --------- | ------------ | --------- | -------------------------------- |
@@ -422,7 +441,7 @@ Pre-trained templates for major Spanish supermarkets:
 | Aldi      | 2.8%         | B82258301 | German discount style            |
 | HiperDino | 2.1%         | A35032517 | Canarias (uses IGIC tax)         |
 
-Each template includes: `namePatterns`, `nifPatterns`, `layout`, `parsing.itemPatterns`, `ocrCorrections`, `fingerprints`
+Each template includes: `country`, `namePatterns`, `nifPatterns`, `layout`, `parsing.itemPatterns`, `ocrCorrections`, `fingerprints`. Keep Spanish `chainId` values stable: bench truth files compare them.
 
 ### Scan Flow (`app/(tabs)/scan.tsx` → `app/scan/review.tsx`)
 
@@ -557,20 +576,16 @@ interface PreferencesState {
   language: 'en' | 'es';
   colorScheme: 'light' | 'dark';
   hasCompletedOnboarding: boolean;
-
-  // Hardcoded Spanish defaults (not configurable)
-  // - Currency: EUR
-  // - Date format: DMY (DD/MM/YYYY)
-  // - Decimal separator: comma (1.234,56)
+  homeCurrency: Currency; // the device region's currency, never persisted
 
   // Actions
   setLanguage(lang: string): void;
   setColorScheme(scheme: 'light' | 'dark'): void;
-  formatPrice(amount: number | null): string;
+  formatPrice(amount: number | null, currencyCode?: string | null): string; // home currency when omitted
 }
 ```
 
-Persisted to AsyncStorage. Language and appearance are the only user-configurable preferences.
+Persisted to AsyncStorage. Language and appearance are the only user-configurable preferences. Pass the receipt's `currency` to `formatPrice` wherever a receipt's amounts are shown.
 
 ### Receipts Store (`src/store/receipts.ts`)
 
@@ -612,6 +627,13 @@ compares with the previous report. Bench data never goes in the repo: it is
 public, and receipts carry card digits, addresses and times; both scripts refuse
 a folder inside it. `scripts/bench/test-pull.sh` checks the pull script against a
 stand-in `adb`.
+
+The same recorded captures become **chain fixtures**: `BENCH_DIR=<folder> RECORD=<id>
+COUNTRY=<cc> CHAIN=<chain> DONATION=<issue url> TOTAL=<printed> npm run fixture` scrubs one
+(`src/services/bench/scrub.ts`) into `src/config/countries/<cc>/__tests__/fixtures/`, where
+`chainFixtures.test.ts` checks it was scrubbed, is read as its chain and country, and adds up to
+the printed figure within 2%. Contributors donate photos through the "Donate a ticket" issue form
+(`CONTRIBUTING.md`); photos never enter the repo.
 
 ## Commit Guidelines
 
@@ -689,7 +711,7 @@ See `.prettierrc`:
 
 **Note**: This app requires a development build due to native modules (ML Kit OCR). Expo Go is not sufficient.
 
-## Spanish Tax Regions (`src/config/taxRegions.ts`)
+## Spanish Tax Regions (`src/config/countries/es/taxRegions.ts`)
 
 | Region             | Tax Type | Rates           |
 | ------------------ | -------- | --------------- |

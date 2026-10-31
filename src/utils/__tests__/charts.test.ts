@@ -1,5 +1,7 @@
 import { axisLabels, fillBuckets, formatAxisAmount, niceScale } from '../charts';
-import { DEFAULT_CURRENCY, getCurrency } from '@/src/config/currency';
+import { DEFAULT_CURRENCY, getCurrency, getNumberLocale } from '@/src/config/currency';
+
+const es = getNumberLocale('es');
 
 describe('niceScale', () => {
   it.each([
@@ -53,11 +55,11 @@ describe('formatAxisAmount', () => {
   const eur = getCurrency(DEFAULT_CURRENCY);
 
   it('drops the decimals of a whole amount', () => {
-    expect(formatAxisAmount(50, eur)).toBe('50 €');
+    expect(formatAxisAmount(50, eur, es)).toBe('50 €');
   });
 
   it('keeps the decimals of a fractional amount', () => {
-    expect(formatAxisAmount(12.5, eur)).toBe('12,50 €');
+    expect(formatAxisAmount(12.5, eur, es)).toBe('12,50 €');
   });
 });
 
@@ -65,7 +67,7 @@ describe('axisLabels', () => {
   const eur = getCurrency(DEFAULT_CURRENCY);
 
   it('labels fractional steps without truncating them', () => {
-    expect(axisLabels(niceScale(11.4), eur)).toEqual([
+    expect(axisLabels(niceScale(11.4), eur, es)).toEqual([
       '0 €',
       '2,50 €',
       '5 €',

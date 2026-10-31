@@ -10,6 +10,7 @@ describe('buildBackupPayload', () => {
           storeId: null,
           dateTime: new Date(2026, 7, 24, 12, 0, 0),
           totalAmount: 1234,
+          currency: 'GBP',
           subtotal: null,
           taxAmount: null,
           discountAmount: null,
@@ -31,6 +32,7 @@ describe('buildBackupPayload', () => {
     });
 
     expect(payload.version).toBe(BACKUP_VERSION);
+    expect(payload.receipts[0].currency).toBe('GBP');
     expect(Object.keys(payload)).toEqual([
       'version',
       'exportedAt',

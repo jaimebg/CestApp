@@ -3,10 +3,12 @@ import { recognizeText } from '../index';
 import { extractTextFromPdf } from '../../pdf';
 import { MERCADONA_PHOTO_BLOCKS } from './fixtures.mercadonaPhoto';
 import { recordCapture } from '../../bench/recordCapture';
+import { decodeQrCodes } from '../../fiscal/decodeQr';
 
 jest.mock('../index', () => ({ recognizeText: jest.fn() }));
 jest.mock('../../pdf', () => ({ extractTextFromPdf: jest.fn() }));
 jest.mock('../../bench/recordCapture', () => ({ recordCapture: jest.fn() }));
+jest.mock('../../fiscal/decodeQr', () => ({ decodeQrCodes: jest.fn().mockResolvedValue([]) }));
 
 const recordCaptureMock = recordCapture as jest.MockedFunction<typeof recordCapture>;
 
@@ -236,5 +238,57 @@ describe('processCapture recording for the benchmark', () => {
     await processCapture({ uri: 'file:///receipt.pdf', isPdf: true });
 
     expect(recordCaptureMock).not.toHaveBeenCalled();
+  });
+});
+
+const decodeQrCodesMock = decodeQrCodes as jest.MockedFunction<typeof decodeQrCodes>;
+const PT_PAYLOAD =
+  'A:502011475*B:999999990*C:PT*D:FS*E:N*F:20261015*G:FS 1/123*H:JJ3ZKXYZ-123*I1:PT*I7:10.00*I8:2.30*N:2.30*O:12.30*Q:AbCd*R:1234';
+
+describe('processCapture and fiscal QR codes', () => {
+  const photo = { uri: 'file:///receipt.jpg', isPdf: false, knownDimensions: PHOTO_DIMS };
+
+  it('carries a decoded fiscal QR on the capture', async () => {
+    recognizeTextMock.mockResolvedValue(ocrSuccess());
+    decodeQrCodesMock.mockResolvedValue([PT_PAYLOAD]);
+
+    expect((await processCapture(photo)).fiscal).toMatchObject({ countryCode: 'PT', total: 12.3 });
+  });
+
+  it('keeps the OCR reading when the QR is not fiscal', async () => {
+    recognizeTextMock.mockResolvedValue(ocrSuccess());
+    decodeQrCodesMock.mockResolvedValue(['https://club.example.com/u/1']);
+
+    const result = await processCapture(photo);
+    expect(result.fiscal).toBeNull();
+    expect(result.lines).toEqual(PHOTO_LINES);
+  });
+
+  it('a PDF never decodes QR codes', async () => {
+    extractTextFromPdfMock.mockResolvedValue({
+      success: false,
+      text: '',
+      lines: [],
+      blocks: [],
+      error: 'no_text_content',
+    } as never);
+    decodeQrCodesMock.mockClear();
+
+    await processCapture({ uri: 'file:///receipt.pdf', isPdf: true });
+    expect(decodeQrCodesMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('processCapture timing', () => {
+  it('starts decoding QR codes before OCR finishes', async () => {
+    let decodingStarted = false;
+    decodeQrCodesMock.mockClear();
+    recognizeTextMock.mockImplementation(async () => {
+      decodingStarted = decodeQrCodesMock.mock.calls.length > 0;
+      return ocrSuccess();
+    });
+
+    await processCapture({ uri: 'file:///receipt.jpg', isPdf: false, knownDimensions: PHOTO_DIMS });
+    expect(decodingStarted).toBe(true);
   });
 });

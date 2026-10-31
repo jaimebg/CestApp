@@ -1,0 +1,36 @@
+import type { CountryDefinition } from '../types';
+
+export const AUSTRIA: CountryDefinition = {
+  code: 'AT',
+  id: 'austria',
+  name: 'Austria',
+  decimalSeparator: ',',
+  thousandsSeparator: '.',
+  dateFormat: 'DMY',
+  currency: 'EUR',
+  currencySymbol: '€',
+  taxRates: [10, 13, 20],
+  keywords: {
+    total: ['SUMME', 'GESAMT', 'TOTAL', 'ZU ZAHLEN', 'BETRAG'],
+    subtotal: ['ZWISCHENSUMME'],
+    tax: ['MWST', 'UST', 'STEUER'],
+    discount: ['RABATT', 'AKTION', 'ERSPARNIS'],
+    quantity: ['STK', 'STÜCK'],
+    cash: ['BAR', 'BARGELD'],
+    card: ['KARTE', 'BANKOMAT', 'MAESTRO', 'VISA'],
+    change: ['RÜCKGELD'],
+    date: ['DATUM'],
+    time: ['UHRZEIT', 'ZEIT'],
+  },
+  commonStores: ['BILLA', 'SPAR', 'INTERSPAR', 'HOFER', 'LIDL', 'PENNY', 'MERKUR', 'MPREIS'],
+  skipKeywords: ['UID', 'ATU', 'TEL', 'WWW', 'EMAIL'],
+  taxIdPatterns: [/\bATU\d{8}\b/],
+  signals: [
+    /\bMWST\b/i,
+    /\bUST\b/i,
+    /\bSUMME\b/i,
+    /\bDANKE\b/i,
+    /\bR[ÜU]CKGELD\b/i,
+    /\bBANKOMAT\b/i,
+  ],
+};

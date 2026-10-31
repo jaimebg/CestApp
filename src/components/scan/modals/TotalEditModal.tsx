@@ -7,6 +7,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { ModalHeader } from '../../ui/ModalHeader';
 import { useFormatPrice } from '../../../store/preferences';
+import { CURRENCIES } from '../../../config/currency';
+import { CurrencySelector } from '../../ui/CurrencySelector';
 import type { ReviewColors } from '../types';
 
 interface TotalEditModalProps {
@@ -16,6 +18,9 @@ interface TotalEditModalProps {
   value: string;
   onChangeText: (value: string) => void;
   itemsSumLabel: string;
+  /** ISO 4217 code the receipt is in. */
+  currency: string;
+  onCurrencyChange: (code: string) => void;
   colors: ReviewColors;
 }
 
@@ -26,6 +31,8 @@ export function TotalEditModal({
   value,
   onChangeText,
   itemsSumLabel,
+  currency,
+  onCurrencyChange,
   colors,
 }: TotalEditModalProps) {
   const { t } = useTranslation();
@@ -79,6 +86,19 @@ export function TotalEditModal({
               }}
               keyboardType="decimal-pad"
               autoFocus
+            />
+
+            <Text
+              className="text-sm mt-4 mb-2"
+              style={{ color: colors.textSecondary, fontFamily: 'Inter_500Medium' }}
+            >
+              {t('receipt.currency')}
+            </Text>
+            <CurrencySelector
+              currencies={Object.keys(CURRENCIES)}
+              selected={currency}
+              onSelect={onCurrencyChange}
+              accessibilityLabel={t('receipt.currency')}
             />
 
             <View className="mt-4 p-3 rounded-lg" style={{ backgroundColor: colors.surface }}>

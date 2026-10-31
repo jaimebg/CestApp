@@ -1,4 +1,12 @@
+import type { CountryCode } from '../../config/countries/types';
 import type { AppleMessage, ChainHint } from './types';
+
+/** Countries whose receipts the Spanish prompt and unit schema are written for. */
+export const LLM_PROMPT_COUNTRIES: CountryCode[] = ['ES'];
+
+export function canRefineCountry(code: CountryCode | undefined): boolean {
+  return code === undefined || LLM_PROMPT_COUNTRIES.includes(code);
+}
 
 const SYSTEM_PROMPT = [
   'Eres un extractor de datos de tickets de supermercado españoles.',

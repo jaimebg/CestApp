@@ -372,7 +372,10 @@ export default function HistoryScreen() {
         <ReceiptRow
           storeName={store?.name || t('scan.unknownStore')}
           meta={receiptMeta(receipt.dateTime, itemCount, language, t)}
-          amount={formatPrice(receipt.totalAmount ? receipt.totalAmount / 100 : null)}
+          amount={formatPrice(
+            receipt.totalAmount ? receipt.totalAmount / 100 : null,
+            receipt.currency
+          )}
           onPress={() => handleReceiptPress(receipt.id)}
           accessibilityHint={t('history.openReceipt')}
         />
