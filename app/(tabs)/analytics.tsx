@@ -5,7 +5,9 @@ import { useTranslation } from 'react-i18next';
 import { useFocusEffect } from 'expo-router';
 import { BarChart, PieChart, type pieDataItem } from 'react-native-gifted-charts';
 import { useDatabaseReady } from '@/src/db/provider';
-import { getAnalyticsSummary, TimePeriod } from '@/src/db/queries/analytics';
+import { getAnalyticsSummary, getTotalsByCurrency, TimePeriod } from '@/src/db/queries/analytics';
+import { pickPrimaryCurrency } from '@/src/utils/currencyTotals';
+import { CurrencySelector } from '@/src/components/ui/CurrencySelector';
 import { useFormatPrice, usePreferencesStore } from '@/src/store/preferences';
 import { useAppColors } from '@/src/hooks/useAppColors';
 import { useLayout } from '@/src/hooks/useLayout';
@@ -158,7 +160,7 @@ export default function AnalyticsScreen() {
   const { t } = useTranslation();
   const colors = useAppColors();
   const { isReady } = useDatabaseReady();
-  const { formatPrice } = useFormatPrice();
+  const { formatPrice, homeCurrency } = useFormatPrice();
   const language = usePreferencesStore((state) => state.language);
   const layout = useLayout();
 
@@ -169,6 +171,8 @@ export default function AnalyticsScreen() {
 
   const [period, setPeriod] = useState<TimePeriod>('month');
   const [data, setData] = useState<AnalyticsData | null>(null);
+  const [chosenCurrency, setChosenCurrency] = useState<string | null>(null);
+  const [activeCurrency, setActiveCurrency] = useState(homeCurrency.code);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const hasDataRef = useRef(false);
@@ -183,8 +187,14 @@ export default function AnalyticsScreen() {
         setIsLoading(true);
       }
       try {
-        const analyticsData = await getAnalyticsSummary(period);
+        const totals = await getTotalsByCurrency(period);
+        const currency =
+          chosenCurrency && totals.some((total) => total.currency === chosenCurrency)
+            ? chosenCurrency
+            : pickPrimaryCurrency(totals, homeCurrency.code);
+        const analyticsData = await getAnalyticsSummary(period, currency);
         hasDataRef.current = true;
+        setActiveCurrency(currency);
         setData(analyticsData);
       } catch (error) {
         logger.error('Failed to load analytics:', error);
@@ -193,8 +203,10 @@ export default function AnalyticsScreen() {
         setIsRefreshing(false);
       }
     },
-    [isReady, period]
+    [isReady, period, chosenCurrency, homeCurrency.code]
   );
+
+  const money = (amount: number | null) => formatPrice(amount, activeCurrency);
 
   useFocusEffect(
     useCallback(() => {
@@ -329,6 +341,17 @@ export default function AnalyticsScreen() {
               ))}
             </View>
           </View>
+
+          {data && data.currencies.length > 1 && (
+            <View className="px-4 pb-3">
+              <CurrencySelector
+                currencies={data.currencies}
+                selected={activeCurrency}
+                onSelect={setChosenCurrency}
+                accessibilityLabel={t('receipt.currency')}
+              />
+            </View>
+          )}
         </ReadingColumn>
 
         {!hasData || !data ? (
@@ -352,7 +375,7 @@ export default function AnalyticsScreen() {
                 >
                   {t('analytics.total')}
                 </Text>
-                <Amount size="xl">{formatPrice(data.total)}</Amount>
+                <Amount size="xl">{money(data.total)}</Amount>
               </View>
               <View className="flex-1 bg-surface dark:bg-surface-dark rounded-2xl p-4">
                 <Text
@@ -361,7 +384,7 @@ export default function AnalyticsScreen() {
                 >
                   {t('analytics.average')}
                 </Text>
-                <Amount size="xl">{formatPrice(data.average)}</Amount>
+                <Amount size="xl">{money(data.average)}</Amount>
               </View>
             </View>
 
@@ -398,7 +421,7 @@ export default function AnalyticsScreen() {
                     }}
                     hideRules
                     maxValue={Math.ceil(maxValue)}
-                    formatYLabel={(label) => formatPrice(Number(label))}
+                    formatYLabel={(label) => money(Number(label))}
                     isAnimated={barChartData.length <= 31}
                     animationDuration={500}
                   />
@@ -417,7 +440,7 @@ export default function AnalyticsScreen() {
                     <CategoryCard
                       data={data}
                       colors={colors}
-                      formatPrice={formatPrice}
+                      formatPrice={money}
                       t={t}
                       pieChartData={pieChartData}
                     />
@@ -429,7 +452,7 @@ export default function AnalyticsScreen() {
                       layout.columns === 2 ? 'flex-1 mx-2' : 'mx-4 mb-4'
                     }`}
                   >
-                    <StoreCard data={data} colors={colors} formatPrice={formatPrice} t={t} />
+                    <StoreCard data={data} colors={colors} formatPrice={money} t={t} />
                   </View>
                 )}
               </View>

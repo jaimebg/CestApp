@@ -15,7 +15,12 @@ import { ReceiptCardSkeleton } from '@/src/components/receipt/ReceiptCardSkeleto
 import { createScopedLogger } from '@/src/utils/debug';
 import { useDatabaseReady } from '@/src/db/provider';
 import { getReceiptsWithItemCount } from '@/src/db/queries/receipts';
-import { getTotalSpending, getReceiptCount } from '@/src/db/queries/analytics';
+import { getTotalsByCurrency, getReceiptCount } from '@/src/db/queries/analytics';
+import {
+  otherCurrencyTotals,
+  pickPrimaryCurrency,
+  type CurrencyTotal,
+} from '@/src/utils/currencyTotals';
 import { useFormatPrice } from '@/src/store/preferences';
 import { useAppColors } from '@/src/hooks/useAppColors';
 import { useEntering, staggerDelay } from '@/src/hooks/useEntering';
@@ -42,18 +47,20 @@ export default function DashboardScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { isReady } = useDatabaseReady();
-  const { formatPrice } = useFormatPrice();
+  const { formatPrice, homeCurrency } = useFormatPrice();
   const colors = useAppColors();
   const entering = useEntering();
   const layout = useLayout();
 
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [monthlyTotal, setMonthlyTotal] = useState(0);
+  const [monthlyTotals, setMonthlyTotals] = useState<CurrencyTotal[]>([]);
   const [receiptCount, setReceiptCount] = useState(0);
   const [recentReceipts, setRecentReceipts] = useState<ReceiptWithStore[]>([]);
   const [viewportHeight, setViewportHeight] = useState(0);
   const [listTop, setListTop] = useState(0);
+
+  const primaryCurrency = pickPrimaryCurrency(monthlyTotals, homeCurrency.code);
 
   const visibleReceipts = useMemo(() => {
     const available = viewportHeight - listTop;
@@ -72,12 +79,12 @@ export default function DashboardScreen() {
 
     try {
       const [total, count, receipts] = await Promise.all([
-        getTotalSpending('month'),
+        getTotalsByCurrency('month'),
         getReceiptCount('month'),
         getReceiptsWithItemCount(),
       ]);
 
-      setMonthlyTotal(total);
+      setMonthlyTotals(total);
       setReceiptCount(count);
       setRecentReceipts(receipts);
     } catch (error) {
@@ -224,7 +231,17 @@ export default function DashboardScreen() {
                   label={`${receiptCount} ${receiptCount === 1 ? t('analytics.receipt') : t('analytics.receipts')}`}
                 />
               </View>
-              <Amount size="hero">{formatPrice(monthlyTotal)}</Amount>
+              <Amount size="hero">
+                {formatPrice(
+                  monthlyTotals.find((t) => t.currency === primaryCurrency)?.total ?? 0,
+                  primaryCurrency
+                )}
+              </Amount>
+              {otherCurrencyTotals(monthlyTotals, primaryCurrency).map((other) => (
+                <Amount key={other.currency} size="base" className="mt-1">
+                  {`+ ${formatPrice(other.total, other.currency)}`}
+                </Amount>
+              ))}
             </Card>
           </Animated.View>
 

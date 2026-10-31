@@ -1,6 +1,6 @@
 import { db } from '../client';
 import { items, categories, type NewItem } from '../schema';
-import { eq, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { normalizeItemName } from './categorization';
 import type { ParsedItem } from '@/src/services/ocr/parser';
 
@@ -55,19 +55,4 @@ export async function updateItem(id: number, data: Partial<NewItem>) {
 
 export async function deleteItem(id: number) {
   await db.delete(items).where(eq(items.id, id));
-}
-
-export async function getSpendingByCategory() {
-  return db
-    .select({
-      categoryId: items.categoryId,
-      categoryName: categories.name,
-      categoryIcon: categories.icon,
-      categoryColor: categories.color,
-      total: sql<number>`SUM(${items.price})`,
-      count: sql<number>`COUNT(*)`,
-    })
-    .from(items)
-    .leftJoin(categories, eq(items.categoryId, categories.id))
-    .groupBy(items.categoryId);
 }

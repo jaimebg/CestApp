@@ -4,6 +4,7 @@ import { items } from '../schema/items';
 import { categories } from '../schema/categories';
 import { stores } from '../schema/stores';
 import { sql, eq, gte, lte, and, desc } from 'drizzle-orm';
+import type { CurrencyTotal } from '@/src/utils/currencyTotals';
 
 export type TimePeriod = 'week' | 'month' | 'year' | 'all';
 
@@ -38,24 +39,36 @@ export function getDateRange(period: TimePeriod): DateRange {
   return { start, end };
 }
 
-export async function getTotalSpending(period: TimePeriod): Promise<number> {
+/** Spending in the period, one total per currency, never added across them. */
+export async function getTotalsByCurrency(period: TimePeriod): Promise<CurrencyTotal[]> {
   const { start, end } = getDateRange(period);
 
   const result = await db
     .select({
+      currency: receipts.currency,
       total: sql<number>`COALESCE(SUM(${receipts.totalAmount}), 0)`.as('total'),
     })
     .from(receipts)
-    .where(and(gte(receipts.dateTime, start), lte(receipts.dateTime, end)));
+    .where(and(gte(receipts.dateTime, start), lte(receipts.dateTime, end)))
+    .groupBy(receipts.currency)
+    .orderBy(desc(sql`total`));
 
-  return (result[0]?.total || 0) / 100;
+  return result.map((r) => ({ currency: r.currency, total: (r.total || 0) / 100 }));
+}
+
+function inPeriodAndCurrency(period: TimePeriod, currency: string) {
+  const { start, end } = getDateRange(period);
+  return and(
+    gte(receipts.dateTime, start),
+    lte(receipts.dateTime, end),
+    eq(receipts.currency, currency)
+  );
 }
 
 export async function getSpendingByDay(
-  period: TimePeriod
+  period: TimePeriod,
+  currency: string
 ): Promise<{ date: string; amount: number }[]> {
-  const { start, end } = getDateRange(period);
-
   const bucketExpr =
     period === 'year'
       ? sql<string>`strftime('%Y-%m', ${receipts.dateTime}, 'unixepoch')`
@@ -67,7 +80,7 @@ export async function getSpendingByDay(
       amount: sql<number>`COALESCE(SUM(${receipts.totalAmount}), 0)`.as('amount'),
     })
     .from(receipts)
-    .where(and(gte(receipts.dateTime, start), lte(receipts.dateTime, end)))
+    .where(inPeriodAndCurrency(period, currency))
     .groupBy(bucketExpr)
     .orderBy(bucketExpr);
 
@@ -77,7 +90,10 @@ export async function getSpendingByDay(
   }));
 }
 
-export async function getSpendingByCategory(period: TimePeriod): Promise<
+export async function getSpendingByCategory(
+  period: TimePeriod,
+  currency: string
+): Promise<
   {
     categoryId: number;
     categoryName: string | null;
@@ -87,8 +103,6 @@ export async function getSpendingByCategory(period: TimePeriod): Promise<
     percentage: number;
   }[]
 > {
-  const { start, end } = getDateRange(period);
-
   const result = await db
     .select({
       categoryId: categories.id,
@@ -100,7 +114,7 @@ export async function getSpendingByCategory(period: TimePeriod): Promise<
     .from(items)
     .innerJoin(receipts, eq(items.receiptId, receipts.id))
     .leftJoin(categories, eq(items.categoryId, categories.id))
-    .where(and(gte(receipts.dateTime, start), lte(receipts.dateTime, end)))
+    .where(inPeriodAndCurrency(period, currency))
     .groupBy(categories.id, categories.name, categories.icon, categories.color)
     .orderBy(desc(sql`amount`));
 
@@ -116,7 +130,10 @@ export async function getSpendingByCategory(period: TimePeriod): Promise<
   }));
 }
 
-export async function getSpendingByStore(period: TimePeriod): Promise<
+export async function getSpendingByStore(
+  period: TimePeriod,
+  currency: string
+): Promise<
   {
     storeId: number;
     storeName: string | null;
@@ -125,8 +142,6 @@ export async function getSpendingByStore(period: TimePeriod): Promise<
     percentage: number;
   }[]
 > {
-  const { start, end } = getDateRange(period);
-
   const result = await db
     .select({
       storeId: stores.id,
@@ -136,7 +151,7 @@ export async function getSpendingByStore(period: TimePeriod): Promise<
     })
     .from(receipts)
     .leftJoin(stores, eq(receipts.storeId, stores.id))
-    .where(and(gte(receipts.dateTime, start), lte(receipts.dateTime, end)))
+    .where(inPeriodAndCurrency(period, currency))
     .groupBy(stores.id, stores.name)
     .orderBy(desc(sql`amount`));
 
@@ -164,36 +179,35 @@ export async function getReceiptCount(period: TimePeriod): Promise<number> {
   return result[0]?.count || 0;
 }
 
-export async function getAverageSpending(period: TimePeriod): Promise<number> {
-  const { start, end } = getDateRange(period);
-
+export async function getAverageSpending(period: TimePeriod, currency: string): Promise<number> {
   const result = await db
     .select({
       average: sql<number>`COALESCE(AVG(${receipts.totalAmount}), 0)`.as('average'),
     })
     .from(receipts)
-    .where(and(gte(receipts.dateTime, start), lte(receipts.dateTime, end)));
+    .where(inPeriodAndCurrency(period, currency));
 
   return (result[0]?.average || 0) / 100;
 }
 
-export async function getAnalyticsSummary(period: TimePeriod) {
-  const [total, average, receiptCount, spendingByDay, spendingByCategory, spendingByStore] =
+export async function getAnalyticsSummary(period: TimePeriod, currency: string) {
+  const [totals, average, receiptCount, spendingByDay, spendingByCategory, spendingByStore] =
     await Promise.all([
-      getTotalSpending(period),
-      getAverageSpending(period),
+      getTotalsByCurrency(period),
+      getAverageSpending(period, currency),
       getReceiptCount(period),
-      getSpendingByDay(period),
-      getSpendingByCategory(period),
-      getSpendingByStore(period),
+      getSpendingByDay(period, currency),
+      getSpendingByCategory(period, currency),
+      getSpendingByStore(period, currency),
     ]);
 
   return {
-    total,
+    total: totals.find((t) => t.currency === currency)?.total ?? 0,
     average,
     receiptCount,
     spendingByDay,
     spendingByCategory,
     spendingByStore,
+    currencies: totals.map((t) => t.currency),
   };
 }
