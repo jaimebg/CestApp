@@ -29,4 +29,13 @@ describe('RankedList', () => {
     expect(screen.getByText('37,06 €')).toBeTruthy();
     expect(screen.getByText('30 %')).toBeTruthy();
   });
+
+  it('gives the share a minimum width rather than a fixed one, so 100 % never wraps', () => {
+    render(
+      <RankedList rows={[{ key: 'all', label: 'Mercadona', amount: '50,00 €', share: 100 }]} />
+    );
+    const share = screen.getByText('100 %');
+    expect(share).toHaveStyle({ minWidth: 48 });
+    expect(share).not.toHaveStyle({ width: 48 });
+  });
 });

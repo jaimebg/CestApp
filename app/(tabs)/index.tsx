@@ -26,6 +26,7 @@ import { fonts } from '@/src/theme/type';
 import { describeChange } from '@/src/utils/periods';
 import { formatMonthName, formatMonthYear } from '@/src/utils/dateTime';
 import { receiptMeta } from '@/src/utils/receiptMeta';
+import { fittingRows } from '@/src/utils/fittingRows';
 import type { Receipt } from '@/src/db/schema/receipts';
 import type { Store } from '@/src/db/schema/stores';
 
@@ -71,16 +72,16 @@ export default function DashboardScreen() {
   const change = describeChange(monthTotal, previousTotal);
 
   const visibleReceipts = useMemo(() => {
-    const available = viewportHeight - listTop;
-    const rows =
-      available > 0
-        ? Math.min(
-            MAX_RECEIPT_ROWS,
-            Math.max(MIN_RECEIPT_ROWS, Math.floor(available / RECEIPT_ROW_BLOCK))
-          )
-        : MIN_RECEIPT_ROWS;
+    const rows = fittingRows({
+      viewportHeight,
+      listTop,
+      parentTop: insets.top,
+      rowHeight: RECEIPT_ROW_BLOCK,
+      min: MIN_RECEIPT_ROWS,
+      max: MAX_RECEIPT_ROWS,
+    });
     return recentReceipts.slice(0, rows * layout.columns);
-  }, [recentReceipts, viewportHeight, listTop, layout.columns]);
+  }, [recentReceipts, viewportHeight, listTop, insets.top, layout.columns]);
 
   const loadData = useCallback(async () => {
     if (!isReady) return;

@@ -1,4 +1,6 @@
-import { render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
+import { View } from 'react-native';
+import * as RN from 'react-native';
 import { TicketLine } from '../TicketLine';
 import { lightColors } from '@/src/theme/colors';
 
@@ -44,5 +46,29 @@ describe('TicketLine', () => {
       'accessibilityHint',
       'Edit item'
     );
+  });
+
+  it('lets an adornment after the amount open the row', () => {
+    const onPress = jest.fn();
+    render(
+      <TicketLine
+        label="Total"
+        amount="31,00 €"
+        variant="total"
+        onPress={onPress}
+        adornment={<View testID="pencil" />}
+      />
+    );
+    fireEvent.press(screen.getByTestId('pencil'));
+    expect(onPress).toHaveBeenCalled();
+  });
+
+  it('stacks the amount under the concept at large text sizes', () => {
+    const spy = jest
+      .spyOn(RN, 'useWindowDimensions')
+      .mockReturnValue({ width: 375, height: 812, scale: 3, fontScale: 2 });
+    render(<TicketLine label="ACEITE OLIVA VIRGEN EXTRA" amount="8,99 €" />);
+    expect(screen.getByTestId('ticket-line-stacked')).toBeTruthy();
+    spy.mockRestore();
   });
 });

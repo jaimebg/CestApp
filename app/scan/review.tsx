@@ -1,4 +1,5 @@
 import { Ticket } from '@/src/components/receipt/Ticket';
+import { TicketField } from '@/src/components/receipt/TicketField';
 import { TicketLine, TicketRule } from '@/src/components/receipt/TicketLine';
 import { ListGroup, ListRow } from '@/src/components/ui/ListGroup';
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
@@ -937,6 +938,7 @@ export default function ScanReviewScreen() {
                       }
                       icon="scan-outline"
                       chevron
+                      accessibilityHint={t('scan.readingHint')}
                       onPress={() => setShowReading(true)}
                     />
                   ) : null}
@@ -961,45 +963,26 @@ export default function ScanReviewScreen() {
               <View className="mt-2">
                 <Ticket>
                   <View className="items-center">
-                    <Pressable
-                      onPress={openStoreEdit}
-                      accessibilityRole="button"
+                    <TicketField
+                      variant="title"
+                      value={parsedData.storeName || t('scan.unknownStore')}
                       accessibilityLabel={t('scan.editStore')}
-                      className="flex-row items-center active:opacity-60"
-                      style={{ minHeight: MIN_TARGET }}
-                    >
-                      <Text
-                        numberOfLines={1}
-                        style={{
-                          color: colors.text,
-                          fontFamily: fonts.semibold,
-                          fontSize: 17,
-                          marginRight: 6,
-                        }}
-                      >
-                        {parsedData.storeName || t('scan.unknownStore')}
-                      </Text>
-                      {pencil}
-                    </Pressable>
+                      onPress={openStoreEdit}
+                    />
                     {parsedData.storeAddress ? (
                       <Text numberOfLines={1} style={headerLine}>
                         {parsedData.storeAddress}
                       </Text>
                     ) : null}
-                    <Pressable
-                      onPress={openDateEdit}
-                      accessibilityRole="button"
-                      accessibilityLabel={t('scan.editDate')}
-                      className="flex-row items-center active:opacity-60"
-                      style={{ minHeight: MIN_TARGET }}
-                    >
-                      <Text style={{ ...headerLine, marginRight: 6 }}>
-                        {parsedData.time
+                    <TicketField
+                      value={
+                        parsedData.time
                           ? `${formatDate(parsedData.date)} · ${parsedData.time}`
-                          : formatDate(parsedData.date)}
-                      </Text>
-                      {pencil}
-                    </Pressable>
+                          : formatDate(parsedData.date)
+                      }
+                      accessibilityLabel={t('scan.editDate')}
+                      onPress={openDateEdit}
+                    />
                     {paymentAndCount ? <Text style={headerLine}>{paymentAndCount}</Text> : null}
                   </View>
                   <TicketRule />
@@ -1063,7 +1046,7 @@ export default function ScanReviewScreen() {
                     amount={formatPrice(parsedData.total)}
                     danger={totalsDiffer}
                     onPress={openTotalEdit}
-                    trailing={pencil}
+                    adornment={pencil}
                   />
 
                   {totalsDiffer && (

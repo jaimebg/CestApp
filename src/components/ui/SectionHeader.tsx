@@ -16,7 +16,14 @@ export function SectionHeader({ title, action }: SectionHeaderProps) {
     <View className="flex-row items-center justify-between mb-3">
       <Text
         accessibilityRole="header"
-        style={{ fontFamily: fonts.semibold, fontSize: 17, lineHeight: 22, color: colors.text }}
+        style={{
+          flexShrink: 1,
+          marginRight: 12,
+          fontFamily: fonts.semibold,
+          fontSize: 17,
+          lineHeight: 22,
+          color: colors.text,
+        }}
       >
         {title}
       </Text>

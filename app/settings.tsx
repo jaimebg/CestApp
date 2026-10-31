@@ -246,6 +246,7 @@ export default function SettingsScreen() {
               description={t('settings.backupDesc')}
               icon="cloud-upload-outline"
               disabled={isBackingUp}
+              busy={isBackingUp}
               onPress={handleBackup}
             />
             <ListRow
@@ -254,6 +255,7 @@ export default function SettingsScreen() {
               icon="trash-outline"
               destructive
               disabled={isLoading}
+              busy={isLoading}
               onPress={() => setShowClearConfirm(true)}
             />
           </ListGroup>
@@ -263,6 +265,7 @@ export default function SettingsScreen() {
             <ListRow
               title={t('settings.version')}
               value={Constants.expoConfig?.version ?? '1.0.0'}
+              accessibilityLabel={`${t('settings.version')} ${Constants.expoConfig?.version ?? '1.0.0'}`}
               onPress={handleVersionTap}
             />
             <ListRow
@@ -312,6 +315,7 @@ export default function SettingsScreen() {
                 description={t('settings.addDemoDataDesc')}
                 icon="add-circle-outline"
                 disabled={isLoading}
+                busy={isLoading}
                 onPress={handleSeedDemoData}
               />
             </ListGroup>

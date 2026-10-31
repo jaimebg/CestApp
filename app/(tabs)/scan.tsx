@@ -176,6 +176,7 @@ export default function ScanScreen() {
               icon={isLoading === 'gallery' ? 'hourglass-outline' : 'images-outline'}
               chevron
               disabled={busy}
+              busy={isLoading === 'gallery'}
               onPress={handleGallery}
             />
             <ListRow
@@ -184,6 +185,7 @@ export default function ScanScreen() {
               icon={isLoading === 'pdf' ? 'hourglass-outline' : 'document-outline'}
               chevron
               disabled={busy}
+              busy={isLoading === 'pdf'}
               onPress={handlePdf}
             />
             <ListRow

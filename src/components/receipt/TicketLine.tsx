@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import Svg, { Line } from 'react-native-svg';
 import { Amount } from '@/src/components/ui/Amount';
 import { useAppColors } from '@/src/hooks/useAppColors';
@@ -18,6 +18,8 @@ interface TicketLineProps {
   danger?: boolean;
   onPress?: () => void;
   accessibilityHint?: string;
+  /** A non-interactive mark after the amount, inside the row's tap area (e.g. a pencil). */
+  adornment?: ReactNode;
   /** A control after the amount, such as the quiet delete in review. */
   trailing?: ReactNode;
 }
@@ -48,6 +50,12 @@ function Leader({ color }: { color: string }) {
   );
 }
 
+/**
+ * From this text size on, a long concept beside a fixed amount squeezes into a
+ * column a few letters wide, so the amount moves to its own line instead.
+ */
+const STACK_FONT_SCALE = 1.6;
+
 /** A dashed rule across the ticket, like the one above a printed total. */
 export function TicketRule() {
   const colors = useAppColors();
@@ -76,53 +84,74 @@ export function TicketLine({
   danger = false,
   onPress,
   accessibilityHint,
+  adornment,
   trailing,
 }: TicketLineProps) {
   const colors = useAppColors();
+  const { fontScale } = useWindowDimensions();
+  const stacked = fontScale >= STACK_FONT_SCALE;
   const isTotal = variant === 'total';
   const ink = variant === 'subtotal' ? colors.textSecondary : colors.text;
 
-  const body = (
+  const labelText = (
+    <Text
+      style={{
+        flexShrink: 1,
+        fontFamily: isTotal ? fonts.semibold : fonts.regular,
+        fontSize: isTotal ? 17 : 15,
+        lineHeight: isTotal ? 24 : 20,
+        color: ink,
+      }}
+    >
+      {label}
+    </Text>
+  );
+  const amountView = (
+    <View
+      testID="ticket-amount"
+      style={{ flexShrink: 0, flexDirection: 'row', alignItems: 'center' }}
+    >
+      <Amount size={isTotal ? 'xl' : 'base'} style={danger ? { color: colors.error } : undefined}>
+        {amount}
+      </Amount>
+      {adornment ? <View style={{ marginLeft: 8 }}>{adornment}</View> : null}
+    </View>
+  );
+  const metaText = meta ? (
+    <Text
+      style={{
+        fontFamily: fonts.regular,
+        fontSize: 13,
+        lineHeight: 18,
+        color: colors.textSecondary,
+        marginTop: 2,
+      }}
+    >
+      {meta}
+    </Text>
+  ) : null;
+
+  const body = stacked ? (
+    <View testID="ticket-line-stacked" style={{ flex: 1 }}>
+      {labelText}
+      {metaText}
+      <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginTop: 2 }}>
+        {isTotal ? <View style={{ flex: 1 }} /> : <Leader color={colors.textTertiary} />}
+        {amountView}
+      </View>
+    </View>
+  ) : (
     <View style={{ flex: 1 }}>
       <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
-        <Text
-          style={{
-            flexShrink: 1,
-            fontFamily: isTotal ? fonts.semibold : fonts.regular,
-            fontSize: isTotal ? 17 : 15,
-            lineHeight: isTotal ? 24 : 20,
-            color: ink,
-          }}
-        >
-          {label}
-        </Text>
+        {labelText}
         {isTotal ? (
           <View style={{ flex: 1, minWidth: 12 }} />
         ) : (
           <Leader color={colors.textTertiary} />
         )}
-        <View testID="ticket-amount" style={{ flexShrink: 0 }}>
-          <Amount
-            size={isTotal ? 'xl' : 'base'}
-            style={danger ? { color: colors.error } : undefined}
-          >
-            {amount}
-          </Amount>
-        </View>
+        {amountView}
       </View>
-      {meta ? (
-        <Text
-          style={{
-            fontFamily: fonts.regular,
-            fontSize: 13,
-            lineHeight: 18,
-            color: colors.textSecondary,
-            marginTop: 2,
-          }}
-        >
-          {meta}
-        </Text>
-      ) : null}
+      {metaText}
     </View>
   );
 

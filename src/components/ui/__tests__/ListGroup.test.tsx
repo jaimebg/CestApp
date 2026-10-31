@@ -55,4 +55,35 @@ describe('ListRow', () => {
     );
     expect(toJSON()).toBeNull();
   });
+
+  it('announces busy and expanded states and accepts its own label and hint', () => {
+    render(
+      <ListGroup>
+        <ListRow
+          title="Versión"
+          value="1.0.0"
+          accessibilityLabel="Versión 1.0.0"
+          accessibilityHint="Pulsa cinco veces"
+          busy
+          expanded
+          onPress={jest.fn()}
+        />
+      </ListGroup>
+    );
+    const row = screen.getByRole('button', { name: 'Versión 1.0.0' });
+    expect(row).toHaveProp('accessibilityHint', 'Pulsa cinco veces');
+    expect(row).toBeBusy();
+    expect(row).toBeExpanded();
+  });
+
+  it('keeps the busy row at full strength while it blocks the others', () => {
+    render(
+      <ListGroup>
+        <ListRow title="Desde la galería" disabled busy onPress={jest.fn()} />
+      </ListGroup>
+    );
+    expect(screen.getByRole('button', { name: 'Desde la galería' })).not.toHaveStyle({
+      opacity: 0.5,
+    });
+  });
 });

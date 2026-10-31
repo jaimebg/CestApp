@@ -5,6 +5,7 @@ import { categories } from '../schema/categories';
 import { stores } from '../schema/stores';
 import { sql, eq, gte, lte, and, desc } from 'drizzle-orm';
 import { getComparableRange, type ComparablePeriod, type DateRange } from '@/src/utils/periods';
+import { spendingBucket } from './spendingBucket';
 
 export type TimePeriod = 'week' | 'month' | 'year' | 'all';
 
@@ -54,10 +55,7 @@ export async function getSpendingByDay(
 ): Promise<{ date: string; amount: number }[]> {
   const { start, end } = getDateRange(period);
 
-  const bucketExpr =
-    period === 'year'
-      ? sql<string>`strftime('%Y-%m', ${receipts.dateTime}, 'unixepoch', 'localtime')`
-      : sql<string>`DATE(${receipts.dateTime}, 'unixepoch', 'localtime')`;
+  const bucketExpr = spendingBucket(period);
 
   const result = await db
     .select({

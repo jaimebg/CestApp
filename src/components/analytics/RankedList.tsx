@@ -34,7 +34,8 @@ export function RankedList({ rows }: { rows: RankedRow[] }) {
             <Amount size="sm">{row.amount}</Amount>
             <Text
               style={{
-                width: 48,
+                minWidth: 48,
+                marginLeft: 8,
                 textAlign: 'right',
                 fontFamily: fonts.regular,
                 fontSize: 13,

@@ -75,6 +75,14 @@ interface ListRowProps {
   destructive?: boolean;
   onPress?: () => void;
   disabled?: boolean;
+  /** Work in progress on this row; it stays at full strength while others are disabled. */
+  busy?: boolean;
+  /** For rows that show or hide content below. */
+  expanded?: boolean;
+  /** Defaults to the title; pass one when the row carries more, like a value. */
+  accessibilityLabel?: string;
+  /** Defaults to the description. */
+  accessibilityHint?: string;
   /** Sits at the trailing edge, e.g. a switch or a thumbnail. */
   accessory?: ReactNode;
   /** Sits under the title across the row, e.g. a segmented control. */
@@ -90,6 +98,10 @@ export function ListRow({
   destructive = false,
   onPress,
   disabled = false,
+  busy = false,
+  expanded,
+  accessibilityLabel,
+  accessibilityHint,
   accessory,
   children,
 }: ListRowProps) {
@@ -171,11 +183,11 @@ export function ListRow({
       onPress={onPress}
       disabled={disabled}
       accessibilityRole="button"
-      accessibilityLabel={title}
-      accessibilityHint={description}
-      accessibilityState={{ disabled }}
+      accessibilityLabel={accessibilityLabel ?? title}
+      accessibilityHint={accessibilityHint ?? description}
+      accessibilityState={{ disabled, busy, expanded }}
       className="active:opacity-60"
-      style={[rowStyle, disabled && { opacity: 0.5 }]}
+      style={[rowStyle, disabled && !busy && { opacity: 0.5 }]}
     >
       {content}
     </Pressable>

@@ -69,6 +69,7 @@ export default function AnalyticsScreen() {
   const [period, setPeriod] = useState<ComparablePeriod>('month');
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [previousTotal, setPreviousTotal] = useState(0);
+  const [shownPeriod, setShownPeriod] = useState<ComparablePeriod>('month');
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const hasDataRef = useRef(false);
@@ -90,6 +91,7 @@ export default function AnalyticsScreen() {
         hasDataRef.current = true;
         setData(analyticsData);
         setPreviousTotal(comparison.previous);
+        setShownPeriod(period);
       } catch (error) {
         logger.error('Failed to load analytics:', error);
       } finally {
@@ -111,7 +113,7 @@ export default function AnalyticsScreen() {
     { value: 'month', label: t('analytics.thisMonth') },
     { value: 'year', label: t('analytics.thisYear') },
   ];
-  const periodLabel = periodOptions.find((option) => option.value === period)?.label ?? '';
+  const periodLabel = periodOptions.find((option) => option.value === shownPeriod)?.label ?? '';
 
   if (!isReady || isLoading) {
     return (
@@ -125,20 +127,20 @@ export default function AnalyticsScreen() {
   }
 
   const hasData = !!data && data.receiptCount > 0;
-  const buckets = data ? fillBuckets(period, data.spendingByDay) : [];
+  const buckets = data ? fillBuckets(shownPeriod, data.spendingByDay) : [];
   const scale = niceScale(Math.max(0, ...buckets.map((bucket) => bucket.amount)));
   const barSlot = chartWidth / Math.max(buckets.length, 1);
   const barWidth = Math.max(3, Math.min(24, Math.floor(barSlot * 0.6)));
   const barData = buckets.map((bucket) => ({
     value: bucket.amount,
-    label: bucketLabel(bucket, period, language, new Date().getDate()),
+    label: bucketLabel(bucket, shownPeriod, language, new Date().getDate()),
     frontColor: bucket.isCurrent ? colors.action : colors.chartRest,
   }));
 
   const now = new Date();
   const change = data ? describeChange(data.total, previousTotal) : null;
   const comparisonText = change
-    ? t(`comparison.${period}.${change.direction}`, {
+    ? t(`comparison.${shownPeriod}.${change.direction}`, {
         amount: formatPrice(change.delta),
         month: formatMonthName(new Date(now.getFullYear(), now.getMonth() - 1, 1), language),
         year: now.getFullYear() - 1,

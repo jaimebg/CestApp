@@ -559,6 +559,7 @@ export default function ReceiptDetailScreen() {
                     <ListRow
                       title={t('receipt.originalPhoto')}
                       icon="image-outline"
+                      expanded={showPhoto}
                       onPress={() => setShowPhoto((shown) => !shown)}
                       accessory={
                         <Image
