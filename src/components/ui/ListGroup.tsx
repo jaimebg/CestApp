@@ -73,6 +73,7 @@ interface ListRowProps {
   /** Error ink on the title only: no fill, no border. */
   destructive?: boolean;
   onPress?: () => void;
+  disabled?: boolean;
   /** Sits at the trailing edge, e.g. a switch or a thumbnail. */
   accessory?: ReactNode;
   /** Sits under the title across the row, e.g. a segmented control. */
@@ -87,6 +88,7 @@ export function ListRow({
   chevron = false,
   destructive = false,
   onPress,
+  disabled = false,
   accessory,
   children,
 }: ListRowProps) {
@@ -166,10 +168,16 @@ export function ListRow({
   return (
     <Pressable
       onPress={onPress}
+      disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={title}
       accessibilityHint={description}
-      style={({ pressed }) => [rowStyle, pressed && { backgroundColor: colors.border }]}
+      accessibilityState={{ disabled }}
+      style={({ pressed }) => [
+        rowStyle,
+        pressed && { backgroundColor: colors.border },
+        disabled && { opacity: 0.5 },
+      ]}
     >
       {content}
     </Pressable>

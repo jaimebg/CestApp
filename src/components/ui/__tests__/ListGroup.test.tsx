@@ -24,6 +24,17 @@ describe('ListRow', () => {
     expect(screen.getByText('1.0.0')).toBeTruthy();
   });
 
+  it('cannot be pressed while disabled', () => {
+    const onPress = jest.fn();
+    render(
+      <ListGroup>
+        <ListRow title="Desde la galería" disabled onPress={onPress} />
+      </ListGroup>
+    );
+    const row = screen.getByRole('button', { name: 'Desde la galería' });
+    expect(row).toBeDisabled();
+  });
+
   it('shows the group footer under its rows', () => {
     render(
       <ListGroup footer="Formato de fecha DD/MM/AAAA">

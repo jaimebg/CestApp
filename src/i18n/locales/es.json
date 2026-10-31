@@ -40,8 +40,7 @@
     "scanAction": "Escanear ticket"
   },
   "scan": {
-    "title": "Escanear ticket",
-    "subtitle": "Elige cómo añadir tu ticket",
+    "title": "Añadir ticket",
     "fromGallery": "Desde la galería",
     "fromGalleryDesc": "Elige una foto que ya tengas",
     "scanDocument": "Escanear documento",

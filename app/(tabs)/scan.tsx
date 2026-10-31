@@ -1,11 +1,14 @@
-import { View, Text, Pressable } from 'react-native';
+import { View, Text } from 'react-native';
 import { showErrorToast } from '@/src/utils/toast';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Card } from '@/src/components/ui/Card';
+import { Button } from '@/src/components/ui/Button';
+import { ListGroup, ListRow } from '@/src/components/ui/ListGroup';
+import { ScreenHeader } from '@/src/components/ui/ScreenHeader';
+import { fonts } from '@/src/theme/type';
 import { ReadingColumn } from '@/src/components/ui/ReadingColumn';
 import { useAppColors } from '@/src/hooks/useAppColors';
 import { selectFromGallery, selectPdf, scanDocument, CaptureResult } from '@/src/services/capture';
@@ -126,157 +129,72 @@ export default function ScanScreen() {
     router.push('/scan/review');
   };
 
+  const busy = isLoading !== null;
+  const describe = (source: 'gallery' | 'pdf', idle: string) =>
+    isReading && isLoading === source ? t('scan.analyzing') : idle;
+
   return (
     <View
       className="flex-1 bg-background dark:bg-background-dark"
       style={{ paddingTop: insets.top }}
     >
-      <ReadingColumn className="flex-1 px-6 pt-4">
-        <Text
-          className="text-3xl text-text dark:text-text-dark"
-          style={{ fontFamily: 'Inter_600SemiBold' }}
-        >
-          {t('scan.title')}
-        </Text>
-        <Text
-          className="text-base text-text-secondary dark:text-text-dark-secondary mt-2"
-          style={{ fontFamily: 'Inter_400Regular' }}
-        >
-          {t('scan.subtitle')}
-        </Text>
+      <ReadingColumn className="flex-1">
+        <ScreenHeader title={t('scan.title')} />
 
-        <View className="flex-1 justify-center gap-4">
-          <Pressable
-            className="bg-primary-deep rounded-2xl p-6 flex-row items-center active:bg-primary-dark"
+        <View className="px-5 mt-4">
+          <Button
+            size="lg"
             onPress={handleScanDocument}
-            disabled={isLoading !== null}
-            accessibilityRole="button"
-            accessibilityLabel={t('scan.scanDocument')}
+            loading={isLoading === 'scanner'}
+            disabled={busy}
             accessibilityHint={t('scan.scanDocumentDesc')}
-            accessibilityState={{ disabled: isLoading !== null, busy: isLoading === 'scanner' }}
-            style={{ opacity: isLoading !== null && isLoading !== 'scanner' ? 0.5 : 1 }}
+            leftIcon={<Ionicons name="scan-outline" size={20} color="#FFFFFF" />}
           >
-            <View className="bg-white/20 rounded-full p-3 mr-4">
-              <Ionicons
-                name={isLoading === 'scanner' ? 'hourglass-outline' : 'scan-outline'}
-                size={28}
-                color="#FFFFFF"
-              />
-            </View>
-            <View className="flex-1">
-              <Text className="text-white text-lg" style={{ fontFamily: 'Inter_600SemiBold' }}>
-                {t('scan.scanDocument')}
-              </Text>
-              <Text
-                className="text-white/80 text-sm mt-1"
-                style={{ fontFamily: 'Inter_400Regular' }}
-              >
-                {isReading && isLoading === 'scanner'
-                  ? t('scan.analyzing')
-                  : t('scan.scanDocumentDesc')}
-              </Text>
-            </View>
-          </Pressable>
+            {t('scan.scanDocument')}
+          </Button>
+          <Text
+            style={{
+              fontFamily: fonts.regular,
+              fontSize: 13,
+              lineHeight: 18,
+              color: colors.textSecondary,
+              textAlign: 'center',
+              marginTop: 8,
+            }}
+          >
+            {isReading && isLoading === 'scanner'
+              ? t('scan.analyzing')
+              : t('scan.scanDocumentDesc')}
+          </Text>
+        </View>
 
-          <Card
-            variant="outlined"
-            padding="lg"
-            onPress={handleGallery}
-            disabled={isLoading !== null}
-            accessibilityLabel={t('scan.fromGallery')}
-            accessibilityHint={t('scan.fromGalleryDesc')}
-            style={{ opacity: isLoading !== null && isLoading !== 'gallery' ? 0.5 : 1 }}
-          >
-            <View className="flex-row items-center">
-              <View className="bg-primary/20 rounded-full p-3 mr-4">
-                <Ionicons
-                  name={isLoading === 'gallery' ? 'hourglass-outline' : 'images-outline'}
-                  size={28}
-                  color={colors.action}
-                />
-              </View>
-              <View className="flex-1">
-                <Text
-                  className="text-text dark:text-text-dark text-lg"
-                  style={{ fontFamily: 'Inter_600SemiBold' }}
-                >
-                  {t('scan.fromGallery')}
-                </Text>
-                <Text
-                  className="text-text-secondary dark:text-text-dark-secondary text-sm mt-1"
-                  style={{ fontFamily: 'Inter_400Regular' }}
-                >
-                  {isReading && isLoading === 'gallery'
-                    ? t('scan.analyzing')
-                    : t('scan.fromGalleryDesc')}
-                </Text>
-              </View>
-            </View>
-          </Card>
-
-          <Card
-            variant="outlined"
-            padding="lg"
-            onPress={handlePdf}
-            disabled={isLoading !== null}
-            accessibilityLabel={t('scan.importPdf')}
-            accessibilityHint={t('scan.importPdfDesc')}
-            style={{ opacity: isLoading !== null && isLoading !== 'pdf' ? 0.5 : 1 }}
-          >
-            <View className="flex-row items-center">
-              <View className="bg-primary/20 rounded-full p-3 mr-4">
-                <Ionicons
-                  name={isLoading === 'pdf' ? 'hourglass-outline' : 'document-outline'}
-                  size={28}
-                  color={colors.action}
-                />
-              </View>
-              <View className="flex-1">
-                <Text
-                  className="text-text dark:text-text-dark text-lg"
-                  style={{ fontFamily: 'Inter_600SemiBold' }}
-                >
-                  {t('scan.importPdf')}
-                </Text>
-                <Text
-                  className="text-text-secondary dark:text-text-dark-secondary text-sm mt-1"
-                  style={{ fontFamily: 'Inter_400Regular' }}
-                >
-                  {isReading && isLoading === 'pdf' ? t('scan.analyzing') : t('scan.importPdfDesc')}
-                </Text>
-              </View>
-            </View>
-          </Card>
-
-          <Card
-            variant="outlined"
-            padding="lg"
-            onPress={handleManualEntry}
-            disabled={isLoading !== null}
-            accessibilityLabel={t('scan.addManually')}
-            accessibilityHint={t('scan.addManuallyDesc')}
-            style={{ opacity: isLoading !== null ? 0.5 : 1 }}
-          >
-            <View className="flex-row items-center">
-              <View className="bg-primary/20 rounded-full p-3 mr-4">
-                <Ionicons name="create-outline" size={28} color={colors.action} />
-              </View>
-              <View className="flex-1">
-                <Text
-                  className="text-text dark:text-text-dark text-lg"
-                  style={{ fontFamily: 'Inter_600SemiBold' }}
-                >
-                  {t('scan.addManually')}
-                </Text>
-                <Text
-                  className="text-text-secondary dark:text-text-dark-secondary text-sm mt-1"
-                  style={{ fontFamily: 'Inter_400Regular' }}
-                >
-                  {t('scan.addManuallyDesc')}
-                </Text>
-              </View>
-            </View>
-          </Card>
+        <View className="px-5 mt-8">
+          <ListGroup>
+            <ListRow
+              title={t('scan.fromGallery')}
+              description={describe('gallery', t('scan.fromGalleryDesc'))}
+              icon={isLoading === 'gallery' ? 'hourglass-outline' : 'images-outline'}
+              chevron
+              disabled={busy}
+              onPress={handleGallery}
+            />
+            <ListRow
+              title={t('scan.importPdf')}
+              description={describe('pdf', t('scan.importPdfDesc'))}
+              icon={isLoading === 'pdf' ? 'hourglass-outline' : 'document-outline'}
+              chevron
+              disabled={busy}
+              onPress={handlePdf}
+            />
+            <ListRow
+              title={t('scan.addManually')}
+              description={t('scan.addManuallyDesc')}
+              icon="create-outline"
+              chevron
+              disabled={busy}
+              onPress={handleManualEntry}
+            />
+          </ListGroup>
         </View>
       </ReadingColumn>
     </View>

@@ -40,8 +40,7 @@
     "scanAction": "Scan receipt"
   },
   "scan": {
-    "title": "Scan Receipt",
-    "subtitle": "Choose how to add your receipt",
+    "title": "Add receipt",
     "fromGallery": "From Gallery",
     "fromGalleryDesc": "Select an existing photo",
     "scanDocument": "Scan Document",
