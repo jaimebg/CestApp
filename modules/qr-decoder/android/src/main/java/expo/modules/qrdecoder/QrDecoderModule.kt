@@ -36,7 +36,7 @@ class QrDecoderModule : Module() {
     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
     BitmapFactory.decodeFile(path, bounds)
     var sample = 1
-    while (maxOf(bounds.outWidth, bounds.outHeight) / sample > MAX_SIDE) sample *= 2
+    while (maxOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= MAX_SIDE) sample *= 2
 
     return BitmapFactory.decodeFile(path, BitmapFactory.Options().apply { inSampleSize = sample })
   }
