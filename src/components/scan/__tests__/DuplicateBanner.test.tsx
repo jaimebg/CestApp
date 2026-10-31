@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { DuplicateBanner } from '../DuplicateBanner';
+import { lightColors } from '@/src/theme/colors';
 
 // The real icon set loads its font asynchronously and settles after the test
 // has finished, which surfaces as an act() warning unrelated to the assertions.
@@ -20,5 +21,14 @@ describe('DuplicateBanner', () => {
     fireEvent.press(screen.getByText('View'));
 
     expect(onView).toHaveBeenCalledTimes(1);
+  });
+
+  it('reads as a warning, not an error', () => {
+    render(<DuplicateBanner dateLabel="17/08/2026" totalLabel="54,20 €" onView={jest.fn()} />);
+
+    expect(screen.getByTestId('duplicate-banner')).not.toHaveStyle({
+      borderColor: lightColors.error,
+    });
+    expect(screen.getByTestId('duplicate-banner-icon')).toHaveProp('color', lightColors.warning);
   });
 });

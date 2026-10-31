@@ -42,7 +42,7 @@ const GUARDS: Guard[] = [
   {
     name: 'no emoji in UI',
     pattern: /\p{Extended_Pictographic}/u,
-    roots: ['app/receipt', 'src/components/receipt'],
+    roots: ['app/receipt', 'src/components/receipt', 'app/scan', 'src/components/scan'],
   },
 ];
 

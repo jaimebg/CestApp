@@ -45,4 +45,14 @@ describe('ListRow', () => {
       color: lightColors.textTertiary,
     });
   });
+
+  it('draws nothing when every row is conditional and none applies', () => {
+    const { toJSON } = render(
+      <ListGroup>
+        {false}
+        {null}
+      </ListGroup>
+    );
+    expect(toJSON()).toBeNull();
+  });
 });

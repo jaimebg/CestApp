@@ -36,8 +36,7 @@ export function RefinementBanner({ status, onUndo, onCompare, onDismiss }: Props
 
   return (
     <View
-      className="mx-4 my-2 flex-row items-center justify-between rounded-xl px-3 py-2"
-      style={{ backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }}
+      className="mx-4 my-2 flex-row items-center justify-between py-2"
       accessibilityLiveRegion="polite"
     >
       <View className="flex-1 flex-row items-center gap-2">

@@ -7,12 +7,11 @@
  */
 
 import { memo } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { Amount } from '../ui/Amount';
-import { ICON_HIT_SLOP } from '../../theme/a11y';
-import { fonts } from '../../theme/type';
+import { TicketLine } from '../receipt/TicketLine';
+import { ICON_HIT_SLOP, MIN_TARGET } from '../../theme/a11y';
 import type { ReviewColors } from './types';
 
 interface ScanItemRowProps {
@@ -41,53 +40,35 @@ function ScanItemRowComponent({
   onRemove,
 }: ScanItemRowProps) {
   const { t } = useTranslation();
+  const quantityLabel =
+    quantity !== 1 && unitPriceLabel
+      ? `${quantity}${unit ? ` ${unit}` : 'x'} @ ${unitPriceLabel}`
+      : null;
+  const meta = [quantityLabel, categoryName].filter(Boolean).join(' · ');
 
   return (
-    <Pressable
+    <TicketLine
+      label={name}
+      amount={totalPriceLabel}
+      meta={meta || undefined}
       onPress={() => onEdit(index)}
-      accessibilityRole="button"
-      accessibilityLabel={`${name}, ${totalPriceLabel}`}
-      accessibilityHint={t('scan.editItem')}
-      className="flex-row items-center py-3 border-b"
-      style={{ borderColor: colors.border }}
-    >
-      <View className="flex-1 mr-2">
-        <Text
-          className="text-sm"
-          style={{ color: colors.text, fontFamily: fonts.medium }}
-          numberOfLines={2}
+      trailing={
+        <Pressable
+          onPress={() => onRemove(index)}
+          hitSlop={ICON_HIT_SLOP}
+          accessibilityRole="button"
+          accessibilityLabel={`${t('common.delete')}: ${name}`}
+          style={{
+            minWidth: MIN_TARGET,
+            minHeight: MIN_TARGET,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
         >
-          {name}
-        </Text>
-        <View className="flex-row items-center mt-0.5">
-          {quantity !== 1 && unitPriceLabel && (
-            <Text
-              className="text-xs mr-2"
-              style={{ color: colors.textSecondary, fontFamily: fonts.regular }}
-            >
-              {quantity} {unit || 'x'} @ {unitPriceLabel}
-            </Text>
-          )}
-          {categoryName && (
-            <Text className="text-xs" style={{ color: colors.action, fontFamily: fonts.regular }}>
-              {categoryName}
-            </Text>
-          )}
-        </View>
-      </View>
-      <Amount size="sm" className="mr-3">
-        {totalPriceLabel}
-      </Amount>
-      <Pressable
-        onPress={() => onRemove(index)}
-        hitSlop={ICON_HIT_SLOP}
-        className="p-1"
-        accessibilityRole="button"
-        accessibilityLabel={`${t('common.delete')}: ${name}`}
-      >
-        <Ionicons name="close-circle" size={20} color={colors.error} />
-      </Pressable>
-    </Pressable>
+          <Ionicons name="close-circle-outline" size={20} color={colors.textTertiary} />
+        </Pressable>
+      }
+    />
   );
 }
 

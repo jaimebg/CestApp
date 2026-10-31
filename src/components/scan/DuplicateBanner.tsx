@@ -23,14 +23,22 @@ export function DuplicateBanner({ dateLabel, totalLabel, onView }: Props) {
 
   return (
     <View
-      className="mx-4 my-2 flex-row items-center justify-between rounded-xl px-3 py-2"
-      style={{ backgroundColor: colors.surface, borderColor: colors.error, borderWidth: 1 }}
+      testID="duplicate-banner"
+      className="mx-4 my-2 flex-row items-center justify-between py-2"
       accessibilityLiveRegion="polite"
     >
       <View className="flex-1 flex-row items-center gap-2">
-        <Ionicons name="alert-circle-outline" size={16} color={colors.error} />
+        <Ionicons
+          testID="duplicate-banner-icon"
+          name="alert-circle-outline"
+          size={20}
+          color={colors.warning}
+        />
         <View className="flex-1">
-          <Text className="text-sm" style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}>
+          <Text
+            className="text-sm"
+            style={{ color: colors.warning, fontFamily: 'Inter_500Medium' }}
+          >
             {t('scan.duplicateTitle')}
           </Text>
           <Text

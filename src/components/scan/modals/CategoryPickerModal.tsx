@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { ModalHeader } from '../../ui/ModalHeader';
 import type { Category, ReviewColors } from '../types';
 import { categoryLabel } from '../../../utils/categoryLabel';
+import { MIN_TARGET } from '../../../theme/a11y';
 
 interface CategoryPickerModalProps {
   visible: boolean;
@@ -58,19 +59,11 @@ export function CategoryPickerModal({
               <Pressable
                 onPress={() => onSelect(item.id)}
                 className="flex-row items-center px-4 py-3 border-b"
-                style={{ borderColor: colors.border }}
+                style={{ borderColor: colors.border, minHeight: MIN_TARGET }}
                 accessibilityRole="button"
                 accessibilityLabel={label}
                 accessibilityState={{ selected: isSelected }}
               >
-                <View
-                  className="w-8 h-8 rounded-full items-center justify-center mr-3"
-                  style={{ backgroundColor: (item.color || colors.textSecondary) + '20' }}
-                >
-                  <Text className="text-base" style={{ fontFamily: 'Inter_400Regular' }}>
-                    {item.icon || '📦'}
-                  </Text>
-                </View>
                 <Text
                   className="flex-1 text-base"
                   style={{
@@ -80,7 +73,7 @@ export function CategoryPickerModal({
                 >
                   {label}
                 </Text>
-                {isSelected && <Ionicons name="checkmark-circle" size={24} color={colors.action} />}
+                {isSelected && <Ionicons name="checkmark" size={22} color={colors.action} />}
               </Pressable>
             );
           }}

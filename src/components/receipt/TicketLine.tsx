@@ -14,6 +14,8 @@ interface TicketLineProps {
   /** Quantity, category: whatever the printed ticket shows under the concept. */
   meta?: string;
   variant?: TicketLineVariant;
+  /** The amount is wrong in a way the user must fix, e.g. a total that does not add up. */
+  danger?: boolean;
   onPress?: () => void;
   /** A control after the amount, such as the quiet delete in review. */
   trailing?: ReactNode;
@@ -70,6 +72,7 @@ export function TicketLine({
   amount,
   meta,
   variant = 'item',
+  danger = false,
   onPress,
   trailing,
 }: TicketLineProps) {
@@ -97,7 +100,12 @@ export function TicketLine({
           <Leader color={colors.textTertiary} />
         )}
         <View testID="ticket-amount" style={{ flexShrink: 0 }}>
-          <Amount size={isTotal ? 'xl' : 'base'}>{amount}</Amount>
+          <Amount
+            size={isTotal ? 'xl' : 'base'}
+            style={danger ? { color: colors.error } : undefined}
+          >
+            {amount}
+          </Amount>
         </View>
       </View>
       {meta ? (

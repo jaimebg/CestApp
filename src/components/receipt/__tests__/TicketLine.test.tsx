@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react-native';
 import { TicketLine } from '../TicketLine';
+import { lightColors } from '@/src/theme/colors';
 
 const LONG_NAME = 'ACEITE OLIVA VIRGEN EXTRA BOTELLA 1L PACK AHORRO FAMILIAR 3X';
 
@@ -23,5 +24,10 @@ describe('TicketLine', () => {
   it('reads concept and amount together to a screen reader', () => {
     render(<TicketLine label="PAN BARRA" amount="0,65 €" meta="Panadería" />);
     expect(screen.getByLabelText('PAN BARRA, 0,65 €')).toBeTruthy();
+  });
+
+  it('sets an amount that does not add up in error ink', () => {
+    render(<TicketLine label="Total" amount="31,00 €" variant="total" danger />);
+    expect(screen.getByText('31,00 €')).toHaveStyle({ color: lightColors.error });
   });
 });

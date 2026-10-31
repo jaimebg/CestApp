@@ -19,6 +19,7 @@ interface ListGroupProps {
 export function ListGroup({ children, footer }: ListGroupProps) {
   const colors = useAppColors();
   const rows = Children.toArray(children).filter(Boolean);
+  if (rows.length === 0) return null;
 
   return (
     <View>
