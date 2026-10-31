@@ -325,33 +325,19 @@
     "preferencesTitle": "Set Your Preferences",
     "continue": "Continue",
     "features": {
-      "subtitle": "A receipt tracker that keeps your data on your phone",
-      "scan": {
-        "title": "Scan Receipts",
-        "short": "Scan",
-        "desc": "Capture receipts with your camera, import from gallery, or upload PDFs"
-      },
-      "track": {
-        "title": "Track Every Purchase",
-        "short": "Track",
-        "desc": "Automatically extract items, prices, and organize by store and category"
-      },
-      "analytics": {
-        "title": "View Spending Insights",
-        "short": "Insights",
-        "desc": "See where your money goes, by category or store"
-      },
-      "privacy": {
-        "title": "100% Private & Local",
-        "short": "Private",
-        "desc": "All data stays on your device. No cloud, no accounts, no tracking"
-      }
+      "subtitle": "A receipt tracker that keeps your data on your phone"
     },
     "language": "Language",
     "appearance": "Appearance",
     "light": "Light",
     "dark": "Dark",
-    "getStarted": "Get Started"
+    "getStarted": "Get Started",
+    "sampleStore": "Corner market",
+    "sample": {
+      "bread": "COUNTRY BREAD",
+      "tomatoes": "PLUM TOMATOES 1KG",
+      "olive": "OLIVE OIL 1L"
+    }
   },
   "comparison": {
     "month": {

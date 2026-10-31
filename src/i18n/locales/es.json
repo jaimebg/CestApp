@@ -325,33 +325,19 @@
     "preferencesTitle": "Configura tus preferencias",
     "continue": "Continuar",
     "features": {
-      "subtitle": "Un gestor de tickets que guarda tus datos en tu móvil",
-      "scan": {
-        "title": "Escanea tickets",
-        "short": "Escanear",
-        "desc": "Haz una foto con la cámara, elige una de la galería o sube un PDF"
-      },
-      "track": {
-        "title": "Controla cada compra",
-        "short": "Controlar",
-        "desc": "Extrae artículos y precios automáticamente y los organiza por tienda y categoría"
-      },
-      "analytics": {
-        "title": "Consulta tus estadísticas",
-        "short": "Estadísticas",
-        "desc": "Mira a dónde va tu dinero, por categoría o por tienda"
-      },
-      "privacy": {
-        "title": "100% privado y local",
-        "short": "Privado",
-        "desc": "Todos los datos se quedan en tu dispositivo. Sin nube, sin cuentas, sin rastreo"
-      }
+      "subtitle": "Un gestor de tickets que guarda tus datos en tu móvil"
     },
     "language": "Idioma",
     "appearance": "Apariencia",
     "light": "Claro",
     "dark": "Oscuro",
-    "getStarted": "Empezar"
+    "getStarted": "Empezar",
+    "sampleStore": "Mercado del barrio",
+    "sample": {
+      "bread": "PAN DE PUEBLO",
+      "tomatoes": "TOMATE PERA 1KG",
+      "olive": "ACEITE OLIVA 1L"
+    }
   },
   "comparison": {
     "month": {

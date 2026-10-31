@@ -2,102 +2,32 @@
  * Single-screen onboarding with language and appearance selection
  */
 
-import { View, Text, Pressable, Image } from 'react-native';
+import { View, Text, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { ReadingColumn } from '@/src/components/ui/ReadingColumn';
-import { usePreferencesStore, type ColorScheme } from '@/src/store/preferences';
+import { useFormatPrice, usePreferencesStore, type ColorScheme } from '@/src/store/preferences';
+import { Button } from '@/src/components/ui/Button';
+import { SegmentedControl } from '@/src/components/ui/SegmentedControl';
+import { Ticket } from '@/src/components/receipt/Ticket';
+import { TicketLine, TicketRule } from '@/src/components/receipt/TicketLine';
+import { fonts } from '@/src/theme/type';
 import { useAppColors } from '@/src/hooks/useAppColors';
-import { MIN_TARGET } from '@/src/theme/a11y';
 import type { SupportedLanguage } from '@/src/i18n';
 
-type FeatureItemProps = {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  primaryColor: string;
-  textColor: string;
-};
-
-function FeatureItem({
-  icon,
-  label,
-  primaryColor,
-  textColor,
-  align,
-}: FeatureItemProps & { align: 'left' | 'right' }) {
-  return (
-    <View
-      className={`flex-row items-center py-2 px-3 ${align === 'left' ? 'justify-end' : 'justify-start'}`}
-      style={{ width: '50%' }}
-    >
-      <Ionicons name={icon} size={18} color={primaryColor} />
-      <Text className="text-sm ml-2" style={{ color: textColor, fontFamily: 'Inter_500Medium' }}>
-        {label}
-      </Text>
-    </View>
-  );
-}
-
-type SegmentedControlProps = {
-  options: { value: string; label: string }[];
-  selectedValue: string;
-  onSelect: (value: string) => void;
-  colors: {
-    surface: string;
-    border: string;
-    primaryDeep: string;
-    textSecondary: string;
-  };
-};
-
-function SegmentedControl({ options, selectedValue, onSelect, colors }: SegmentedControlProps) {
-  return (
-    <View
-      className="flex-row rounded-xl p-1"
-      style={{
-        backgroundColor: colors.surface,
-        borderWidth: 1,
-        borderColor: colors.border,
-      }}
-    >
-      {options.map((option) => {
-        const isSelected = option.value === selectedValue;
-        return (
-          <Pressable
-            key={option.value}
-            className="flex-1 items-center justify-center rounded-lg py-2.5"
-            onPress={() => onSelect(option.value)}
-            accessibilityRole="button"
-            accessibilityLabel={option.label}
-            accessibilityState={{ selected: isSelected }}
-            style={[
-              isSelected ? { backgroundColor: colors.primaryDeep } : undefined,
-              { minHeight: MIN_TARGET },
-            ]}
-          >
-            <Text
-              style={{
-                color: isSelected ? '#FFFFFF' : colors.textSecondary,
-                fontFamily: isSelected ? 'Inter_600SemiBold' : 'Inter_500Medium',
-                fontSize: 14,
-              }}
-            >
-              {option.label}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
-}
+const SAMPLE_LINES = [
+  { key: 'bread', amount: 1.2 },
+  { key: 'tomatoes', amount: 2.35 },
+  { key: 'olive', amount: 8.99 },
+] as const;
 
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const router = useRouter();
   const colors = useAppColors();
+  const { formatPrice } = useFormatPrice();
 
   const { language, setLanguage, colorScheme, setColorScheme, completeOnboarding } =
     usePreferencesStore();
@@ -107,22 +37,18 @@ export default function OnboardingScreen() {
     router.replace('/(tabs)');
   };
 
-  const features = [
-    { icon: 'scan-outline' as const, labelKey: 'onboarding.features.scan.short' },
-    { icon: 'list-outline' as const, labelKey: 'onboarding.features.track.short' },
-    { icon: 'bar-chart-outline' as const, labelKey: 'onboarding.features.analytics.short' },
-    { icon: 'shield-checkmark-outline' as const, labelKey: 'onboarding.features.privacy.short' },
-  ];
-
-  const languageOptions = [
+  const languageOptions: { value: SupportedLanguage; label: string }[] = [
     { value: 'en', label: 'EN' },
     { value: 'es', label: 'ES' },
   ];
 
-  const appearanceOptions = [
+  const appearanceOptions: { value: ColorScheme; label: string }[] = [
     { value: 'light', label: t('onboarding.light') },
     { value: 'dark', label: t('onboarding.dark') },
   ];
+
+  const sampleTotal = SAMPLE_LINES.reduce((sum, line) => sum + line.amount, 0);
+  const label = { color: colors.textSecondary, fontFamily: fonts.medium, fontSize: 13 };
 
   return (
     <View className="flex-1" style={{ backgroundColor: colors.background, paddingTop: insets.top }}>
@@ -137,8 +63,8 @@ export default function OnboardingScreen() {
             importantForAccessibility="no-hide-descendants"
           />
           <Text
-            className="text-3xl text-center"
-            style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
+            className="text-center"
+            style={{ color: colors.text, fontFamily: fonts.semibold, fontSize: 28, lineHeight: 34 }}
           >
             {t('onboarding.welcome')}
           </Text>
@@ -150,84 +76,58 @@ export default function OnboardingScreen() {
           </Text>
         </View>
 
-        <View className="mb-8">
-          <View className="flex-row">
-            <FeatureItem
-              icon={features[0].icon}
-              label={t(features[0].labelKey)}
-              primaryColor={colors.action}
-              textColor={colors.textSecondary}
-              align="left"
+        <View
+          className="mb-8 self-center w-full"
+          style={{ maxWidth: 280 }}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        >
+          <Ticket header={{ title: t('onboarding.sampleStore'), lines: [] }}>
+            {SAMPLE_LINES.map((line) => (
+              <TicketLine
+                key={line.key}
+                label={t(`onboarding.sample.${line.key}`)}
+                amount={formatPrice(line.amount)}
+              />
+            ))}
+            <TicketRule />
+            <TicketLine
+              variant="total"
+              label={t('receipt.total')}
+              amount={formatPrice(sampleTotal)}
             />
-            <FeatureItem
-              icon={features[1].icon}
-              label={t(features[1].labelKey)}
-              primaryColor={colors.action}
-              textColor={colors.textSecondary}
-              align="right"
-            />
-          </View>
-          <View className="flex-row -mt-1">
-            <FeatureItem
-              icon={features[2].icon}
-              label={t(features[2].labelKey)}
-              primaryColor={colors.action}
-              textColor={colors.textSecondary}
-              align="left"
-            />
-            <FeatureItem
-              icon={features[3].icon}
-              label={t(features[3].labelKey)}
-              primaryColor={colors.action}
-              textColor={colors.textSecondary}
-              align="right"
-            />
-          </View>
+          </Ticket>
         </View>
 
         <View className="mb-5">
-          <Text
-            className="text-sm mb-2 ml-1"
-            style={{ color: colors.textSecondary, fontFamily: 'Inter_600SemiBold' }}
-          >
+          <Text className="mb-2 ml-1" style={label}>
             {t('onboarding.language')}
           </Text>
           <SegmentedControl
             options={languageOptions}
-            selectedValue={language}
-            onSelect={(value) => setLanguage(value as SupportedLanguage)}
-            colors={colors}
+            value={language as SupportedLanguage}
+            onChange={setLanguage}
+            accessibilityLabel={t('onboarding.language')}
           />
         </View>
 
         <View className="mb-6">
-          <Text
-            className="text-sm mb-2 ml-1"
-            style={{ color: colors.textSecondary, fontFamily: 'Inter_600SemiBold' }}
-          >
+          <Text className="mb-2 ml-1" style={label}>
             {t('onboarding.appearance')}
           </Text>
           <SegmentedControl
             options={appearanceOptions}
-            selectedValue={colorScheme}
-            onSelect={(value) => setColorScheme(value as ColorScheme)}
-            colors={colors}
+            value={colorScheme}
+            onChange={setColorScheme}
+            accessibilityLabel={t('onboarding.appearance')}
           />
         </View>
       </ReadingColumn>
 
       <ReadingColumn className="px-6 pt-4" style={{ paddingBottom: insets.bottom + 16 }}>
-        <Pressable
-          onPress={handleGetStarted}
-          accessibilityRole="button"
-          accessibilityLabel={t('onboarding.getStarted')}
-          className="rounded-2xl py-4 items-center"
-          style={{ backgroundColor: colors.primaryDeep, minHeight: MIN_TARGET }}
-        >
-          <Text className="text-white text-lg" style={{ fontFamily: 'Inter_600SemiBold' }}>
-            {t('onboarding.getStarted')}
-          </Text>
-        </Pressable>
+        <Button size="lg" onPress={handleGetStarted}>
+          {t('onboarding.getStarted')}
+        </Button>
       </ReadingColumn>
     </View>
   );
