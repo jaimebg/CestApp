@@ -1,6 +1,6 @@
 import '../styles/global.css';
 import '@/src/i18n';
-import { useState, useEffect, useLayoutEffect, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, type ReactNode } from 'react';
 import { Stack, useSegments, useRootNavigationState, useRouter } from 'expo-router';
 import { ActivityIndicator, Dimensions, InteractionManager, Platform, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -19,6 +19,7 @@ import { lightColors, darkColors } from '@/src/theme/colors';
 import { fontModules } from '@/src/theme/type';
 import { ErrorState } from '@/src/components/ui/EmptyState';
 import { useAppColors } from '@/src/hooks/useAppColors';
+import { useStoreHydrated } from '@/src/hooks/useStoreHydrated';
 import { installGlobalErrorHandlers } from '@/src/utils/errorLog';
 import { resolveLayout } from '@/src/theme/layout';
 import { createScopedLogger } from '@/src/utils/debug';
@@ -28,17 +29,6 @@ const logger = createScopedLogger('RootLayout');
 installGlobalErrorHandlers();
 
 SplashScreen.preventAutoHideAsync();
-
-function useStoreHydrated() {
-  const [hydrated, setHydrated] = useState(usePreferencesStore.persist.hasHydrated());
-
-  useEffect(() => {
-    const unsub = usePreferencesStore.persist.onFinishHydration(() => setHydrated(true));
-    return unsub;
-  }, []);
-
-  return hydrated;
-}
 
 /**
  * Pushes the stored appearance preference into NativeWind.
@@ -92,7 +82,7 @@ export default function RootLayout() {
   const segments = useSegments();
   const navigationState = useRootNavigationState();
   const router = useRouter();
-  const storeHydrated = useStoreHydrated();
+  const storeHydrated = useStoreHydrated(usePreferencesStore.persist);
   const hasCompletedOnboarding = usePreferencesStore((state) => state.hasCompletedOnboarding);
   const bgColor = colorScheme === 'dark' ? darkColors.background : lightColors.background;
 
