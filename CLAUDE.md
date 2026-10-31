@@ -60,7 +60,8 @@ CestApp is a **Spain-focused** supermarket receipt scanner app built with React 
 - Use `useSafeAreaInsets()` hook for safe area handling (NOT SafeAreaView component)
 - Apply `fontFamily` via inline styles for Inter font weights, using the
   `fonts` map in `src/theme/type.ts`:
-  - `Inter_300Light`, `Inter_400Regular`, `Inter_500Medium`, `Inter_600SemiBold`, `Inter_700Bold`
+  - `Inter_400Regular`, `Inter_500Medium`, `Inter_600SemiBold` — only 400, 500 and 600.
+    Hierarchy comes from size and colour, not from heavier weights.
 - **Never use Tailwind weight classes** (`font-semibold`, `font-bold`). They set
   `fontWeight` and leave `fontFamily` unset, which silently renders that text in
   the system font instead of Inter.
@@ -73,7 +74,34 @@ CestApp is a **Spain-focused** supermarket receipt scanner app built with React 
   styles reference.
 - Route entering animations through `useEntering()` (`src/hooks/useEntering.ts`)
   so they respect the OS "Reduce Motion" setting. Avoid `.springify()` — spring
-  overshoot on arriving content is a vestibular trigger.
+  overshoot on arriving content is a vestibular trigger. At most one entrance per
+  screen (a short fade of the main content); no staggered rows, no chart animation.
+- Pressables take static `style` plus `active:` classes. NativeWind's Pressable
+  interop drops `style={({ pressed }) => …}` on device, which silently breaks layout.
+
+### Ticket design system
+
+The interface takes its character from the supermarket ticket. Keep it there:
+
+- **Quiet chrome.** Surfaces, borders and text are neutral; the brand green lives in
+  `action` (primary action, selection, the one figure or bar that matters).
+- **No boxes by default.** Sections sit on the background under a sentence-case
+  label; lists are rows divided by hairlines (`ListGroup`/`ListRow`, `ReceiptRow`).
+  Only the ticket and grouped settings get a surface.
+- **The ticket is the moment.** Receipt detail, review and onboarding draw a
+  `Ticket` (torn SVG edges) with `TicketLine` rows. The dotted leader between
+  concept and amount is the signature: use it for amounts on a ticket, nowhere else.
+- **Icons** are Ionicons `-outline`, 20pt, in `textSecondary`, never inside a
+  tinted circle. **No emoji** in the interface; categories are their name.
+- **Red means danger.** `error` only for destructive actions and real errors;
+  warnings use `warning`.
+- **Copy:** sentence case, no exclamation marks, no trailing period on labels,
+  no subtitle that says nothing, and a change always says what it compares to.
+
+`src/theme/__tests__/designGuards.test.ts` scans the source for the patterns this
+system removed (bold/light Inter, emoji, uppercase tracked labels, tinted icon
+circles, chart rainbows, pie charts, Pressable style functions). Add a row there
+when you remove another one.
 
 ### Color Palette
 
@@ -122,19 +150,28 @@ src/
   components/
     ui/                        # Reusable UI components
       Amount.tsx               # Monetary value, tabular mono
-      Badge.tsx                # Status indicators
+      Badge.tsx                # Status indicators (real states only)
       Button.tsx               # Primary action button
-      Card.tsx                 # Content container
+      Card.tsx                 # Content container (rarely needed)
+      Chip.tsx                 # Filter chip
+      ListGroup.tsx            # ListGroup / ListRow: hairline-divided rows
+      ScreenHeader.tsx         # Screen title and optional informative line
+      SectionHeader.tsx        # Sentence-case section title with optional action
+      SegmentedControl.tsx     # Language, appearance and period choices
       ConfirmationModal.tsx    # Delete confirmations
       EmptyState.tsx           # Empty/error states
       Input.tsx                # Text input field
       ModalHeader.tsx          # Shared modal header bar
       Skeleton.tsx             # Loading placeholders
+    analytics/                 # Analytics components
+      RankedList.tsx           # Ranked rows with thin bars, one accent
     receipt/                   # Receipt-specific components
       CollapsibleItemList.tsx  # Read-only receipt rows, collapses past 25
       ItemRow.tsx              # Line item display
-      ReceiptCard.tsx          # Receipt preview card
-      ReceiptCardSkeleton.tsx  # Loading skeleton
+      ReceiptRow.tsx           # Receipt list row (store, meta, amount)
+      ReceiptRowSkeleton.tsx   # Loading skeleton for a row
+      Ticket.tsx               # Paper surface with torn edges
+      TicketLine.tsx           # Concept · dotted leader · amount, and TicketRule
       ReceiptSummary.tsx       # Summary stats
     scan/                      # Scan flow components
       DuplicateBanner.tsx      # Duplicate receipt warning
@@ -222,6 +259,7 @@ src/
   hooks/
     useAppColors.ts            # Theme colors hook
     useEntering.ts             # Entering animations that respect Reduce Motion
+    useStoreHydrated.ts        # Whether a persisted store has loaded
     useLlmRefinement.ts        # LLM-powered receipt refinement
 
   theme/
@@ -262,9 +300,14 @@ Available in `src/components/ui/`:
 | Component           | Props                                                                   | Description             |
 | ------------------- | ----------------------------------------------------------------------- | ----------------------- |
 | Button              | `variant` (primary, secondary, ghost, destructive), `size` (sm, md, lg) | Primary action button   |
-| Card                | `variant` (elevated, outlined, filled), `padding` (sm, md, lg)          | Content container       |
+| Card                | `variant` (elevated, outlined), `padding` (sm, md, lg)                  | Content container       |
 | Input               | `label`, `error`, `leftIcon`, `rightIcon`                               | Text input field        |
-| Badge               | `variant` (default, success, warning, error, info), `size` (sm, md)     | Status indicator        |
+| Badge               | `variant` (default, success, warning, error, info), `size` (sm, md)     | Real status only        |
+| ScreenHeader        | `title`, `subtitle`, `action`                                           | Screen title            |
+| SectionHeader       | `title`, `action`                                                       | Section title           |
+| SegmentedControl    | `options`, `value`, `onChange`, `accessibilityLabel`                    | Short exclusive choice  |
+| Chip                | `label`, `selected`, `onPress`, `icon`                                  | Filter chip             |
+| ListGroup / ListRow | `footer` / `title`, `description`, `value`, `icon`, `destructive`, …    | Hairline-divided rows   |
 | Amount              | `size` (sm, base, lg, xl, hero), `weight`                               | Monetary value          |
 | CollapsibleItemList | `items`                                                                 | Read-only receipt rows  |
 | ModalHeader         | `title`, `onClose`, `closeLabel`, `confirmLabel`, `onConfirm`           | Shared modal header bar |
