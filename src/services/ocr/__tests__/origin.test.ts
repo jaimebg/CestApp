@@ -1,4 +1,5 @@
 import { autoDetectZones } from '../autoZoneDetector';
+import { parseFiscalQr } from '../../fiscal';
 import { applyOrigin } from '../origin';
 import { parseCapture } from '../parseCapture';
 import { createManualParsedReceipt } from '../parser';
@@ -34,4 +35,22 @@ test('a detected country keeps its own currency', () => {
     countryCode: 'PT',
     currency: 'EUR',
   });
+});
+
+const PT_QR =
+  'A:502011475*B:999999990*C:PT*D:FS*E:N*F:20261015*G:FS 1/123*H:JJ3ZKXYZ-123*I1:PT*I7:10.00*I8:2.30*N:2.30*O:12.30*Q:AbCd*R:1234';
+
+test('fiscal data overrides the reading', () => {
+  expect(
+    applyOrigin({ ...blank, total: 12.0 }, 'TOTAL 12,00', parseFiscalQr([PT_QR]))
+  ).toMatchObject({
+    countryCode: 'PT',
+    currency: 'EUR',
+    total: 12.3,
+    date: new Date(2026, 9, 15),
+  });
+});
+
+test('no fiscal data leaves the reading as it was', () => {
+  expect(applyOrigin({ ...blank, total: 12.0 }, 'TOTAL 12,00', null).total).toBe(12);
 });

@@ -2,6 +2,7 @@ import { createScopedLogger } from '../../utils/debug';
 import { parseReceipt, type ParsedReceipt, type ParserOptions } from './parser';
 import { parseWithTemplate, parseWithSpatialCorrelation } from './templateParser';
 import { applyOrigin } from './origin';
+import type { FiscalReceipt } from '../fiscal/types';
 import type { StoreParsingTemplate } from '../../db/schema/storeParsingTemplates';
 import type { OcrBlock } from './index';
 import type { ZoneDefinition } from '../../types/zones';
@@ -23,6 +24,8 @@ export interface CaptureParseInput {
   /** The total the zone detector read straight off the receipt, if it found one. */
   detectedTotal: number | null;
   options?: ParserOptions;
+  /** A fiscal QR read from the same photo; it outranks OCR on total, date and country. */
+  fiscal?: FiscalReceipt | null;
 }
 
 /**
@@ -77,7 +80,7 @@ function resolveTotal(parsed: ParsedReceipt, detectedTotal: number): number {
  * lines alone.
  */
 export function parseCapture(input: CaptureParseInput): ParsedReceipt | null {
-  const { lines, blocks, ocrText, dimensions, zones, detectedTotal, options } = input;
+  const { lines, blocks, ocrText, dimensions, zones, detectedTotal, options, fiscal } = input;
 
   if (lines.length === 0) return null;
 
@@ -94,12 +97,12 @@ export function parseCapture(input: CaptureParseInput): ParsedReceipt | null {
     result = parseWithSpatialCorrelation(blocks, rawText, dimensions);
   } else {
     logger.log('Reading through lines alone');
-    result = parseReceipt(lines, options);
+    result = parseReceipt(lines, { ...options, taxIdHint: fiscal?.merchantTaxId });
   }
 
   if (detectedTotal !== null) {
     result = { ...result, total: resolveTotal(result, detectedTotal) };
   }
 
-  return applyOrigin(result, rawText);
+  return applyOrigin(result, rawText, fiscal);
 }

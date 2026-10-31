@@ -1,6 +1,8 @@
 import { getCountry } from '../../config/countries';
 import type { CountryDefinition } from '../../config/countries/types';
 import { CURRENCIES } from '../../config/currency';
+import type { FiscalReceipt } from '../fiscal/types';
+import { findTemplateByTaxId } from './chainDetector';
 import { detectCountry, type CountryDetection } from './countryDetector';
 import type { ParsedReceipt } from './parser';
 
@@ -23,10 +25,17 @@ export function detectCurrency(
 }
 
 /**
- * Stamps a reading with the country and currency it came from. A detected
- * chain settles the country; otherwise the receipt's own text does.
+ * Stamps a reading with the country and currency it came from. Fiscal QR data
+ * settles country, total and date; else a detected chain settles the country;
+ * else the receipt's own text does.
  */
-export function applyOrigin(result: ParsedReceipt, rawText: string): ParsedReceipt {
+export function applyOrigin(
+  result: ParsedReceipt,
+  rawText: string,
+  fiscal?: FiscalReceipt | null
+): ParsedReceipt {
+  if (fiscal) return applyFiscal(result, fiscal);
+
   const detection: CountryDetection =
     result.chainId && result.countryCode
       ? { code: result.countryCode, confidence: 100, method: 'tax_id' }
@@ -37,5 +46,20 @@ export function applyOrigin(result: ParsedReceipt, rawText: string): ParsedRecei
     ...result,
     countryCode: country.code,
     currency: detectCurrency(rawText, country, detection.method),
+  };
+}
+
+function applyFiscal(result: ParsedReceipt, fiscal: FiscalReceipt): ParsedReceipt {
+  const chain =
+    !result.chainId && fiscal.merchantTaxId ? findTemplateByTaxId(fiscal.merchantTaxId) : null;
+
+  return {
+    ...result,
+    ...(chain ? { chainId: chain.chainId, chainName: chain.name } : {}),
+    countryCode: fiscal.countryCode,
+    currency: getCountry(fiscal.countryCode).currency,
+    total: fiscal.total,
+    date: fiscal.date,
+    time: fiscal.time ?? result.time,
   };
 }
