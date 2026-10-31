@@ -1,26 +1,31 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { View, Text, ScrollView, Pressable, RefreshControl } from 'react-native';
-import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Card } from '@/src/components/ui/Card';
-import { Badge } from '@/src/components/ui/Badge';
 import { Amount } from '@/src/components/ui/Amount';
+import { Button } from '@/src/components/ui/Button';
 import { Skeleton } from '@/src/components/ui/Skeleton';
 import { ReadingColumn } from '@/src/components/ui/ReadingColumn';
-import { ReceiptCard, RECEIPT_CARD_BLOCK } from '@/src/components/receipt/ReceiptCard';
-import { ReceiptCardSkeleton } from '@/src/components/receipt/ReceiptCardSkeleton';
+import { ScreenHeader } from '@/src/components/ui/ScreenHeader';
+import { SectionHeader } from '@/src/components/ui/SectionHeader';
+import { ReceiptRow, RECEIPT_ROW_BLOCK } from '@/src/components/receipt/ReceiptRow';
+import { ReceiptRowSkeleton } from '@/src/components/receipt/ReceiptRowSkeleton';
 import { createScopedLogger } from '@/src/utils/debug';
 import { useDatabaseReady } from '@/src/db/provider';
 import { getReceiptsWithItemCount } from '@/src/db/queries/receipts';
-import { getTotalSpending, getReceiptCount } from '@/src/db/queries/analytics';
-import { useFormatPrice } from '@/src/store/preferences';
+import { getPeriodComparison, getReceiptCount } from '@/src/db/queries/analytics';
+import { useFormatPrice, usePreferencesStore } from '@/src/store/preferences';
 import { useAppColors } from '@/src/hooks/useAppColors';
-import { useEntering, staggerDelay } from '@/src/hooks/useEntering';
+import { useEntering } from '@/src/hooks/useEntering';
 import { useLayout } from '@/src/hooks/useLayout';
 import { MIN_TARGET } from '@/src/theme/a11y';
+import { fonts } from '@/src/theme/type';
+import { describeChange } from '@/src/utils/periods';
+import { formatMonthName, formatMonthYear } from '@/src/utils/dateTime';
+import { receiptMeta } from '@/src/utils/receiptMeta';
 import type { Receipt } from '@/src/db/schema/receipts';
 import type { Store } from '@/src/db/schema/stores';
 
@@ -43,17 +48,27 @@ export default function DashboardScreen() {
   const router = useRouter();
   const { isReady } = useDatabaseReady();
   const { formatPrice } = useFormatPrice();
+  const language = usePreferencesStore((state) => state.language);
   const colors = useAppColors();
   const entering = useEntering();
   const layout = useLayout();
 
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [monthlyTotal, setMonthlyTotal] = useState(0);
+  const [monthTotal, setMonthTotal] = useState(0);
+  const [previousTotal, setPreviousTotal] = useState(0);
   const [receiptCount, setReceiptCount] = useState(0);
   const [recentReceipts, setRecentReceipts] = useState<ReceiptWithStore[]>([]);
   const [viewportHeight, setViewportHeight] = useState(0);
   const [listTop, setListTop] = useState(0);
+
+  const now = new Date();
+  const title = formatMonthYear(now, language);
+  const previousMonth = formatMonthName(
+    new Date(now.getFullYear(), now.getMonth() - 1, 1),
+    language
+  );
+  const change = describeChange(monthTotal, previousTotal);
 
   const visibleReceipts = useMemo(() => {
     const available = viewportHeight - listTop;
@@ -61,7 +76,7 @@ export default function DashboardScreen() {
       available > 0
         ? Math.min(
             MAX_RECEIPT_ROWS,
-            Math.max(MIN_RECEIPT_ROWS, Math.floor(available / RECEIPT_CARD_BLOCK))
+            Math.max(MIN_RECEIPT_ROWS, Math.floor(available / RECEIPT_ROW_BLOCK))
           )
         : MIN_RECEIPT_ROWS;
     return recentReceipts.slice(0, rows * layout.columns);
@@ -71,13 +86,14 @@ export default function DashboardScreen() {
     if (!isReady) return;
 
     try {
-      const [total, count, receipts] = await Promise.all([
-        getTotalSpending('month'),
+      const [comparison, count, receipts] = await Promise.all([
+        getPeriodComparison('month'),
         getReceiptCount('month'),
         getReceiptsWithItemCount(),
       ]);
 
-      setMonthlyTotal(total);
+      setMonthTotal(comparison.current);
+      setPreviousTotal(comparison.previous);
       setReceiptCount(count);
       setRecentReceipts(receipts);
     } catch (error) {
@@ -105,20 +121,17 @@ export default function DashboardScreen() {
     setIsRefreshing(false);
   }, [loadData]);
 
-  const handleReceiptPress = useCallback(
-    (receiptId: number) => {
-      router.push(`/receipt/${receiptId}`);
-    },
-    [router]
+  const settingsButton = (
+    <Pressable
+      onPress={() => router.push('/settings')}
+      className="items-center justify-center active:opacity-60"
+      style={{ width: MIN_TARGET, height: MIN_TARGET, marginRight: -10 }}
+      accessibilityRole="button"
+      accessibilityLabel={t('settings.title')}
+    >
+      <Ionicons name="settings-outline" size={22} color={colors.textSecondary} />
+    </Pressable>
   );
-
-  const handleScanPress = useCallback(() => {
-    router.push('/(tabs)/scan');
-  }, [router]);
-
-  const handleViewAllPress = useCallback(() => {
-    router.push('/(tabs)/history');
-  }, [router]);
 
   if (!isReady || isLoading) {
     return (
@@ -127,33 +140,17 @@ export default function DashboardScreen() {
         contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 32 }}
       >
         <ReadingColumn>
-          <View className="px-6 pt-4">
-            <Text
-              className="text-3xl text-text dark:text-text-dark"
-              style={{ fontFamily: 'Inter_600SemiBold' }}
-            >
-              {t('dashboard.title')}
-            </Text>
-            <Text
-              className="text-base text-text-secondary dark:text-text-dark-secondary mt-2"
-              style={{ fontFamily: 'Inter_400Regular' }}
-            >
-              {t('dashboard.subtitle')}
-            </Text>
-
-            {/* Monthly spending skeleton */}
-            <View className="mt-8 bg-surface dark:bg-surface-dark rounded-2xl p-6">
-              <Skeleton width={100} height={14} borderRadius={4} />
-              <View className="h-3" />
-              <Skeleton width={150} height={40} borderRadius={8} />
-            </View>
-
-            {/* Recent receipts skeleton */}
-            <View className="mt-8">
-              <Skeleton width={140} height={20} borderRadius={4} className="mb-4" />
-              <ReceiptCardSkeleton />
-              <ReceiptCardSkeleton />
-            </View>
+          <ScreenHeader title={title} action={settingsButton} />
+          <View className="px-5 mt-4">
+            <Skeleton width={90} height={14} borderRadius={4} />
+            <View className="h-3" />
+            <Skeleton width={180} height={40} borderRadius={8} />
+          </View>
+          <View className="px-5 mt-8">
+            <Skeleton width={140} height={18} borderRadius={4} className="mb-2" />
+            <ReceiptRowSkeleton />
+            <ReceiptRowSkeleton />
+            <ReceiptRowSkeleton />
           </View>
         </ReadingColumn>
       </ScrollView>
@@ -161,6 +158,7 @@ export default function DashboardScreen() {
   }
 
   const hasReceipts = recentReceipts.length > 0;
+  const secondary = { fontFamily: fonts.regular, fontSize: 15, color: colors.textSecondary };
 
   return (
     <ScrollView
@@ -176,162 +174,73 @@ export default function DashboardScreen() {
         />
       }
     >
-      <ReadingColumn>
-        <View className="px-6 pt-4">
-          <View className="flex-row items-start justify-between">
-            <View className="flex-1">
-              <Animated.Text
-                entering={entering(FadeIn, 0, 400)}
-                className="text-3xl text-text dark:text-text-dark"
-                style={{ fontFamily: 'Inter_600SemiBold' }}
-              >
-                {t('dashboard.title')}
-              </Animated.Text>
-              <Animated.Text
-                entering={entering(FadeIn, 100, 400)}
-                className="text-base text-text-secondary dark:text-text-dark-secondary mt-2"
-                style={{ fontFamily: 'Inter_400Regular' }}
-              >
-                {t('dashboard.subtitle')}
-              </Animated.Text>
-            </View>
-            <Animated.View entering={entering(FadeIn, 200, 400)}>
-              <Pressable
-                onPress={() => router.push('/settings')}
-                className="rounded-full bg-surface dark:bg-surface-dark items-center justify-center"
-                style={{ marginTop: 4, width: MIN_TARGET, height: MIN_TARGET }}
-                accessibilityRole="button"
-                accessibilityLabel={t('settings.title')}
-              >
-                <Ionicons name="settings-outline" size={24} color={colors.action} />
-              </Pressable>
-            </Animated.View>
-          </View>
+      <Animated.View entering={entering(FadeIn, 0, 300)}>
+        <ReadingColumn>
+          <ScreenHeader title={title} action={settingsButton} />
 
-          {/* Monthly Spending Card */}
-          <Animated.View entering={entering(FadeInUp, 200, 400)}>
-            <Card variant="elevated" padding="lg" className="mt-8">
-              <View className="flex-row items-center justify-between mb-2">
-                <Text
-                  className="text-sm text-text-secondary dark:text-text-dark-secondary"
-                  style={{ fontFamily: 'Inter_500Medium' }}
-                >
-                  {t('dashboard.thisMonth')}
-                </Text>
-                <Badge
-                  variant={receiptCount > 0 ? 'success' : 'default'}
-                  size="sm"
-                  label={`${receiptCount} ${receiptCount === 1 ? t('analytics.receipt') : t('analytics.receipts')}`}
-                />
-              </View>
-              <Amount size="hero">{formatPrice(monthlyTotal)}</Amount>
-            </Card>
-          </Animated.View>
-
-          {/* Quick Scan CTA */}
-          {!hasReceipts && (
-            <Animated.View entering={entering(FadeInUp, 300, 400)}>
-              <Pressable
-                onPress={handleScanPress}
-                className="mt-4 bg-primary-deep rounded-2xl p-6 flex-row items-center active:opacity-90"
-                accessibilityRole="button"
-                accessibilityLabel={t('dashboard.scanFirst')}
-                accessibilityHint={t('dashboard.startScanning')}
-              >
-                <View className="bg-white/20 rounded-full p-3 mr-4">
-                  <Ionicons name="scan-outline" size={24} color="#FFFFFF" />
-                </View>
-                <View className="flex-1">
-                  <Text className="text-white text-lg" style={{ fontFamily: 'Inter_600SemiBold' }}>
-                    {t('dashboard.scanFirst')}
-                  </Text>
-                  <Text
-                    className="text-white/80 text-sm mt-0.5"
-                    style={{ fontFamily: 'Inter_400Regular' }}
-                  >
-                    {t('dashboard.startScanning')}
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={24} color="#FFFFFF" />
-              </Pressable>
-            </Animated.View>
-          )}
-        </View>
-      </ReadingColumn>
-
-      {/* Recent Receipts */}
-      <View
-        className="w-full mx-auto px-6 mt-8"
-        style={{ maxWidth: layout.contentWidth }}
-        onLayout={(event) => setListTop(event.nativeEvent.layout.y)}
-      >
-        <Animated.View entering={entering(FadeInUp, 400, 400)}>
-          <View className="flex-row items-center justify-between mb-4">
-            <Text
-              className="text-lg text-text dark:text-text-dark"
-              style={{ fontFamily: 'Inter_600SemiBold' }}
-            >
-              {t('dashboard.recentReceipts')}
+          <View className="px-5 mt-4">
+            <Text style={secondary}>{t('dashboard.thisMonth')}</Text>
+            <Amount size="hero" className="mt-1">
+              {formatPrice(monthTotal)}
+            </Amount>
+            {change ? (
+              <Text style={{ ...secondary, fontSize: 13, marginTop: 6 }}>
+                {t(`comparison.month.${change.direction}`, {
+                  amount: formatPrice(change.delta),
+                  month: previousMonth,
+                })}
+              </Text>
+            ) : null}
+            <Text style={{ ...secondary, fontSize: 13, marginTop: change ? 2 : 6 }}>
+              {t('common.receiptCount', { count: receiptCount })}
             </Text>
-            {hasReceipts && (
-              <Pressable
-                onPress={handleViewAllPress}
-                className="flex-row items-center"
-                accessibilityRole="button"
-                accessibilityLabel={t('common.all')}
-              >
-                <Text className="text-action dark:text-action-dark text-sm mr-1">
-                  {t('common.all')}
-                </Text>
-                <Ionicons name="chevron-forward" size={16} color={colors.action} />
-              </Pressable>
-            )}
           </View>
 
-          {hasReceipts ? (
-            <View className={layout.columns === 2 ? 'flex-row flex-wrap -mx-1.5' : ''}>
-              {visibleReceipts.map((item, index) => (
-                <Animated.View
+          {!hasReceipts && (
+            <View className="px-5 mt-8">
+              <Text style={{ ...secondary, marginBottom: 16 }}>{t('dashboard.startScanning')}</Text>
+              <Button
+                size="lg"
+                onPress={() => router.push('/(tabs)/scan')}
+                leftIcon={<Ionicons name="scan-outline" size={20} color="#FFFFFF" />}
+              >
+                {t('dashboard.scanAction')}
+              </Button>
+            </View>
+          )}
+        </ReadingColumn>
+
+        {hasReceipts && (
+          <View
+            className="w-full mx-auto px-5 mt-8"
+            style={{ maxWidth: layout.contentWidth }}
+            onLayout={(event) => setListTop(event.nativeEvent.layout.y)}
+          >
+            <SectionHeader
+              title={t('dashboard.recentReceipts')}
+              action={{ label: t('common.all'), onPress: () => router.push('/(tabs)/history') }}
+            />
+            <View className={layout.columns === 2 ? 'flex-row flex-wrap -mx-3' : ''}>
+              {visibleReceipts.map((item) => (
+                <View
                   key={item.receipt.id}
-                  entering={entering(FadeInDown, 500 + staggerDelay(index, 100), 400)}
-                  style={layout.columns === 2 ? { width: '50%', paddingHorizontal: 6 } : undefined}
+                  style={layout.columns === 2 ? { width: '50%', paddingHorizontal: 12 } : undefined}
                 >
-                  <ReceiptCard
-                    receipt={item.receipt}
-                    store={item.store}
-                    itemCount={item.itemCount}
-                    onPress={() => handleReceiptPress(item.receipt.id)}
+                  <ReceiptRow
+                    storeName={item.store?.name || t('scan.unknownStore')}
+                    meta={receiptMeta(item.receipt.dateTime, item.itemCount, language, t)}
+                    amount={formatPrice(
+                      item.receipt.totalAmount ? item.receipt.totalAmount / 100 : null
+                    )}
+                    onPress={() => router.push(`/receipt/${item.receipt.id}`)}
+                    accessibilityHint={t('history.openReceipt')}
                   />
-                </Animated.View>
+                </View>
               ))}
             </View>
-          ) : (
-            <Animated.View entering={entering(FadeIn, 500, 400)}>
-              <Card variant="outlined" padding="md">
-                <View className="flex-row items-center">
-                  <View className="bg-primary/20 rounded-full p-3 mr-4">
-                    <Ionicons name="receipt-outline" size={24} color={colors.action} />
-                  </View>
-                  <View className="flex-1">
-                    <Text
-                      className="text-base text-text dark:text-text-dark"
-                      style={{ fontFamily: 'Inter_500Medium' }}
-                    >
-                      {t('dashboard.noReceipts')}
-                    </Text>
-                    <Text
-                      className="text-sm text-text-secondary dark:text-text-dark-secondary mt-0.5"
-                      style={{ fontFamily: 'Inter_400Regular' }}
-                    >
-                      {t('dashboard.startScanning')}
-                    </Text>
-                  </View>
-                </View>
-              </Card>
-            </Animated.View>
-          )}
-        </Animated.View>
-      </View>
+          </View>
+        )}
+      </Animated.View>
     </ScrollView>
   );
 }

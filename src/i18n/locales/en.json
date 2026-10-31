@@ -20,7 +20,9 @@
     "close": "Close",
     "back": "Back",
     "share": "Share",
-    "clear": "Clear"
+    "clear": "Clear",
+    "receiptCount_one": "{{count}} receipt",
+    "receiptCount_other": "{{count}} receipts"
   },
   "tabs": {
     "dashboard": "Dashboard",
@@ -29,15 +31,13 @@
     "analytics": "Analytics"
   },
   "dashboard": {
-    "title": "Dashboard",
-    "subtitle": "Your spending overview",
-    "thisMonth": "This Month",
+    "thisMonth": "This month",
     "onTrack": "On track",
     "overBudget": "Over budget",
-    "recentReceipts": "Recent Receipts",
+    "recentReceipts": "Recent receipts",
     "noReceipts": "No receipts yet",
     "startScanning": "Start scanning receipts to track your spending",
-    "scanFirst": "Scan your first receipt to get started"
+    "scanAction": "Scan receipt"
   },
   "scan": {
     "title": "Scan Receipt",
@@ -353,5 +353,22 @@
     "light": "Light",
     "dark": "Dark",
     "getStarted": "Get Started"
+  },
+  "comparison": {
+    "month": {
+      "more": "{{amount}} more than this time in {{month}}",
+      "less": "{{amount}} less than this time in {{month}}",
+      "same": "Same as this time in {{month}}"
+    },
+    "week": {
+      "more": "{{amount}} more than the previous 7 days",
+      "less": "{{amount}} less than the previous 7 days",
+      "same": "Same as the previous 7 days"
+    },
+    "year": {
+      "more": "{{amount}} more than this time in {{year}}",
+      "less": "{{amount}} less than this time in {{year}}",
+      "same": "Same as this time in {{year}}"
+    }
   }
 }

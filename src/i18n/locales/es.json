@@ -20,7 +20,9 @@
     "close": "Cerrar",
     "back": "Atrás",
     "share": "Compartir",
-    "clear": "Borrar"
+    "clear": "Borrar",
+    "receiptCount_one": "{{count}} ticket",
+    "receiptCount_other": "{{count}} tickets"
   },
   "tabs": {
     "dashboard": "Inicio",
@@ -29,15 +31,13 @@
     "analytics": "Estadísticas"
   },
   "dashboard": {
-    "title": "Inicio",
-    "subtitle": "Resumen de tus gastos",
     "thisMonth": "Este mes",
     "onTrack": "En orden",
     "overBudget": "Excedido",
     "recentReceipts": "Tickets recientes",
     "noReceipts": "Aún no hay tickets",
     "startScanning": "Escanea tickets para controlar tus gastos",
-    "scanFirst": "Escanea tu primer ticket para empezar"
+    "scanAction": "Escanear ticket"
   },
   "scan": {
     "title": "Escanear ticket",
@@ -353,5 +353,22 @@
     "light": "Claro",
     "dark": "Oscuro",
     "getStarted": "Empezar"
+  },
+  "comparison": {
+    "month": {
+      "more": "{{amount}} más que a estas alturas de {{month}}",
+      "less": "{{amount}} menos que a estas alturas de {{month}}",
+      "same": "Igual que a estas alturas de {{month}}"
+    },
+    "week": {
+      "more": "{{amount}} más que los 7 días anteriores",
+      "less": "{{amount}} menos que los 7 días anteriores",
+      "same": "Igual que los 7 días anteriores"
+    },
+    "year": {
+      "more": "{{amount}} más que a estas alturas de {{year}}",
+      "less": "{{amount}} menos que a estas alturas de {{year}}",
+      "same": "Igual que a estas alturas de {{year}}"
+    }
   }
 }
