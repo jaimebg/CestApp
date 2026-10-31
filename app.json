@@ -2,7 +2,7 @@
   "expo": {
     "name": "CestApp",
     "slug": "CestApp",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "default",
     "icon": "./assets/images/cestapp-logo.png",
     "scheme": "cestapp",
@@ -26,7 +26,7 @@
         ],
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "1"
+      "buildNumber": "2"
     },
     "android": {
       "adaptiveIcon": {
@@ -37,7 +37,7 @@
       "predictiveBackGestureEnabled": false,
       "blockedPermissions": ["android.permission.RECORD_AUDIO"],
       "package": "com.jbgsoft.cestapp",
-      "versionCode": 1
+      "versionCode": 2
     },
     "web": {
       "output": "static",
