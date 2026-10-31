@@ -42,6 +42,8 @@ export interface ParsedReceipt {
   chainConfidence?: number;
   parsingMethod?: 'chain' | 'generic';
   countryCode?: CountryCode;
+  /** ISO 4217 code of the currency the receipt was paid in. */
+  currency?: string;
 }
 
 export function createManualParsedReceipt(date: Date = new Date()): ParsedReceipt {

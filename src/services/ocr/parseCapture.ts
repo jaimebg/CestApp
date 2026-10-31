@@ -1,6 +1,7 @@
 import { createScopedLogger } from '../../utils/debug';
 import { parseReceipt, type ParsedReceipt, type ParserOptions } from './parser';
 import { parseWithTemplate, parseWithSpatialCorrelation } from './templateParser';
+import { applyOrigin } from './origin';
 import type { StoreParsingTemplate } from '../../db/schema/storeParsingTemplates';
 import type { OcrBlock } from './index';
 import type { ZoneDefinition } from '../../types/zones';
@@ -97,8 +98,8 @@ export function parseCapture(input: CaptureParseInput): ParsedReceipt | null {
   }
 
   if (detectedTotal !== null) {
-    return { ...result, total: resolveTotal(result, detectedTotal) };
+    result = { ...result, total: resolveTotal(result, detectedTotal) };
   }
 
-  return result;
+  return applyOrigin(result, rawText);
 }
