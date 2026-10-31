@@ -74,3 +74,16 @@ describe('chain and country together', () => {
     expect(findTemplateByTaxId('REF 15033408559', templates)).toBeNull();
   });
 });
+
+describe('a chain from another country', () => {
+  it('does not apply a Spanish template to a receipt with a Portuguese tax ID', () => {
+    const result = detectChainFromText(
+      'MERCADONA\nNIF: 510962750\nIVA 23%\nATCUD:AB12-1\nOBRIGADO'
+    );
+    expect(result).toMatchObject({ chainId: null, countryCode: null });
+  });
+
+  it('still recognises a Spanish receipt by name', () => {
+    expect(detectChainFromText('MERCADONA, S.A.\nGRACIAS POR SU VISITA').chainId).toBe('mercadona');
+  });
+});

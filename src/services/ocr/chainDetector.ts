@@ -218,6 +218,16 @@ function detectByHeuristic(text: string, templates: ChainTemplate[]): ChainDetec
   };
 }
 
+/**
+ * A chain recognised only by name belongs to one country's template. When the
+ * receipt prints another country's tax ID (Lidl in Portugal, while only Lidl
+ * Spain has a template), that template would misread it, so no chain is better.
+ */
+function fitsPrintedTaxId(detection: ChainDetectionResult, text: string): boolean {
+  const country = detectCountry(text);
+  return country.method !== 'tax_id' || country.code === detection.countryCode;
+}
+
 const NO_CHAIN: ChainDetectionResult = {
   chain: null,
   chainId: null,
@@ -241,11 +251,13 @@ export function detectChain(blocks: OcrBlock[], options?: DetectionOptions): Cha
     return NO_CHAIN;
   }
 
-  const result =
-    detectByNif(text, templates, options?.taxIdHint) ??
+  const byTaxId = detectByNif(text, templates, options?.taxIdHint);
+  const byName =
+    byTaxId ??
     detectByName(text, templates) ??
     detectByFingerprint(text, templates) ??
     detectByHeuristic(text, templates);
+  const result = byTaxId ?? (byName && fitsPrintedTaxId(byName, text) ? byName : null);
 
   if (!result) {
     logger.log('No chain detected');

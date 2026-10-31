@@ -54,3 +54,13 @@ test('fiscal data overrides the reading', () => {
 test('no fiscal data leaves the reading as it was', () => {
   expect(applyOrigin({ ...blank, total: 12.0 }, 'TOTAL 12,00', null).total).toBe(12);
 });
+
+test('fiscal data from another country drops a chain read from the wrong country', () => {
+  expect(
+    applyOrigin(
+      { ...blank, chainId: 'lidl', chainName: 'Lidl', countryCode: 'ES' },
+      'LIDL',
+      parseFiscalQr([PT_QR])
+    )
+  ).toMatchObject({ chainId: null, chainName: null, countryCode: 'PT' });
+});

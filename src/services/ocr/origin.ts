@@ -50,12 +50,13 @@ export function applyOrigin(
 }
 
 function applyFiscal(result: ParsedReceipt, fiscal: FiscalReceipt): ParsedReceipt {
+  const chainFits = result.chainId && result.countryCode === fiscal.countryCode;
   const chain =
-    !result.chainId && fiscal.merchantTaxId ? findTemplateByTaxId(fiscal.merchantTaxId) : null;
+    !chainFits && fiscal.merchantTaxId ? findTemplateByTaxId(fiscal.merchantTaxId) : null;
 
   return {
     ...result,
-    ...(chain ? { chainId: chain.chainId, chainName: chain.name } : {}),
+    ...(chainFits ? {} : { chainId: chain?.chainId ?? null, chainName: chain?.name ?? null }),
     countryCode: fiscal.countryCode,
     currency: getCountry(fiscal.countryCode).currency,
     total: fiscal.total,
