@@ -22,7 +22,9 @@ describe('ScanItemRow', () => {
     const onEdit = jest.fn();
     render(<ScanItemRow {...props} onEdit={onEdit} />);
     expect(screen.getByTestId('ticket-leader')).toBeTruthy();
-    fireEvent.press(screen.getByRole('button', { name: 'LECHE ENTERA 1L, 5,88 €' }));
+    fireEvent.press(
+      screen.getByRole('button', { name: 'LECHE ENTERA 1L, 6x @ 0,98 € · Lácteos, 5,88 €' })
+    );
     expect(onEdit).toHaveBeenCalledWith(0);
   });
 

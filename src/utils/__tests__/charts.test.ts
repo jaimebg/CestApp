@@ -1,4 +1,4 @@
-import { fillBuckets, formatAxisAmount, niceScale } from '../charts';
+import { axisLabels, fillBuckets, formatAxisAmount, niceScale } from '../charts';
 import { DEFAULT_CURRENCY, getCurrency } from '@/src/config/currency';
 
 describe('niceScale', () => {
@@ -58,5 +58,20 @@ describe('formatAxisAmount', () => {
 
   it('keeps the decimals of a fractional amount', () => {
     expect(formatAxisAmount(12.5, eur)).toBe('12,50 €');
+  });
+});
+
+describe('axisLabels', () => {
+  const eur = getCurrency(DEFAULT_CURRENCY);
+
+  it('labels fractional steps without truncating them', () => {
+    expect(axisLabels(niceScale(11.4), eur)).toEqual([
+      '0 €',
+      '2,50 €',
+      '5 €',
+      '7,50 €',
+      '10 €',
+      '12,50 €',
+    ]);
   });
 });

@@ -634,6 +634,7 @@ export default function ReceiptDetailScreen() {
                           amount={formatPrice(item.price / 100)}
                           meta={meta || undefined}
                           onPress={() => openItemEditor(item, index)}
+                          accessibilityHint={t('receipt.editItem')}
                           trailing={
                             <Pressable
                               onPress={() => deleteItemFromList(index)}

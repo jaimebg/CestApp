@@ -66,3 +66,13 @@ export function formatAxisAmount(value: number, currency: Currency): string {
   const decimals = Number.isInteger(value) ? 0 : currency.decimals;
   return formatPrice(value, { ...currency, decimals });
 }
+
+/** Tick labels from the bottom of the axis up, fractional steps included. */
+export function axisLabels(
+  scale: { step: number; sections: number },
+  currency: Currency
+): string[] {
+  return Array.from({ length: scale.sections + 1 }, (_, index) =>
+    formatAxisAmount(Math.round(index * scale.step * 100) / 100, currency)
+  );
+}

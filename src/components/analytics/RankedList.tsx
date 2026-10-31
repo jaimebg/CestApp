@@ -51,7 +51,7 @@ export function RankedList({ rows }: { rows: RankedRow[] }) {
                 height: 4,
                 borderRadius: 2,
                 width: `${Math.max(2, Math.round((row.share / leader) * 100))}%`,
-                backgroundColor: index === 0 ? colors.action : colors.border,
+                backgroundColor: index === 0 ? colors.action : colors.chartRest,
               }}
             />
           </View>

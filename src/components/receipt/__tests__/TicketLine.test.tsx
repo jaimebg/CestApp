@@ -23,11 +23,26 @@ describe('TicketLine', () => {
 
   it('reads concept and amount together to a screen reader', () => {
     render(<TicketLine label="PAN BARRA" amount="0,65 €" meta="Panadería" />);
-    expect(screen.getByLabelText('PAN BARRA, 0,65 €')).toBeTruthy();
+    expect(screen.getByLabelText('PAN BARRA, Panadería, 0,65 €')).toBeTruthy();
   });
 
   it('sets an amount that does not add up in error ink', () => {
     render(<TicketLine label="Total" amount="31,00 €" variant="total" danger />);
     expect(screen.getByText('31,00 €')).toHaveStyle({ color: lightColors.error });
+  });
+
+  it('reads quantity and category to a screen reader, not only concept and amount', () => {
+    render(<TicketLine label="PLATANO" amount="2,40 €" meta="2x @ 1,20 € / kg · Fruta" />);
+    expect(screen.getByLabelText('PLATANO, 2x @ 1,20 € / kg · Fruta, 2,40 €')).toBeTruthy();
+  });
+
+  it('passes a hint to the pressable row', () => {
+    render(
+      <TicketLine label="PAN" amount="0,65 €" onPress={jest.fn()} accessibilityHint="Edit item" />
+    );
+    expect(screen.getByRole('button', { name: 'PAN, 0,65 €' })).toHaveProp(
+      'accessibilityHint',
+      'Edit item'
+    );
   });
 });

@@ -55,6 +55,11 @@ describe('palette contrast', () => {
       expect(contrast(WHITE, c.primaryDeep)).toBeGreaterThanOrEqual(AA_TEXT);
     });
 
+    it('resting chart bars clear the non-text floor on the page', () => {
+      expect(contrast(c.chartRest, c.background)).toBeGreaterThanOrEqual(AA_NON_TEXT);
+      expect(contrast(c.chartRest, c.surface)).toBeGreaterThanOrEqual(AA_NON_TEXT);
+    });
+
     it('action is legible enough to tint an icon', () => {
       expect(contrast(c.action, c.background)).toBeGreaterThanOrEqual(AA_NON_TEXT);
     });

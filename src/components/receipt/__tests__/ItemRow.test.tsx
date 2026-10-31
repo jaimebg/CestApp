@@ -20,7 +20,7 @@ const dairy = { id: 2, name: 'Dairy', icon: '🥛', color: '#5BA4D9' } as unknow
 describe('ItemRow', () => {
   it('prints the item as a ticket line with its amount', () => {
     render(<ItemRow item={item} category={dairy} />);
-    expect(screen.getByLabelText(/HUEVOS CAMPEROS, 2,89/)).toBeTruthy();
+    expect(screen.getByLabelText(/^HUEVOS CAMPEROS, 12x · .+, 2,89/)).toBeTruthy();
     expect(screen.getByTestId('ticket-leader')).toBeTruthy();
   });
 

@@ -83,6 +83,12 @@ const colors = {
   },
 
   border: { DEFAULT: '#E8E4D9', dark: '#4A4640' },
+
+  /** Resting chart bars: a neutral step that still clears 3:1, darker than the rules. */
+  chart: {
+    rest: '#8F887E', //            3.19:1 paper · 3.51:1 white
+    'rest-dark': '#857F77', //     4.43:1 charcoal · 3.60:1 raised
+  },
 };
 
 module.exports = { colors };

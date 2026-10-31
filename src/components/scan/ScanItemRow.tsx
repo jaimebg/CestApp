@@ -52,6 +52,7 @@ function ScanItemRowComponent({
       amount={totalPriceLabel}
       meta={meta || undefined}
       onPress={() => onEdit(index)}
+      accessibilityHint={t('scan.editItem')}
       trailing={
         <Pressable
           onPress={() => onRemove(index)}

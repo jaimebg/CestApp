@@ -2,7 +2,7 @@
  * Single-screen onboarding with language and appearance selection
  */
 
-import { View, Text, Image } from 'react-native';
+import { View, Text, Image, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
@@ -52,77 +52,89 @@ export default function OnboardingScreen() {
 
   return (
     <View className="flex-1" style={{ backgroundColor: colors.background, paddingTop: insets.top }}>
-      <ReadingColumn className="flex-1 px-6 justify-center">
-        <View className="items-center mb-6">
-          <Image
-            source={require('@/assets/images/cestapp-logo.png')}
-            className="w-20 h-20 mb-4 overflow-hidden"
-            style={{ borderRadius: 18 }}
-            resizeMode="cover"
+      <ScrollView
+        testID="onboarding-scroll"
+        className="flex-1"
+        contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingVertical: 16 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <ReadingColumn className="px-6">
+          <View className="items-center mb-6">
+            <Image
+              source={require('@/assets/images/cestapp-logo.png')}
+              className="w-20 h-20 mb-4 overflow-hidden"
+              style={{ borderRadius: 18 }}
+              resizeMode="cover"
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+            />
+            <Text
+              className="text-center"
+              style={{
+                color: colors.text,
+                fontFamily: fonts.semibold,
+                fontSize: 28,
+                lineHeight: 34,
+              }}
+            >
+              {t('onboarding.welcome')}
+            </Text>
+            <Text
+              className="text-base text-center mt-2 px-4"
+              style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
+            >
+              {t('onboarding.features.subtitle')}
+            </Text>
+          </View>
+
+          <View
+            className="mb-8 self-center w-full"
+            style={{ maxWidth: 280 }}
             accessibilityElementsHidden
             importantForAccessibility="no-hide-descendants"
-          />
-          <Text
-            className="text-center"
-            style={{ color: colors.text, fontFamily: fonts.semibold, fontSize: 28, lineHeight: 34 }}
           >
-            {t('onboarding.welcome')}
-          </Text>
-          <Text
-            className="text-base text-center mt-2 px-4"
-            style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-          >
-            {t('onboarding.features.subtitle')}
-          </Text>
-        </View>
-
-        <View
-          className="mb-8 self-center w-full"
-          style={{ maxWidth: 280 }}
-          accessibilityElementsHidden
-          importantForAccessibility="no-hide-descendants"
-        >
-          <Ticket header={{ title: t('onboarding.sampleStore'), lines: [] }}>
-            {SAMPLE_LINES.map((line) => (
+            <Ticket header={{ title: t('onboarding.sampleStore'), lines: [] }}>
+              {SAMPLE_LINES.map((line) => (
+                <TicketLine
+                  key={line.key}
+                  label={t(`onboarding.sample.${line.key}`)}
+                  amount={formatPrice(line.amount)}
+                />
+              ))}
+              <TicketRule />
               <TicketLine
-                key={line.key}
-                label={t(`onboarding.sample.${line.key}`)}
-                amount={formatPrice(line.amount)}
+                variant="total"
+                label={t('receipt.total')}
+                amount={formatPrice(sampleTotal)}
               />
-            ))}
-            <TicketRule />
-            <TicketLine
-              variant="total"
-              label={t('receipt.total')}
-              amount={formatPrice(sampleTotal)}
+            </Ticket>
+          </View>
+
+          <View className="mb-5">
+            <Text className="mb-2 ml-1" style={label}>
+              {t('onboarding.language')}
+            </Text>
+            <SegmentedControl
+              options={languageOptions}
+              value={language as SupportedLanguage}
+              onChange={setLanguage}
+              accessibilityLabel={t('onboarding.language')}
             />
-          </Ticket>
-        </View>
+          </View>
 
-        <View className="mb-5">
-          <Text className="mb-2 ml-1" style={label}>
-            {t('onboarding.language')}
-          </Text>
-          <SegmentedControl
-            options={languageOptions}
-            value={language as SupportedLanguage}
-            onChange={setLanguage}
-            accessibilityLabel={t('onboarding.language')}
-          />
-        </View>
-
-        <View className="mb-6">
-          <Text className="mb-2 ml-1" style={label}>
-            {t('onboarding.appearance')}
-          </Text>
-          <SegmentedControl
-            options={appearanceOptions}
-            value={colorScheme}
-            onChange={setColorScheme}
-            accessibilityLabel={t('onboarding.appearance')}
-          />
-        </View>
-      </ReadingColumn>
+          <View className="mb-6">
+            <Text className="mb-2 ml-1" style={label}>
+              {t('onboarding.appearance')}
+            </Text>
+            <SegmentedControl
+              options={appearanceOptions}
+              value={colorScheme}
+              onChange={setColorScheme}
+              accessibilityLabel={t('onboarding.appearance')}
+            />
+          </View>
+        </ReadingColumn>
+      </ScrollView>
 
       <ReadingColumn className="px-6 pt-4" style={{ paddingBottom: insets.bottom + 16 }}>
         <Button size="lg" onPress={handleGetStarted}>

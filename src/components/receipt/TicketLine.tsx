@@ -17,6 +17,7 @@ interface TicketLineProps {
   /** The amount is wrong in a way the user must fix, e.g. a total that does not add up. */
   danger?: boolean;
   onPress?: () => void;
+  accessibilityHint?: string;
   /** A control after the amount, such as the quiet delete in review. */
   trailing?: ReactNode;
 }
@@ -74,6 +75,7 @@ export function TicketLine({
   variant = 'item',
   danger = false,
   onPress,
+  accessibilityHint,
   trailing,
 }: TicketLineProps) {
   const colors = useAppColors();
@@ -130,7 +132,7 @@ export function TicketLine({
     minHeight: onPress ? MIN_TARGET : undefined,
     paddingVertical: variant === 'item' ? 8 : 4,
   };
-  const accessibilityLabel = `${label}, ${amount}`;
+  const accessibilityLabel = [label, meta, amount].filter(Boolean).join(', ');
 
   if (!onPress) {
     return (
@@ -147,6 +149,7 @@ export function TicketLine({
         onPress={onPress}
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
+        accessibilityHint={accessibilityHint}
         className="active:opacity-60"
         style={{ flex: 1 }}
       >

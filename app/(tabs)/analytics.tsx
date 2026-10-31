@@ -7,7 +7,7 @@ import { BarChart } from 'react-native-gifted-charts';
 import { useDatabaseReady } from '@/src/db/provider';
 import { getAnalyticsSummary, getPeriodComparison } from '@/src/db/queries/analytics';
 import { useFormatPrice, usePreferencesStore } from '@/src/store/preferences';
-import { useAppColors, useIsDarkMode } from '@/src/hooks/useAppColors';
+import { useAppColors } from '@/src/hooks/useAppColors';
 import { useLayout } from '@/src/hooks/useLayout';
 import { EmptyState } from '@/src/components/ui/EmptyState';
 import { Amount } from '@/src/components/ui/Amount';
@@ -21,7 +21,7 @@ import { DEFAULT_CURRENCY, getCurrency } from '@/src/config/currency';
 import { createScopedLogger } from '@/src/utils/debug';
 import { formatMonthName } from '@/src/utils/dateTime';
 import { categoryLabel } from '@/src/utils/categoryLabel';
-import { fillBuckets, formatAxisAmount, niceScale, type Bucket } from '@/src/utils/charts';
+import { axisLabels, fillBuckets, niceScale, type Bucket } from '@/src/utils/charts';
 import { describeChange, type ComparablePeriod } from '@/src/utils/periods';
 
 const logger = createScopedLogger('Analytics');
@@ -59,7 +59,6 @@ export default function AnalyticsScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const colors = useAppColors();
-  const isDark = useIsDarkMode();
   const { isReady } = useDatabaseReady();
   const { formatPrice } = useFormatPrice();
   const language = usePreferencesStore((state) => state.language);
@@ -128,13 +127,12 @@ export default function AnalyticsScreen() {
   const hasData = !!data && data.receiptCount > 0;
   const buckets = data ? fillBuckets(period, data.spendingByDay) : [];
   const scale = niceScale(Math.max(0, ...buckets.map((bucket) => bucket.amount)));
-  const restingBar = isDark ? colors.textTertiary : colors.border;
   const barSlot = chartWidth / Math.max(buckets.length, 1);
   const barWidth = Math.max(3, Math.min(24, Math.floor(barSlot * 0.6)));
   const barData = buckets.map((bucket) => ({
     value: bucket.amount,
     label: bucketLabel(bucket, period, language, new Date().getDate()),
-    frontColor: bucket.isCurrent ? colors.action : restingBar,
+    frontColor: bucket.isCurrent ? colors.action : colors.chartRest,
   }));
 
   const now = new Date();
@@ -256,7 +254,7 @@ export default function AnalyticsScreen() {
                     marginLeft: (barWidth - X_LABEL_WIDTH) / 2,
                     textAlign: 'center',
                   }}
-                  formatYLabel={(label) => formatAxisAmount(Number(label), CURRENCY)}
+                  yAxisLabelTexts={axisLabels(scale, CURRENCY)}
                   isAnimated={false}
                   disablePress
                 />

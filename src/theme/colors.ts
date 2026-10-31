@@ -16,6 +16,7 @@ export const lightColors = {
   textSecondary: palette.text.secondary,
   textTertiary: palette.text.tertiary,
   border: palette.border.DEFAULT,
+  chartRest: palette.chart.rest,
   primary: palette.primary.DEFAULT,
   primaryDark: palette.primary.dark,
   primaryDeep: palette.primary.deep,
@@ -33,6 +34,7 @@ export const darkColors: AppColors = {
   textSecondary: palette.text['dark-secondary'],
   textTertiary: palette.text['dark-tertiary'],
   border: palette.border.dark,
+  chartRest: palette.chart['rest-dark'],
   primary: palette.primary.DEFAULT,
   primaryDark: palette.primary.dark,
   primaryDeep: palette.primary.deep,
@@ -51,6 +53,8 @@ export type AppColors = {
   /** Placeholders and hints. Clears 4.5:1 on its own ground. */
   textTertiary: string;
   border: string;
+  /** Resting chart bars; clears 3:1 on the page and sits darker than `border` rules. */
+  chartRest: string;
   /** Fill only. Fails contrast as ink on a light ground — use `action`. */
   primary: string;
   primaryDark: string;

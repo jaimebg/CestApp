@@ -14,7 +14,7 @@ describe('RankedList', () => {
       backgroundColor: lightColors.action,
     });
     expect(screen.getByTestId('ranked-bar-pantry')).toHaveStyle({
-      backgroundColor: lightColors.border,
+      backgroundColor: lightColors.chartRest,
     });
   });
 
