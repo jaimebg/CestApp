@@ -3,6 +3,8 @@ import { createScopedLogger } from '../../utils/debug';
 import { recognizeText, type OcrBlock } from './index';
 import { detectImageZones } from './imageOcr';
 import { recordCapture } from '../bench/recordCapture';
+import { decodeQrCodes } from '../fiscal/decodeQr';
+import { parseFiscalQr, type FiscalReceipt } from '../fiscal';
 import { extractTextFromPdf } from '../pdf';
 import { autoDetectZones } from './autoZoneDetector';
 import type { ZoneDefinition } from '../../types/zones';
@@ -42,6 +44,8 @@ export interface CaptureProcessResult {
   dimensions: Dimensions;
   zones: ZoneDefinition[];
   detectedTotal: number | null;
+  /** A fiscal QR code read from the photo; null for PDFs and photos without one. */
+  fiscal: FiscalReceipt | null;
   error?: CaptureProcessError;
 }
 
@@ -55,6 +59,7 @@ function failure(isPdf: boolean, error: CaptureProcessError): CaptureProcessResu
     dimensions: FALLBACK_DIMENSIONS,
     zones: [],
     detectedTotal: null,
+    fiscal: null,
     error,
   };
 }
@@ -93,6 +98,7 @@ async function processPdf(uri: string): Promise<CaptureProcessResult> {
     dimensions: pdf.dimensions,
     zones: detected.zones,
     detectedTotal: detected.detectedTotal,
+    fiscal: null,
   };
 }
 
@@ -113,7 +119,8 @@ async function processImage(
   }
 
   const { dimensions, zones, detectedTotal } = detectImageZones(result, measured);
-  logger.log('Blocks:', result.blocks.length, 'zones:', zones.length);
+  const fiscal = parseFiscalQr(await decodeQrCodes(uri));
+  logger.log('Blocks:', result.blocks.length, 'zones:', zones.length, 'fiscal:', fiscal?.source);
 
   return {
     success: true,
@@ -124,6 +131,7 @@ async function processImage(
     dimensions,
     zones,
     detectedTotal,
+    fiscal,
   };
 }
 

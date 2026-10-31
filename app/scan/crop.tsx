@@ -95,6 +95,7 @@ export default function ReceiptCropScreen() {
         dimensions: processed.dimensions,
         zones: detected.zones,
         detectedTotal: detected.detectedTotal,
+        fiscal: processed.fiscal ?? useScanDraftStore.getState().draft?.fiscal ?? null,
       });
       router.back();
     } catch (error) {

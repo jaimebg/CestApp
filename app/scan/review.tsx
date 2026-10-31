@@ -94,7 +94,7 @@ export default function ScanReviewScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const colors = useAppColors();
-  const { formatPrice, formatAmountInput } = useFormatPrice();
+  const { formatPrice, formatAmountInput, homeCurrency } = useFormatPrice();
   const dateFormat = usePreferencesStore((state) => state.dateFormat);
   const decimalSeparator = usePreferencesStore((state) => state.decimalSeparator);
   const language = usePreferencesStore((state) => state.language);
@@ -106,6 +106,7 @@ export default function ScanReviewScreen() {
   const blocks = draft?.blocks ?? NO_BLOCKS;
   const dimensions = draft?.dimensions ?? FALLBACK_DIMENSIONS;
   const detectedTotal = draft?.detectedTotal ?? null;
+  const fiscal = draft?.fiscal ?? null;
   const hasOcrResult = ocrText.length > 0;
   const isManualEntry = draft !== null && uri === '';
 
@@ -156,8 +157,9 @@ export default function ScanReviewScreen() {
         zones,
         detectedTotal,
         options: parserOptions,
+        fiscal,
       }),
-    [lines, blocks, ocrText, dimensions, detectedTotal, parserOptions]
+    [lines, blocks, ocrText, dimensions, detectedTotal, parserOptions, fiscal]
   );
 
   const [initialParsedData] = useState(() =>
@@ -538,7 +540,7 @@ export default function ScanReviewScreen() {
         rawText: parsedData.rawText || lines.join('\n'),
         processingStatus: 'completed',
         confidence: isManualEntry ? 100 : parsedData.confidence,
-        currency: parsedData.currency ?? 'EUR',
+        currency: parsedData.currency ?? homeCurrency.code,
       };
 
       const categorizedItems = await Promise.all(
