@@ -43,7 +43,15 @@ the output of the OCR engine the app ships (ML Kit), not a desktop stand-in.
    and writes `src/config/countries/<cc>/__tests__/fixtures/<chain>-NN.json`. It refuses a
    `BENCH_DIR` inside the repository.
 
+5. Attach the fixture JSON to the donation issue and label it `fixture-ready`. Don't commit it
+   on its own: a fixture tests itself against its chain's template, so without the template CI
+   fails. It lands in the same pull request as the template.
+
 ## Writing a chain template
+
+Start from a donation issue labelled `fixture-ready`: download its fixture JSON into
+`src/config/countries/<cc>/__tests__/fixtures/` (keep its file name). Your pull request adds the
+template and that fixture together.
 
 A template is one file: `src/config/countries/<cc>/chains/<chain>.ts`, exporting a
 `ChainTemplate` (see `src/config/countries/types.ts` and the Spanish chains in
