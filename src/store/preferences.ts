@@ -4,6 +4,7 @@
  * The parser hints (DMY dates, decimal comma) keep their Spanish defaults.
  */
 
+import { useMemo } from 'react';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -154,9 +155,23 @@ export const usePreferencesStore = create<PreferencesState>()(
   )
 );
 
+/**
+ * Amount formatters for the current UI language. They are rebuilt when the
+ * language or home currency changes, so memoised consumers (React Compiler)
+ * re-format instead of keeping the old language's output.
+ */
 export function useFormatPrice() {
-  const formatPrice = usePreferencesStore((state) => state.formatPrice);
-  const formatAmountInput = usePreferencesStore((state) => state.formatAmountInput);
+  const language = usePreferencesStore((state) => state.language);
   const homeCurrency = usePreferencesStore((state) => state.homeCurrency);
-  return { formatPrice, formatAmountInput, homeCurrency };
+
+  return useMemo(() => {
+    const locale = getNumberLocale(language);
+    return {
+      formatPrice: (amount: number | null, currencyCode?: string | null) =>
+        formatPriceUtil(amount, getCurrency(currencyCode ?? homeCurrency.code), locale),
+      formatAmountInput: (amount: number | null | undefined, decimals?: number) =>
+        formatAmountInputUtil(amount, locale, decimals),
+      homeCurrency,
+    };
+  }, [language, homeCurrency]);
 }
