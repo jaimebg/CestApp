@@ -7,7 +7,8 @@ import { View, Text, ScrollView, Pressable } from 'react-native';
 import { type ZoneDefinition } from '@/src/types/zones';
 import { showSuccessToast, showErrorToast } from '@/src/utils/toast';
 import { createScopedLogger } from '@/src/utils/debug';
-import { useRouter, useFocusEffect, useNavigation } from 'expo-router';
+import { useRouter, useFocusEffect, useNavigation, useLocalSearchParams } from 'expo-router';
+import { SCREENSHOT_MODE } from '@/src/screenshots/mode';
 import { usePreventRemove } from 'expo-router/build/react-navigation/core/usePreventRemove';
 import type { NavigationAction } from 'expo-router/build/react-navigation/routers';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -259,7 +260,8 @@ export default function ScanReviewScreen() {
   const [currentStoreId, setCurrentStoreId] = useState<number | null>(null);
   const [hasExistingTemplate, setHasExistingTemplate] = useState(false);
   const [templateApplied, setTemplateApplied] = useState(false);
-  const [showReading, setShowReading] = useState(false);
+  const { reading: readingParam } = useLocalSearchParams<{ reading?: string }>();
+  const [showReading, setShowReading] = useState(SCREENSHOT_MODE && readingParam === '1');
   const [hasManualEdits, setHasManualEdits] = useState(false);
   const [pendingReread, setPendingReread] = useState<{
     zones: ZoneDefinition[];

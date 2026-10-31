@@ -1,31 +1,38 @@
 import { px } from './theme.js';
 
 /**
- * Capture-source profiles.
+ * Capture-source profiles: the Android emulators capture.mjs creates (from
+ * `hardware` and `systemImage`), boots upright and shoots.
  *
  * `statusStrip` is how many pixels of the raw PNG the system status bar
- * occupies. Compose crops exactly that much away and paints a synthetic bar of
- * the same height in its place, which fixes two defects in the captures without
- * re-shooting them: the clock reads whatever time the run happened at rather
- * than 9:41, and the English iPad captures carry a Spanish system status bar.
+ * occupies (`adb shell dumpsys window`, type=statusBars). Compose crops exactly
+ * that much away and paints a synthetic bar of the same height in its place,
+ * iOS-styled for App Store tiles and Android-styled for Play tiles, so the clock
+ * always reads 9:41 whatever time the run happened at.
  *
- * `raw` is asserted against every capture before composing. Recapturing on a
- * different simulator changes both numbers, so the run fails loudly rather than
- * silently slicing a strip out of the wrong place.
+ * `raw` is asserted on every capture. A different AVD, density or rotation
+ * changes both numbers, so the run fails loudly rather than silently slicing a
+ * strip out of the wrong place.
  */
 export const DEVICES = {
-  iphone: {
-    label: 'iPhone 16 Pro Max',
-    raw: { width: 1320, height: 2868 }, //  440x956pt @3x
-    statusStrip: 186, //                     62pt top safe-area inset @3x
+  phone: {
+    label: 'Android phone (medium_phone, API 36)',
+    avd: 'CestApp_Screenshots_Phone',
+    hardware: 'medium_phone',
+    systemImage: 'system-images;android-36;google_apis_playstore;arm64-v8a',
+    raw: { width: 1080, height: 2400 }, // 411x914dp @2.625
+    statusStrip: 63, //                    24dp @2.625
     kind: 'phone',
     bezelRatio: 0.026,
-    cornerRatio: 0.118, //                   55pt of 440pt
+    cornerRatio: 0.118,
   },
-  ipad: {
-    label: 'iPad mini (A17 Pro), portrait',
-    raw: { width: 1488, height: 2266 }, //  744x1133pt @2x
-    statusStrip: 48, //                      24pt status bar @2x
+  tablet: {
+    label: 'Android tablet (medium_tablet, API 36.1), portrait',
+    avd: 'CestApp_Screenshots_Tablet',
+    hardware: 'medium_tablet',
+    systemImage: 'system-images;android-36.1;google_apis_playstore;arm64-v8a',
+    raw: { width: 1600, height: 2560 }, // 800x1280dp @2
+    statusStrip: 48, //                    24dp @2
     kind: 'tablet',
     bezelRatio: 0.02,
     cornerRatio: 0.055,

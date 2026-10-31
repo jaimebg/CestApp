@@ -37,7 +37,7 @@ const INSETS = {
 export const SLOTS = [
   {
     id: 'ios-phone',
-    device: 'iphone',
+    device: 'phone',
     platform: 'ios',
     width: 1290,
     height: 2796,
@@ -47,7 +47,7 @@ export const SLOTS = [
   },
   {
     id: 'ios-tablet',
-    device: 'ipad',
+    device: 'tablet',
     platform: 'ios',
     width: 2048,
     height: 2732,
@@ -57,7 +57,7 @@ export const SLOTS = [
   },
   {
     id: 'play-phone',
-    device: 'iphone',
+    device: 'phone',
     platform: 'android',
     width: 1080,
     height: 2340,
@@ -67,7 +67,7 @@ export const SLOTS = [
   },
   {
     id: 'play-tablet',
-    device: 'ipad',
+    device: 'tablet',
     platform: 'android',
     width: 2048,
     height: 2732,

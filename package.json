@@ -20,7 +20,8 @@
     "shots:fixture": "node scripts/store-screenshots/gen-fixture.mjs",
     "shots:capture": "node scripts/store-screenshots/capture.mjs",
     "shots:compose": "node scripts/store-screenshots/compose.mjs",
-    "shots:all": "npm run shots:fixture && npm run shots:capture && npm run shots:compose",
+    "shots:panorama": "node scripts/store-screenshots/panorama.mjs",
+    "shots:all": "npm run shots:fixture && npm run shots:capture && npm run shots:compose && npm run shots:panorama",
     "prepare": "husky",
     "postinstall": "patch-package"
   },

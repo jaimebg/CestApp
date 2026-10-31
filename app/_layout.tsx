@@ -92,12 +92,13 @@ export default function RootLayout() {
 
   const appReady = (fontsLoaded || fontError) && storeHydrated;
   const isNavigationReady = !!navigationState?.key;
-  const isOnOnboardingScreen = segments[0] === 'onboarding';
+  const topSegment: string | undefined = segments[0];
+  const skipsOnboardingRedirect = topSegment === 'onboarding' || topSegment === 'screenshots';
 
   useEffect(() => {
     if (!appReady || !isNavigationReady) return;
 
-    if (!hasCompletedOnboarding && !isOnOnboardingScreen) {
+    if (!hasCompletedOnboarding && !skipsOnboardingRedirect) {
       router.replace('/onboarding');
       return;
     }
@@ -106,7 +107,7 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
     });
     return () => handle.cancel();
-  }, [appReady, isNavigationReady, hasCompletedOnboarding, isOnOnboardingScreen, router]);
+  }, [appReady, isNavigationReady, hasCompletedOnboarding, skipsOnboardingRedirect, router]);
 
   /**
    * Tablets rotate, phones do not. iOS handles this in Info.plist; Android has no
