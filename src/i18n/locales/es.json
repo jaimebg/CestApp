@@ -157,7 +157,6 @@
   },
   "history": {
     "title": "Historial",
-    "subtitle": "Todos tus tickets escaneados",
     "noReceipts": "Aún no hay tickets",
     "noReceiptsDesc": "Escanea tu primer ticket para empezar a controlar tus gastos",
     "filterByStore": "Filtrar por tienda",

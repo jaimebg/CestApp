@@ -38,6 +38,7 @@ const GUARDS: Guard[] = [
     pattern: /style=\{\(\{ pressed/,
     roots: ['app', 'src/components'],
   },
+  { name: 'no ReceiptCard', pattern: /ReceiptCard/, roots: ['app', 'src'] },
 ];
 
 const ROOT = path.resolve(__dirname, '../../..');

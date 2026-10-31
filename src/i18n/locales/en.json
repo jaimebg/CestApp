@@ -157,7 +157,6 @@
   },
   "history": {
     "title": "History",
-    "subtitle": "All your scanned receipts",
     "noReceipts": "No receipts yet",
     "noReceiptsDesc": "Scan your first receipt to start tracking your spending",
     "filterByStore": "Filter by store",

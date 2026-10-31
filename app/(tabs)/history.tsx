@@ -10,7 +10,6 @@ import {
   ScrollView,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -24,15 +23,21 @@ import {
 } from '@/src/db/queries/receipts';
 import { getCategories } from '@/src/db/queries/categories';
 import { getPresetDateRange, type HistoryDatePreset } from '@/src/db/queries/dayRange';
-import { buildValidatedDateTime } from '@/src/utils/dateTime';
-import { ReceiptCard } from '@/src/components/receipt/ReceiptCard';
-import { ReceiptListSkeleton } from '@/src/components/receipt/ReceiptCardSkeleton';
+import { buildValidatedDateTime, formatMonthYear } from '@/src/utils/dateTime';
+import { groupByMonth, type HistoryEntry } from '@/src/utils/groupByMonth';
+import { receiptMeta } from '@/src/utils/receiptMeta';
+import { useFormatPrice, usePreferencesStore } from '@/src/store/preferences';
+import { ReceiptRow } from '@/src/components/receipt/ReceiptRow';
+import { ReceiptRowSkeleton } from '@/src/components/receipt/ReceiptRowSkeleton';
+import { Button } from '@/src/components/ui/Button';
+import { Chip } from '@/src/components/ui/Chip';
+import { ScreenHeader } from '@/src/components/ui/ScreenHeader';
 import { EmptyState } from '@/src/components/ui/EmptyState';
 import { ModalHeader } from '@/src/components/ui/ModalHeader';
 import { ReadingColumn } from '@/src/components/ui/ReadingColumn';
 import { useAppColors } from '@/src/hooks/useAppColors';
-import { useEntering, staggerDelay } from '@/src/hooks/useEntering';
-import { ICON_HIT_SLOP, MIN_TARGET } from '@/src/theme/a11y';
+import { ICON_HIT_SLOP } from '@/src/theme/a11y';
+import { fonts } from '@/src/theme/type';
 import { READING_MAX } from '@/src/theme/layout';
 import { createScopedLogger } from '@/src/utils/debug';
 import { mergePages } from '@/src/utils/pagination';
@@ -87,7 +92,8 @@ export default function HistoryScreen() {
   const router = useRouter();
   const { isReady } = useDatabaseReady();
   const colors = useAppColors();
-  const entering = useEntering();
+  const language = usePreferencesStore((state) => state.language);
+  const { formatPrice } = useFormatPrice();
 
   const [receipts, setReceipts] = useState<ReceiptWithStore[]>([]);
   const [stores, setStores] = useState<{ id: number; name: string }[]>([]);
@@ -332,22 +338,53 @@ export default function HistoryScreen() {
     return null;
   };
 
-  // Defined with useCallback so FlashList keeps a stable component identity,
-  // and the stagger is capped: index-based delays on a recycled list mean a
-  // row 40 deep waits two seconds, and re-waits every time it scrolls back.
-  const renderReceiptItem = useCallback(
-    ({ item, index }: { item: ReceiptWithStore; index: number }) => (
-      <Animated.View entering={entering(FadeInDown, staggerDelay(index), 300)}>
-        <ReceiptCard
-          receipt={item.receipt}
-          store={item.store}
-          itemCount={item.itemCount}
-          onPress={() => handleReceiptPress(item.receipt.id)}
-        />
-      </Animated.View>
-    ),
-    [entering, handleReceiptPress]
+  const entries = useMemo(
+    () =>
+      groupByMonth(
+        receipts,
+        (row) => (row.receipt.dateTime ? new Date(row.receipt.dateTime) : null),
+        (row) => String(row.receipt.id)
+      ),
+    [receipts]
   );
+
+  // useCallback keeps a stable component identity for FlashList's recycling.
+  const renderEntry = useCallback(
+    ({ item }: { item: HistoryEntry<ReceiptWithStore> }) => {
+      if (item.type === 'header') {
+        return (
+          <Text
+            accessibilityRole="header"
+            style={{
+              fontFamily: fonts.semibold,
+              fontSize: 15,
+              color: colors.textSecondary,
+              paddingTop: 24,
+              paddingBottom: 4,
+            }}
+          >
+            {item.date ? formatMonthYear(item.date, language) : t('scan.noDateFound')}
+          </Text>
+        );
+      }
+      const { receipt, store, itemCount } = item.item;
+      return (
+        <ReceiptRow
+          storeName={store?.name || t('scan.unknownStore')}
+          meta={receiptMeta(receipt.dateTime, itemCount, language, t)}
+          amount={formatPrice(receipt.totalAmount ? receipt.totalAmount / 100 : null)}
+          onPress={() => handleReceiptPress(receipt.id)}
+          accessibilityHint={t('history.openReceipt')}
+        />
+      );
+    },
+    [colors.textSecondary, formatPrice, handleReceiptPress, language, t]
+  );
+
+  const activeFilterCount =
+    (selectedStoreId ? 1 : 0) +
+    (selectedDatePreset !== 'all' ? 1 : 0) +
+    (selectedCategoryId ? 1 : 0);
 
   if (!isReady || isLoading) {
     return (
@@ -355,26 +392,14 @@ export default function HistoryScreen() {
         className="flex-1 bg-background dark:bg-background-dark"
         style={{ paddingTop: insets.top }}
       >
-        {/* Header */}
         <ReadingColumn>
-          <View className="px-6 pt-4 pb-2">
-            <Text
-              className="text-3xl text-text dark:text-text-dark"
-              style={{ fontFamily: 'Inter_600SemiBold' }}
-            >
-              {t('history.title')}
-            </Text>
-            <Text
-              className="text-base text-text-secondary dark:text-text-dark-secondary mt-1"
-              style={{ fontFamily: 'Inter_400Regular' }}
-            >
-              {t('history.subtitle')}
-            </Text>
-          </View>
+          <ScreenHeader title={t('history.title')} />
         </ReadingColumn>
-        <View className="py-6">
-          <ReceiptListSkeleton count={5} />
-        </View>
+        <ReadingColumn className="px-5 py-6">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <ReceiptRowSkeleton key={index} />
+          ))}
+        </ReadingColumn>
       </View>
     );
   }
@@ -384,28 +409,17 @@ export default function HistoryScreen() {
       className="flex-1 bg-background dark:bg-background-dark"
       style={{ paddingTop: insets.top }}
     >
-      {/* Header */}
       <ReadingColumn>
-        <View className="px-6 pt-4 pb-2">
-          <Text
-            className="text-3xl text-text dark:text-text-dark"
-            style={{ fontFamily: 'Inter_600SemiBold' }}
-          >
-            {t('history.title')}
-          </Text>
-          <Text
-            className="text-base text-text-secondary dark:text-text-dark-secondary mt-1"
-            style={{ fontFamily: 'Inter_400Regular' }}
-          >
-            {t('history.subtitle')}
-          </Text>
-        </View>
+        <ScreenHeader title={t('history.title')} />
       </ReadingColumn>
 
       {/* Search bar */}
       <ReadingColumn>
-        <View className="px-6 py-3">
-          <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl px-4 py-3 border border-border dark:border-border-dark">
+        <View className="px-5 py-3">
+          <View
+            className="flex-row items-center bg-surface dark:bg-surface-dark px-4 py-3 border border-border dark:border-border-dark"
+            style={{ borderRadius: 10 }}
+          >
             <Ionicons name="search-outline" size={20} color={colors.textTertiary} />
             <TextInput
               className="flex-1 ml-3 text-text dark:text-text-dark text-base"
@@ -426,7 +440,7 @@ export default function HistoryScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={t('history.clearSearch')}
               >
-                <Ionicons name="close-circle" size={20} color={colors.textTertiary} />
+                <Ionicons name="close-circle-outline" size={20} color={colors.textTertiary} />
               </Pressable>
             )}
             {isSearching && (
@@ -436,127 +450,36 @@ export default function HistoryScreen() {
         </View>
       </ReadingColumn>
 
-      {/* Filter chips */}
-      <ReadingColumn className="px-6 pb-2">
+      <ReadingColumn className="px-5 pb-2">
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View className="flex-row gap-2">
-            {/* Filter button */}
-            <Pressable
-              onPress={() => setShowFilters(true)}
-              accessibilityRole="button"
-              accessibilityLabel={t('history.filters')}
-              accessibilityState={{ selected: hasActiveFilters }}
-              style={{ minHeight: MIN_TARGET }}
-              className={`flex-row items-center px-3 py-2 rounded-full border ${
+            <Chip
+              icon="options-outline"
+              label={
                 hasActiveFilters
-                  ? 'bg-primary/20 border-primary'
-                  : 'bg-surface dark:bg-surface-dark border-border dark:border-border-dark'
-              }`}
-            >
-              <Ionicons
-                name="options-outline"
-                size={16}
-                color={hasActiveFilters ? colors.action : colors.textTertiary}
-              />
-              <Text
-                className={`ml-2 text-sm ${
-                  hasActiveFilters
-                    ? 'text-action dark:text-action-dark'
-                    : 'text-text-secondary dark:text-text-dark-secondary'
-                }`}
-                style={{ fontFamily: 'Inter_400Regular' }}
-              >
-                {t('history.filters')}
-              </Text>
-              {hasActiveFilters && (
-                <View className="ml-1 w-5 h-5 rounded-full bg-primary-deep items-center justify-center">
-                  <Text className="text-white text-xs" style={{ fontFamily: 'Inter_600SemiBold' }}>
-                    {(selectedStoreId ? 1 : 0) +
-                      (selectedDatePreset !== 'all' ? 1 : 0) +
-                      (selectedCategoryId ? 1 : 0)}
-                  </Text>
-                </View>
-              )}
-            </Pressable>
-
-            {/* Date filter chip */}
-            <Pressable
+                  ? `${t('history.filters')} · ${activeFilterCount}`
+                  : t('history.filters')
+              }
+              accessibilityLabel={t('history.filters')}
+              selected={hasActiveFilters}
               onPress={() => setShowFilters(true)}
-              accessibilityRole="button"
+            />
+            <Chip
+              icon="calendar-outline"
+              label={datePresetLabel}
               accessibilityLabel={`${t('history.dateRange')}: ${datePresetLabel}`}
-              accessibilityState={{ selected: selectedDatePreset !== 'all' }}
-              style={{ minHeight: MIN_TARGET }}
-              className={`flex-row items-center px-3 py-2 rounded-full border ${
-                selectedDatePreset !== 'all'
-                  ? 'bg-primary/20 border-primary'
-                  : 'bg-surface dark:bg-surface-dark border-border dark:border-border-dark'
-              }`}
-            >
-              <Ionicons
-                name="calendar-outline"
-                size={16}
-                color={selectedDatePreset !== 'all' ? colors.action : colors.textTertiary}
-              />
-              <Text
-                className={`ml-2 text-sm ${
-                  selectedDatePreset !== 'all'
-                    ? 'text-action dark:text-action-dark'
-                    : 'text-text-secondary dark:text-text-dark-secondary'
-                }`}
-                style={{ fontFamily: 'Inter_400Regular' }}
-              >
-                {datePresetLabel}
-              </Text>
-            </Pressable>
-
-            {/* Store filter chip */}
-            <Pressable
+              selected={selectedDatePreset !== 'all'}
               onPress={() => setShowFilters(true)}
-              accessibilityRole="button"
+            />
+            <Chip
+              icon="storefront-outline"
+              label={selectedStoreName}
               accessibilityLabel={`${t('history.store')}: ${selectedStoreName}`}
-              accessibilityState={{ selected: selectedStoreId !== null }}
-              style={{ minHeight: MIN_TARGET }}
-              className={`flex-row items-center px-3 py-2 rounded-full border ${
-                selectedStoreId
-                  ? 'bg-primary/20 border-primary'
-                  : 'bg-surface dark:bg-surface-dark border-border dark:border-border-dark'
-              }`}
-            >
-              <Ionicons
-                name="storefront-outline"
-                size={16}
-                color={selectedStoreId ? colors.action : colors.textTertiary}
-              />
-              <Text
-                className={`ml-2 text-sm ${
-                  selectedStoreId
-                    ? 'text-action dark:text-action-dark'
-                    : 'text-text-secondary dark:text-text-dark-secondary'
-                }`}
-                numberOfLines={1}
-                style={{ fontFamily: 'Inter_400Regular' }}
-              >
-                {selectedStoreName}
-              </Text>
-            </Pressable>
-
-            {/* Clear filters */}
+              selected={selectedStoreId !== null}
+              onPress={() => setShowFilters(true)}
+            />
             {hasActiveFilters && (
-              <Pressable
-                onPress={handleClearFilters}
-                accessibilityRole="button"
-                accessibilityLabel={t('history.clearFilters')}
-                style={{ minHeight: MIN_TARGET }}
-                className="flex-row items-center px-3 py-2 rounded-full bg-error/10 border border-error/30"
-              >
-                <Ionicons name="close" size={16} color={colors.error} />
-                <Text
-                  className="ml-1 text-sm text-error dark:text-error-light"
-                  style={{ fontFamily: 'Inter_400Regular' }}
-                >
-                  {t('history.clearFilters')}
-                </Text>
-              </Pressable>
+              <Chip icon="close" label={t('history.clearFilters')} onPress={handleClearFilters} />
             )}
           </View>
         </ScrollView>
@@ -564,11 +487,12 @@ export default function HistoryScreen() {
 
       {/* Receipt list */}
       <FlashList
-        data={receipts}
-        keyExtractor={(item) => item.receipt.id.toString()}
-        renderItem={renderReceiptItem}
+        data={entries}
+        keyExtractor={(entry) => entry.key}
+        getItemType={(entry) => entry.type}
+        renderItem={renderEntry}
         contentContainerStyle={{
-          paddingHorizontal: 16,
+          paddingHorizontal: 20,
           paddingBottom: insets.bottom + 20,
           width: '100%',
           maxWidth: READING_MAX,
@@ -606,7 +530,7 @@ export default function HistoryScreen() {
             insetTop={insets.top}
           />
 
-          <ScrollView className="flex-1 px-6 py-4">
+          <ScrollView className="flex-1 px-5 py-4">
             {/* Date Range Section */}
             <Text
               className="text-base text-text dark:text-text-dark mb-3"
@@ -625,33 +549,12 @@ export default function HistoryScreen() {
                   'custom',
                 ] as HistoryDatePreset[]
               ).map((preset) => (
-                <Pressable
+                <Chip
                   key={preset}
+                  label={preset === 'all' ? t('history.allDates') : t(`history.${preset}`)}
+                  selected={selectedDatePreset === preset}
                   onPress={() => setSelectedDatePreset(preset)}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: selectedDatePreset === preset }}
-                  style={{ minHeight: MIN_TARGET, justifyContent: 'center' }}
-                  className={`px-4 py-2 rounded-full border ${
-                    selectedDatePreset === preset
-                      ? 'bg-primary-deep border-primary-deep'
-                      : 'bg-surface dark:bg-surface-dark border-border dark:border-border-dark'
-                  }`}
-                >
-                  <Text
-                    className={
-                      selectedDatePreset === preset
-                        ? 'text-white'
-                        : 'text-text-secondary dark:text-text-dark-secondary'
-                    }
-                    style={
-                      selectedDatePreset === preset
-                        ? { fontFamily: 'Inter_500Medium' }
-                        : { fontFamily: 'Inter_400Regular' }
-                    }
-                  >
-                    {preset === 'all' ? t('history.allDates') : t(`history.${preset}`)}
-                  </Text>
-                </Pressable>
+                />
               ))}
             </View>
 
@@ -734,58 +637,18 @@ export default function HistoryScreen() {
               {t('history.store')}
             </Text>
             <View className="flex-row flex-wrap gap-2 mb-6">
-              <Pressable
+              <Chip
+                label={t('history.allStores')}
+                selected={selectedStoreId === null}
                 onPress={() => setSelectedStoreId(null)}
-                accessibilityRole="button"
-                accessibilityState={{ selected: selectedStoreId === null }}
-                style={{ minHeight: MIN_TARGET, justifyContent: 'center' }}
-                className={`px-4 py-2 rounded-full border ${
-                  selectedStoreId === null
-                    ? 'bg-primary-deep border-primary-deep'
-                    : 'bg-surface dark:bg-surface-dark border-border dark:border-border-dark'
-                }`}
-              >
-                <Text
-                  className={
-                    selectedStoreId === null
-                      ? 'text-white'
-                      : 'text-text-secondary dark:text-text-dark-secondary'
-                  }
-                  style={{
-                    fontFamily: selectedStoreId === null ? 'Inter_600SemiBold' : 'Inter_400Regular',
-                  }}
-                >
-                  {t('history.allStores')}
-                </Text>
-              </Pressable>
+              />
               {stores.map((store) => (
-                <Pressable
+                <Chip
                   key={store.id}
+                  label={store.name}
+                  selected={selectedStoreId === store.id}
                   onPress={() => setSelectedStoreId(store.id)}
-                  accessibilityRole="button"
-                  accessibilityLabel={store.name}
-                  accessibilityState={{ selected: selectedStoreId === store.id }}
-                  style={{ minHeight: MIN_TARGET, justifyContent: 'center' }}
-                  className={`px-4 py-2 rounded-full border ${
-                    selectedStoreId === store.id
-                      ? 'bg-primary-deep border-primary-deep'
-                      : 'bg-surface dark:bg-surface-dark border-border dark:border-border-dark'
-                  }`}
-                >
-                  <Text
-                    className={
-                      selectedStoreId === store.id
-                        ? 'text-white'
-                        : 'text-text-secondary dark:text-text-dark-secondary'
-                    }
-                    style={{
-                      fontFamily:
-                        selectedStoreId === store.id ? 'Inter_600SemiBold' : 'Inter_400Regular',
-                    }}
-                  >
-                    {store.name}
-                  </Text>
-                </Pressable>
+                />
               ))}
             </View>
 
@@ -797,80 +660,26 @@ export default function HistoryScreen() {
               {t('history.category')}
             </Text>
             <View className="flex-row flex-wrap gap-2 mb-6">
-              <Pressable
+              <Chip
+                label={t('history.allCategories')}
+                selected={selectedCategoryId === null}
                 onPress={() => setSelectedCategoryId(null)}
-                accessibilityRole="button"
-                accessibilityState={{ selected: selectedCategoryId === null }}
-                style={{ minHeight: MIN_TARGET, justifyContent: 'center' }}
-                className={`px-4 py-2 rounded-full border ${
-                  selectedCategoryId === null
-                    ? 'bg-primary-deep border-primary-deep'
-                    : 'bg-surface dark:bg-surface-dark border-border dark:border-border-dark'
-                }`}
-              >
-                <Text
-                  className={
-                    selectedCategoryId === null
-                      ? 'text-white'
-                      : 'text-text-secondary dark:text-text-dark-secondary'
-                  }
-                  style={
-                    selectedCategoryId === null
-                      ? { fontFamily: 'Inter_500Medium' }
-                      : { fontFamily: 'Inter_400Regular' }
-                  }
-                >
-                  {t('history.allCategories')}
-                </Text>
-              </Pressable>
+              />
               {categoriesList.map((cat) => (
-                <Pressable
+                <Chip
                   key={cat.id}
+                  label={categoryLabel(cat.name, t)}
+                  selected={selectedCategoryId === cat.id}
                   onPress={() => setSelectedCategoryId(cat.id)}
-                  accessibilityRole="button"
-                  accessibilityLabel={categoryLabel(cat.name, t)}
-                  accessibilityState={{ selected: selectedCategoryId === cat.id }}
-                  style={{ minHeight: MIN_TARGET, justifyContent: 'center' }}
-                  className={`px-4 py-2 rounded-full border ${
-                    selectedCategoryId === cat.id
-                      ? 'bg-primary-deep border-primary-deep'
-                      : 'bg-surface dark:bg-surface-dark border-border dark:border-border-dark'
-                  }`}
-                >
-                  <Text
-                    className={
-                      selectedCategoryId === cat.id
-                        ? 'text-white'
-                        : 'text-text-secondary dark:text-text-dark-secondary'
-                    }
-                    style={
-                      selectedCategoryId === cat.id
-                        ? { fontFamily: 'Inter_500Medium' }
-                        : { fontFamily: 'Inter_400Regular' }
-                    }
-                  >
-                    {categoryLabel(cat.name, t)}
-                  </Text>
-                </Pressable>
+                />
               ))}
             </View>
 
             {/* Clear filters button */}
             {hasActiveFilters && (
-              <Pressable
-                onPress={handleClearFilters}
-                accessibilityRole="button"
-                accessibilityLabel={t('history.clearFilters')}
-                style={{ minHeight: MIN_TARGET }}
-                className="bg-error/10 border border-error/30 rounded-xl py-3 items-center justify-center mt-4"
-              >
-                <Text
-                  className="text-error dark:text-error-light"
-                  style={{ fontFamily: 'Inter_500Medium' }}
-                >
-                  {t('history.clearFilters')}
-                </Text>
-              </Pressable>
+              <Button variant="secondary" className="mt-4" onPress={handleClearFilters}>
+                {t('history.clearFilters')}
+              </Button>
             )}
           </ScrollView>
         </View>
