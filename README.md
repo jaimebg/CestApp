@@ -34,7 +34,7 @@
 
 ## Status
 
-[1.0.0](https://github.com/jaimebg/CestApp/releases/tag/v1.0.0) is in review at the App Store and Google Play.
+1.1.0 is in review at the App Store and Google Play.
 
 ## Why CestApp?
 
