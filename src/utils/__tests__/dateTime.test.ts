@@ -1,4 +1,9 @@
-import { buildValidatedDateTime, formatLocalizedDate } from '../dateTime';
+import {
+  buildValidatedDateTime,
+  formatLocalizedDate,
+  formatMonthName,
+  formatMonthYear,
+} from '../dateTime';
 
 describe('buildValidatedDateTime', () => {
   it('builds a date from valid day/month/year', () => {
@@ -31,5 +36,17 @@ describe('formatLocalizedDate', () => {
     expect(es).toMatch(/2026/);
     expect(es).toMatch(/lunes|Lunes/);
     expect(es).toMatch(/agosto/);
+  });
+});
+
+describe('month labels', () => {
+  it('titles a month with its year, capitalised in Spanish', () => {
+    expect(formatMonthYear(new Date(2026, 9, 1), 'es')).toBe('Octubre de 2026');
+    expect(formatMonthYear(new Date(2026, 9, 1), 'en')).toBe('October 2026');
+  });
+
+  it('names a month for use mid-sentence', () => {
+    expect(formatMonthName(new Date(2026, 8, 1), 'es')).toBe('septiembre');
+    expect(formatMonthName(new Date(2026, 8, 1), 'en')).toBe('September');
   });
 });

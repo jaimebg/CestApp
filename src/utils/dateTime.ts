@@ -60,6 +60,17 @@ export function formatShortDate(date: Date, language: 'en' | 'es'): string {
   });
 }
 
+/** `Octubre de 2026` / `October 2026` — screen titles and month headers. */
+export function formatMonthYear(date: Date, language: 'en' | 'es'): string {
+  const label = date.toLocaleDateString(localeFor(language), { month: 'long', year: 'numeric' });
+  return label.charAt(0).toLocaleUpperCase(localeFor(language)) + label.slice(1);
+}
+
+/** `septiembre` / `September` — a month named mid-sentence. */
+export function formatMonthName(date: Date, language: 'en' | 'es'): string {
+  return date.toLocaleDateString(localeFor(language), { month: 'long' });
+}
+
 /** `Mon 24` / `lun 24` — chart axis ticks, where the month is already implied. */
 export function formatDayLabel(date: Date, language: 'en' | 'es'): string {
   return date.toLocaleDateString(localeFor(language), { weekday: 'short', day: 'numeric' });

@@ -4,13 +4,9 @@ import { items } from '../schema/items';
 import { categories } from '../schema/categories';
 import { stores } from '../schema/stores';
 import { sql, eq, gte, lte, and, desc } from 'drizzle-orm';
+import { getComparableRange, type ComparablePeriod, type DateRange } from '@/src/utils/periods';
 
 export type TimePeriod = 'week' | 'month' | 'year' | 'all';
-
-interface DateRange {
-  start: Date;
-  end: Date;
-}
 
 export function getDateRange(period: TimePeriod): DateRange {
   const now = new Date();
@@ -39,8 +35,10 @@ export function getDateRange(period: TimePeriod): DateRange {
 }
 
 export async function getTotalSpending(period: TimePeriod): Promise<number> {
-  const { start, end } = getDateRange(period);
+  return getTotalSpendingBetween(getDateRange(period));
+}
 
+export async function getTotalSpendingBetween({ start, end }: DateRange): Promise<number> {
   const result = await db
     .select({
       total: sql<number>`COALESCE(SUM(${receipts.totalAmount}), 0)`.as('total'),
@@ -58,8 +56,8 @@ export async function getSpendingByDay(
 
   const bucketExpr =
     period === 'year'
-      ? sql<string>`strftime('%Y-%m', ${receipts.dateTime}, 'unixepoch')`
-      : sql<string>`DATE(${receipts.dateTime}, 'unixepoch')`;
+      ? sql<string>`strftime('%Y-%m', ${receipts.dateTime}, 'unixepoch', 'localtime')`
+      : sql<string>`DATE(${receipts.dateTime}, 'unixepoch', 'localtime')`;
 
   const result = await db
     .select({
@@ -149,6 +147,18 @@ export async function getSpendingByStore(period: TimePeriod): Promise<
     receiptCount: r.receiptCount || 0,
     percentage: total > 0 ? ((r.amount || 0) / total) * 100 : 0,
   }));
+}
+
+/** Spending so far this period, and over the matching stretch of the previous one. */
+export async function getPeriodComparison(
+  period: ComparablePeriod
+): Promise<{ current: number; previous: number }> {
+  const { current, previous } = getComparableRange(period);
+  const [currentTotal, previousTotal] = await Promise.all([
+    getTotalSpendingBetween(current),
+    getTotalSpendingBetween(previous),
+  ]);
+  return { current: currentTotal, previous: previousTotal };
 }
 
 export async function getReceiptCount(period: TimePeriod): Promise<number> {
