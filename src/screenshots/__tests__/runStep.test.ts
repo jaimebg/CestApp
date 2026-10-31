@@ -24,6 +24,7 @@ function deps(): ScreenshotDeps & { calls: string[] } {
       fiscal: null,
     })),
     setDraft: jest.fn(),
+    markerPresent: jest.fn(async () => true),
   };
 }
 
@@ -65,4 +66,11 @@ test('review without a photo is refused', async () => {
 
 test('an unknown step is refused', async () => {
   await expect(runScreenshotStep('nope' as never, {}, deps())).rejects.toThrow('nope');
+});
+
+test('nothing runs on a device the capture script did not mark', async () => {
+  const d = deps();
+  d.markerPresent = jest.fn(async () => false);
+  await expect(runScreenshotStep('setup', {}, d)).rejects.toThrow('not enabled');
+  expect(d.clearAllData).not.toHaveBeenCalled();
 });

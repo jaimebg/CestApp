@@ -9,7 +9,8 @@ import { ActivityIndicator, View } from 'react-native';
 import { Redirect, router, useLocalSearchParams, type Href } from 'expo-router';
 import { clearAllData, seedDemoData } from '@/src/db/demoData';
 import { useAppColors } from '@/src/hooks/useAppColors';
-import { SCREENSHOT_MODE } from '@/src/screenshots/mode';
+import { getInfoAsync } from 'expo-file-system/legacy';
+import { SCREENSHOT_MARKER, SCREENSHOT_MODE } from '@/src/screenshots/mode';
 import { runScreenshotStep, type ScreenshotStep } from '@/src/screenshots/runStep';
 import { processCapture } from '@/src/services/ocr/processCapture';
 import { usePreferencesStore } from '@/src/store/preferences';
@@ -34,10 +35,14 @@ function ScreenshotStepRunner({ step, uri }: { step: ScreenshotStep; uri?: strin
         completeOnboarding: preferences.completeOnboarding,
         processCapture,
         setDraft: useScanDraftStore.getState().setDraft,
+        markerPresent: async () => (await getInfoAsync(SCREENSHOT_MARKER)).exists,
       }
     )
       .then((route) => router.replace(route as Href))
-      .catch((error) => logger.error('Screenshot step failed:', error));
+      .catch((error) => {
+        logger.error('Screenshot step failed:', error);
+        router.replace('/');
+      });
   }, [step, uri]);
 
   return (

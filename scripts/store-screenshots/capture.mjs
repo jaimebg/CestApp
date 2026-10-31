@@ -21,6 +21,7 @@ const APK = path.join(ROOT, 'android/app/build/outputs/apk/release/app-release.a
 const TICKET = path.join(here, 'fixtures/sample-ticket.png');
 const DEVICE_TICKET = `/sdcard/Android/data/${PACKAGE}/files/sample-ticket.png`;
 const TICKET_URI = encodeURIComponent(`file://${DEVICE_TICKET}`);
+const DEVICE_MARKER = `/sdcard/Android/data/${PACKAGE}/files/screenshots.enabled`;
 const SDK = process.env.ANDROID_HOME || path.join(os.homedir(), 'Library/Android/sdk');
 
 const SCREENS = [
@@ -206,6 +207,7 @@ function prepareDevice(serial) {
   adb(serial, ['shell', 'pm', 'clear', PACKAGE], { stdio: 'ignore' });
   adb(serial, ['shell', 'mkdir', '-p', path.posix.dirname(DEVICE_TICKET)]);
   adb(serial, ['push', TICKET, DEVICE_TICKET], { stdio: 'ignore' });
+  adb(serial, ['shell', 'touch', DEVICE_MARKER]);
 }
 
 function assertDisplay(png, profile) {
@@ -240,6 +242,15 @@ async function captureDevice(key, profile) {
     log(`  ${screen.id}`);
   }
   shutDown(serial);
+}
+
+// finally does not run when the process is interrupted, and a screenshot
+// bundle left in android/ could be picked up by the next store build.
+for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
+  process.on(signal, () => {
+    wipeScreenshotBuild();
+    process.exit(130);
+  });
 }
 
 try {

@@ -11,6 +11,8 @@ export interface ScreenshotDeps {
   completeOnboarding: () => void;
   processCapture: (input: CaptureProcessInput) => Promise<CaptureProcessResult>;
   setDraft: (draft: ScanDraft) => void;
+  /** Whether the capture script left its marker file on this device. */
+  markerPresent: () => Promise<boolean>;
 }
 
 async function openPhoto(uri: string | undefined, deps: ScreenshotDeps): Promise<void> {
@@ -40,6 +42,10 @@ export async function runScreenshotStep(
   params: { uri?: string },
   deps: ScreenshotDeps
 ): Promise<string> {
+  if (!(await deps.markerPresent())) {
+    throw new Error('Screenshot mode is not enabled on this device');
+  }
+
   switch (step) {
     case 'setup':
       await deps.clearAllData();
