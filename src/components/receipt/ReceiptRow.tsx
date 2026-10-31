@@ -34,14 +34,14 @@ function ReceiptRowComponent({
       accessibilityRole="button"
       accessibilityLabel={`${storeName}, ${meta}, ${amount}`}
       accessibilityHint={accessibilityHint}
-      style={({ pressed }) => ({
+      className="active:opacity-60"
+      style={{
         flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: 14,
         borderBottomWidth: StyleSheet.hairlineWidth,
         borderBottomColor: colors.border,
-        opacity: pressed ? 0.6 : 1,
-      })}
+      }}
     >
       <View style={{ flex: 1 }}>
         <Text

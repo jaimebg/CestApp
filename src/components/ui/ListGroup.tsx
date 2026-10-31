@@ -173,11 +173,8 @@ export function ListRow({
       accessibilityLabel={title}
       accessibilityHint={description}
       accessibilityState={{ disabled }}
-      style={({ pressed }) => [
-        rowStyle,
-        pressed && { backgroundColor: colors.border },
-        disabled && { opacity: 0.5 },
-      ]}
+      className="active:opacity-60"
+      style={[rowStyle, disabled && { opacity: 0.5 }]}
     >
       {content}
     </Pressable>

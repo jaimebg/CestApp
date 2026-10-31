@@ -33,6 +33,11 @@ const GUARDS: Guard[] = [
     pattern: /Inter_(700Bold|300Light)|fonts\.(bold|light)\b/,
     roots: ['app', 'src'],
   },
+  {
+    name: 'no Pressable style functions (NativeWind drops them on device)',
+    pattern: /style=\{\(\{ pressed/,
+    roots: ['app', 'src/components'],
+  },
 ];
 
 const ROOT = path.resolve(__dirname, '../../..');

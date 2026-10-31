@@ -24,7 +24,8 @@ export function Chip({ label, selected = false, onPress, icon, accessibilityLabe
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ selected }}
-      style={({ pressed }) => ({
+      className="active:opacity-70"
+      style={{
         minHeight: MIN_TARGET,
         flexDirection: 'row',
         alignItems: 'center',
@@ -33,8 +34,7 @@ export function Chip({ label, selected = false, onPress, icon, accessibilityLabe
         borderWidth: 1,
         borderColor: selected ? colors.action : colors.border,
         backgroundColor: selected ? `${colors.action}1A` : colors.surface,
-        opacity: pressed ? 0.7 : 1,
-      })}
+      }}
     >
       {icon ? <Ionicons name={icon} size={16} color={ink} style={{ marginRight: 6 }} /> : null}
       <Text

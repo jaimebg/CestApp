@@ -139,7 +139,8 @@ export function TicketLine({
         onPress={onPress}
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
-        style={({ pressed }) => ({ flex: 1, opacity: pressed ? 0.6 : 1 })}
+        className="active:opacity-60"
+        style={{ flex: 1 }}
       >
         {body}
       </Pressable>
