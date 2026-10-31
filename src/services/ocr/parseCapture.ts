@@ -87,17 +87,26 @@ export function parseCapture(input: CaptureParseInput): ParsedReceipt | null {
   const rawText = ocrText || lines.join('\n');
   const hasGeometry = blocks.length > 0 && dimensions.width > 0 && dimensions.height > 0;
 
+  const fiscalHint = { taxIdHint: fiscal?.merchantTaxId };
   let result: ParsedReceipt;
 
   if (zones.length > 0 && hasGeometry) {
     logger.log('Reading through', zones.length, 'zones');
-    result = parseWithTemplate(blocks, oneOffTemplate(zones, dimensions), rawText, dimensions);
+    result = parseWithTemplate(
+      blocks,
+      oneOffTemplate(zones, dimensions),
+      rawText,
+      dimensions,
+      fiscalHint
+    );
   } else if (hasGeometry) {
     logger.log('Reading through block geometry');
-    result = parseWithSpatialCorrelation(blocks, rawText, dimensions);
+    result = parseWithSpatialCorrelation(blocks, rawText, dimensions, {
+      parserOptions: fiscalHint,
+    });
   } else {
     logger.log('Reading through lines alone');
-    result = parseReceipt(lines, { ...options, taxIdHint: fiscal?.merchantTaxId });
+    result = parseReceipt(lines, { ...options, ...fiscalHint });
   }
 
   if (detectedTotal !== null) {

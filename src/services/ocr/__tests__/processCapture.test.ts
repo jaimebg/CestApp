@@ -278,3 +278,17 @@ describe('processCapture and fiscal QR codes', () => {
     expect(decodeQrCodesMock).not.toHaveBeenCalled();
   });
 });
+
+describe('processCapture timing', () => {
+  it('starts decoding QR codes before OCR finishes', async () => {
+    let decodingStarted = false;
+    decodeQrCodesMock.mockClear();
+    recognizeTextMock.mockImplementation(async () => {
+      decodingStarted = decodeQrCodesMock.mock.calls.length > 0;
+      return ocrSuccess();
+    });
+
+    await processCapture({ uri: 'file:///receipt.jpg', isPdf: false, knownDimensions: PHOTO_DIMS });
+    expect(decodingStarted).toBe(true);
+  });
+});

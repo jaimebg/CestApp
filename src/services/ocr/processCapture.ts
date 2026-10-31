@@ -108,6 +108,7 @@ async function processImage(
   source?: string
 ): Promise<CaptureProcessResult> {
   const measured = known ?? (await measureImage(uri));
+  const qrPayloads = decodeQrCodes(uri);
   const result = await recognizeText(uri, measured);
 
   if (__DEV__ && source && result.raw) {
@@ -119,7 +120,7 @@ async function processImage(
   }
 
   const { dimensions, zones, detectedTotal } = detectImageZones(result, measured);
-  const fiscal = parseFiscalQr(await decodeQrCodes(uri));
+  const fiscal = parseFiscalQr(await qrPayloads);
   logger.log('Blocks:', result.blocks.length, 'zones:', zones.length, 'fiscal:', fiscal?.source);
 
   return {

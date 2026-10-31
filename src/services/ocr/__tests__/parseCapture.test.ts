@@ -125,3 +125,35 @@ describe('parseCapture keeps the chain', () => {
     expect(result).toMatchObject({ chainId: 'mercadona', countryCode: 'ES' });
   });
 });
+
+describe('parseCapture and the fiscal tax ID', () => {
+  const lines = ['1 LECHE ENTERA 1,10', '1 PAN 0,85', 'TOTAL (€) 1,95'];
+  const blocks = lines.map((text, i) => {
+    const boundingBox = { left: 10, top: 100 + i * 40, width: 400, height: 30 };
+    return { text, boundingBox, lines: [{ text, boundingBox }] };
+  });
+  const input = {
+    lines,
+    blocks,
+    ocrText: lines.join('\n'),
+    dimensions: { width: 500, height: 600 },
+    zones: [],
+    detectedTotal: null,
+  };
+  const fiscal = {
+    source: 'pt-atcud' as const,
+    countryCode: 'ES' as const,
+    total: 1.95,
+    date: new Date(2026, 9, 15),
+    time: null,
+    merchantTaxId: 'A46103834',
+  };
+
+  it('reads a photo through the chain the fiscal tax ID names', () => {
+    expect(parseCapture({ ...input, fiscal })?.parsingMethod).toBe('chain');
+  });
+
+  it('reads the same photo generically without it', () => {
+    expect(parseCapture(input)?.parsingMethod).not.toBe('chain');
+  });
+});
