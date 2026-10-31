@@ -2,7 +2,7 @@
  * Contrast guards for the palette.
  *
  * The brand green (#93BD57) reads well as a fill and fails badly as ink — it
- * measures 2.11:1 on cream. It was the app's action colour once; these tests
+ * measures 1.98:1 on paper. It was the app's action colour once; these tests
  * exist so it cannot become one again.
  */
 
@@ -38,11 +38,13 @@ describe('palette contrast', () => {
       ['text on surface', () => contrast(c.text, c.surface)],
       ['textSecondary on background', () => contrast(c.textSecondary, c.background)],
       ['textSecondary on surface', () => contrast(c.textSecondary, c.surface)],
+      ['textTertiary on background', () => contrast(c.textTertiary, c.background)],
       ['textTertiary on surface', () => contrast(c.textTertiary, c.surface)],
       ['action on background', () => contrast(c.action, c.background)],
       ['action on surface', () => contrast(c.action, c.surface)],
       ['error on background', () => contrast(c.error, c.background)],
       ['error on surface', () => contrast(c.error, c.surface)],
+      ['warning on background', () => contrast(c.warning, c.background)],
       ['warning on surface', () => contrast(c.warning, c.surface)],
       ['info on surface', () => contrast(c.info, c.surface)],
     ])('%s clears AA for text', (_label, ratio) => {
@@ -62,6 +64,11 @@ describe('palette contrast', () => {
     // Documents why `action` exists: this is what the old value measured.
     expect(contrast(lightColors.primary, lightColors.background)).toBeLessThan(AA_TEXT);
     expect(lightColors.action).not.toBe(lightColors.primary);
+  });
+
+  it('uses the paper ground in light mode', () => {
+    expect(lightColors.background).toBe('#F7F4EE');
+    expect(lightColors.surface).toBe('#FFFFFF');
   });
 
   it('keeps the two themes on the same token set', () => {

@@ -79,7 +79,7 @@ CestApp is a **Spain-focused** supermarket receipt scanner app built with React 
 
 | Name                      | Hex     | Usage                      |
 | ------------------------- | ------- | -------------------------- |
-| Cream                     | #FFFDE1 | Light background           |
+| Paper                     | #F7F4EE | Light background           |
 | Golden                    | #FBE580 | Accent                     |
 | Fresh Green (primary)     | #93BD57 | Primary actions, dark text |
 | Deep Green (primary-deep) | #3D6B23 | White text on green        |

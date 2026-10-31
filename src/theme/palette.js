@@ -9,12 +9,12 @@
  * is actually used on. WCAG AA needs 4.5:1 for text and 3:1 for icons.
  *
  * The brand green appears twice on purpose:
- *   `fresh`  #93BD57 is a FILL. It is 2.11:1 on cream, so it is never ink.
+ *   `fresh`  #93BD57 is a FILL. It is 1.98:1 on paper, so it is never ink.
  *   `deep`   #3D6B23 is the INK. Every label, icon tint and active state.
  */
 
 const grounds = {
-  cream: '#FFFDE1',
+  paper: '#F7F4EE',
   white: '#FFFFFF',
   charcoal: '#1A1918',
   charcoalRaised: '#2D2A26',
@@ -31,15 +31,15 @@ const brand = {
 const colors = {
   ...brand,
 
-  background: { DEFAULT: grounds.cream, dark: grounds.charcoal },
+  background: { DEFAULT: grounds.paper, dark: grounds.charcoal },
   surface: { DEFAULT: grounds.white, dark: grounds.charcoalRaised },
   'surface-elevated': { DEFAULT: grounds.white, dark: grounds.charcoalHigh },
 
   primary: {
-    DEFAULT: '#93BD57', //         fill only — 2.11:1 on cream, never use as ink
+    DEFAULT: '#93BD57', //         fill only — 1.98:1 on paper, never use as ink
     light: '#A8CE6F', //           fill only
     dark: '#5C8A32', //            pressed state under `deep`
-    deep: '#3D6B23', //            6.13:1 cream · 6.31:1 white — carries white text
+    deep: '#3D6B23', //            5.75:1 paper · 6.31:1 white — carries white text
   },
 
   /**
@@ -48,36 +48,36 @@ const colors = {
    * ground. Use as `text-action dark:text-action-dark`.
    */
   action: {
-    DEFAULT: '#3D6B23', //         6.13:1 cream · 6.31:1 white
+    DEFAULT: '#3D6B23', //         5.75:1 paper · 6.31:1 white
     dark: '#A8CE6F', //            9.80:1 charcoal · 7.97:1 raised
   },
 
   accent: {
-    DEFAULT: '#FBE580', //         fill only — 1.23:1 on cream, never ink
+    DEFAULT: '#FBE580', //         fill only — never ink
     dark: '#E8D46D',
   },
 
-  /** Warning ink. The golden hue dropped in luminance until it reads on cream. */
+  /** Warning ink. The golden hue dropped in luminance until it reads on paper. */
   warning: {
-    DEFAULT: '#8A6A00', //         4.92:1 cream · 5.07:1 white
+    DEFAULT: '#8A6A00', //         4.62:1 paper · 5.07:1 white
     dark: '#FBE580', //            11.30:1 charcoal
   },
 
   error: {
-    DEFAULT: '#980404', //         8.66:1 cream
+    DEFAULT: '#980404', //         8.13:1 paper
     light: '#E88A84', //           7.02:1 charcoal · 5.71:1 raised
   },
 
   info: {
-    DEFAULT: '#2F6E9E', //         5.46:1 white
+    DEFAULT: '#2F6E9E', //         4.98:1 paper · 5.46:1 white
     dark: '#7FBEE8', //            7.09:1 raised
   },
 
   text: {
     DEFAULT: '#2D2A26',
-    secondary: '#6B6560', //       5.74:1 white · 5.58:1 cream
-    tertiary: '#767068', //        4.90:1 white — placeholders and hints
-    dark: grounds.cream,
+    secondary: '#6B6560', //       5.74:1 white · 5.23:1 paper
+    tertiary: '#726D65', //        5.13:1 white · 4.68:1 paper — placeholders and hints
+    dark: brand.cream,
     'dark-secondary': '#B8B4A9', // 8.48:1 charcoal · 6.89:1 raised
     'dark-tertiary': '#9C958C', //  4.82:1 raised · 5.93:1 charcoal
   },
