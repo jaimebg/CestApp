@@ -61,3 +61,25 @@ test('scrubs elements and rebuilds block text', () => {
   expect(out.blocks[0].lines[0].elements.map((e) => e.text)).toEqual(['AUT:', '******']);
   expect(out.text).toBe('AUT: ******\nTOTAL 23,45');
 });
+
+test('masks card endings after dots and times written with h', () => {
+  expect(scrubLine('TARJETA ....4921')).toBe('TARJETA ********');
+  expect(scrubLine('HORA 18h42')).toBe('HORA 12h00');
+});
+
+test('masks a code ML Kit put in another block on the same row', () => {
+  const raw = toMlkitTextWithElements([['AUT:'], ['0A12B3'], ['TOTAL 23,45']]);
+  raw.blocks[0].lines[0].frame = { left: 0, top: 100, right: 60, bottom: 120 } as never;
+  raw.blocks[1].lines[0].frame = { left: 200, top: 102, right: 300, bottom: 121 } as never;
+  raw.blocks[2].lines[0].frame = { left: 0, top: 200, right: 300, bottom: 220 } as never;
+  const out = scrubRaw(raw);
+  expect(out.blocks[1].lines[0].text).toBe('******');
+  expect(out.blocks[1].lines[0].elements.map((e) => e.text)).toEqual(['******']);
+  expect(out.blocks[2].lines[0].text).toBe('TOTAL 23,45');
+});
+
+test('masks letters too when elements cannot be matched to the scrubbed line', () => {
+  const raw = toMlkitTextWithElements([['AUT: 0A12B3']]);
+  raw.blocks[0].lines[0].elements = [{ text: 'AUT:0A12B3', frame } as never];
+  expect(scrubRaw(raw).blocks[0].lines[0].elements.map((e) => e.text)).toEqual(['AUT:******']);
+});
