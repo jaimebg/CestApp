@@ -4,6 +4,9 @@
  * Spanish defaults for currency, date format, and number format
  */
 
+import { ListGroup, ListRow } from '@/src/components/ui/ListGroup';
+import { SegmentedControl } from '@/src/components/ui/SegmentedControl';
+import { fonts } from '@/src/theme/type';
 import { View, Text, Pressable, ScrollView, Modal, Platform, Switch, Share } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -153,22 +156,38 @@ export default function SettingsScreen() {
     }
   };
 
+  const sectionLabel = (label: string, first = false) => (
+    <Text
+      accessibilityRole="header"
+      style={{
+        color: colors.textSecondary,
+        fontFamily: fonts.medium,
+        fontSize: 13,
+        marginTop: first ? 8 : 32,
+        marginBottom: 8,
+        paddingHorizontal: 16,
+      }}
+    >
+      {label}
+    </Text>
+  );
+
   return (
     <View className="flex-1" style={{ backgroundColor: colors.background, paddingTop: insets.top }}>
-      {/* Header */}
-      <View className="flex-row items-center px-4 py-3">
+      <View className="flex-row items-center px-2 py-1">
         <Pressable
           onPress={() => router.back()}
-          className="rounded-full items-center justify-center"
-          style={{ backgroundColor: colors.surface, width: MIN_TARGET, height: MIN_TARGET }}
+          className="items-center justify-center active:opacity-60"
+          style={{ width: MIN_TARGET, height: MIN_TARGET }}
           accessibilityRole="button"
           accessibilityLabel={t('common.close')}
         >
           <Ionicons name="close" size={22} color={colors.text} />
         </Pressable>
         <Text
-          className="text-xl ml-4"
-          style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
+          accessibilityRole="header"
+          className="ml-2"
+          style={{ color: colors.text, fontFamily: fonts.semibold, fontSize: 17 }}
         >
           {t('settings.title')}
         </Text>
@@ -180,327 +199,85 @@ export default function SettingsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <ReadingColumn>
-          {/* Language Section */}
-          <Text
-            accessibilityRole="header"
-            className="text-sm uppercase tracking-wide mb-3 mt-4"
-            style={{ color: colors.textSecondary, fontFamily: 'Inter_600SemiBold' }}
-          >
-            {t('settings.preferences')}
-          </Text>
-
-          <View
-            className="p-4 rounded-xl mb-3"
-            style={{
-              backgroundColor: colors.surface,
-              borderWidth: 1,
-              borderColor: colors.border,
-            }}
-          >
-            <Text
-              className="text-base mb-3"
-              style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
-            >
-              {t('settings.language')}
-            </Text>
-            <View
-              className="flex-row rounded-lg p-1"
-              style={{
-                backgroundColor: colors.background,
-                borderWidth: 1,
-                borderColor: colors.border,
-              }}
-            >
-              {SUPPORTED_LANGUAGES.map((lang) => {
-                const isSelected = language === lang.code;
-                return (
-                  <Pressable
-                    key={lang.code}
-                    className="flex-1 items-center justify-center rounded-md py-2"
-                    style={[
-                      isSelected ? { backgroundColor: colors.primaryDeep } : undefined,
-                      { minHeight: MIN_TARGET },
-                    ]}
-                    onPress={() => setLanguage(lang.code as SupportedLanguage)}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: isSelected }}
-                    accessibilityLabel={lang.nativeName}
-                  >
-                    <Text
-                      style={{
-                        color: isSelected ? '#FFFFFF' : colors.textSecondary,
-                        fontFamily: isSelected ? 'Inter_600SemiBold' : 'Inter_500Medium',
-                        fontSize: 14,
-                      }}
-                    >
-                      {lang.nativeName}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-
-          <View
-            className="p-4 rounded-xl mb-3"
-            style={{
-              backgroundColor: colors.surface,
-              borderWidth: 1,
-              borderColor: colors.border,
-            }}
-          >
-            <Text
-              className="text-base mb-3"
-              style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
-            >
-              {t('settings.appearance')}
-            </Text>
-            <View
-              className="flex-row rounded-lg p-1"
-              style={{
-                backgroundColor: colors.background,
-                borderWidth: 1,
-                borderColor: colors.border,
-              }}
-            >
-              {(['light', 'dark'] as const).map((scheme) => {
-                const isSelected = colorScheme === scheme;
-                return (
-                  <Pressable
-                    key={scheme}
-                    className="flex-1 items-center justify-center rounded-md py-2"
-                    style={[
-                      isSelected ? { backgroundColor: colors.primaryDeep } : undefined,
-                      { minHeight: MIN_TARGET },
-                    ]}
-                    onPress={() => setColorScheme(scheme)}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: isSelected }}
-                    accessibilityLabel={
-                      scheme === 'light' ? t('settings.light') : t('settings.dark')
-                    }
-                  >
-                    <Text
-                      style={{
-                        color: isSelected ? '#FFFFFF' : colors.textSecondary,
-                        fontFamily: isSelected ? 'Inter_600SemiBold' : 'Inter_500Medium',
-                        fontSize: 14,
-                      }}
-                    >
-                      {scheme === 'light' ? t('settings.light') : t('settings.dark')}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-
-          {llmSupported && (
-            <View
-              className="p-4 rounded-xl mb-3 flex-row items-center justify-between"
-              style={{
-                backgroundColor: colors.surface,
-                borderWidth: 1,
-                borderColor: colors.border,
-              }}
-            >
-              <View className="flex-1 pr-3">
-                <Text style={{ color: colors.text, fontFamily: 'Inter_500Medium', fontSize: 15 }}>
-                  {t('settings.llmRefinement')}
-                </Text>
-                <Text
-                  className="mt-1"
-                  style={{
-                    color: colors.textSecondary,
-                    fontFamily: 'Inter_400Regular',
-                    fontSize: 13,
-                  }}
-                >
-                  {t('settings.llmRefinementDescription')}
-                </Text>
-              </View>
-              <Switch
-                value={llmRefinementEnabled}
-                onValueChange={setLlmRefinementEnabled}
-                trackColor={{ true: colors.primary, false: colors.border }}
-                accessibilityLabel={t('settings.llmRefinement')}
+          {sectionLabel(t('settings.preferences'), true)}
+          <ListGroup footer={t('settings.spanishDefaultsDesc')}>
+            <ListRow title={t('settings.language')}>
+              <SegmentedControl
+                options={SUPPORTED_LANGUAGES.map((lang) => ({
+                  value: lang.code as SupportedLanguage,
+                  label: lang.nativeName,
+                }))}
+                value={language as SupportedLanguage}
+                onChange={(code) => setLanguage(code)}
+                accessibilityLabel={t('settings.language')}
               />
-            </View>
-          )}
+            </ListRow>
+            <ListRow title={t('settings.appearance')}>
+              <SegmentedControl
+                options={[
+                  { value: 'light' as const, label: t('settings.light') },
+                  { value: 'dark' as const, label: t('settings.dark') },
+                ]}
+                value={colorScheme}
+                onChange={setColorScheme}
+                accessibilityLabel={t('settings.appearance')}
+              />
+            </ListRow>
+            {llmSupported ? (
+              <ListRow
+                title={t('settings.llmRefinement')}
+                description={t('settings.llmRefinementDescription')}
+                accessory={
+                  <Switch
+                    value={llmRefinementEnabled}
+                    onValueChange={setLlmRefinementEnabled}
+                    trackColor={{ true: colors.primary, false: colors.border }}
+                    accessibilityLabel={t('settings.llmRefinement')}
+                  />
+                }
+              />
+            ) : null}
+          </ListGroup>
 
-          {/* Spanish Defaults Info */}
-          <View
-            className="p-4 rounded-xl mb-3"
-            style={{
-              backgroundColor: `${colors.primary}10`,
-              borderWidth: 1,
-              borderColor: `${colors.primary}30`,
-            }}
-          >
-            <View className="flex-row items-start">
-              <Ionicons name="information-circle-outline" size={20} color={colors.action} />
-              <View className="flex-1 ml-2">
-                <Text
-                  className="text-sm"
-                  style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
-                >
-                  {t('settings.spanishDefaults')}
-                </Text>
-                <Text
-                  className="text-sm mt-1"
-                  style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-                >
-                  {t('settings.spanishDefaultsDesc')}
-                </Text>
-              </View>
-            </View>
-          </View>
+          {sectionLabel(t('settings.data'))}
+          <ListGroup>
+            <ListRow
+              title={t('settings.backup')}
+              description={t('settings.backupDesc')}
+              icon="cloud-upload-outline"
+              disabled={isBackingUp}
+              onPress={handleBackup}
+            />
+            <ListRow
+              title={t('settings.clearAllData')}
+              description={t('settings.clearAllDataDesc')}
+              icon="trash-outline"
+              destructive
+              disabled={isLoading}
+              onPress={() => setShowClearConfirm(true)}
+            />
+          </ListGroup>
 
-          {/* Data */}
-          <Text
-            accessibilityRole="header"
-            className="text-sm uppercase tracking-wide mb-3 mt-6"
-            style={{ color: colors.textSecondary, fontFamily: 'Inter_600SemiBold' }}
-          >
-            {t('settings.data')}
-          </Text>
-
-          <Pressable
-            onPress={() => setShowClearConfirm(true)}
-            disabled={isLoading}
-            accessibilityRole="button"
-            accessibilityLabel={t('settings.clearAllData')}
-            accessibilityState={{ disabled: isLoading, busy: isLoading }}
-            className="p-4 rounded-xl mb-3 flex-row items-center"
-            style={{
-              backgroundColor: `${colors.error}15`,
-              borderWidth: 1,
-              borderColor: colors.error,
-              opacity: isLoading ? 0.5 : 1,
-            }}
-          >
-            <Ionicons name="trash-outline" size={24} color={colors.error} />
-            <View className="flex-1 ml-3">
-              <Text
-                className="text-base"
-                style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
-              >
-                {t('settings.clearAllData')}
-              </Text>
-              <Text
-                className="text-sm mt-1"
-                style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-              >
-                {t('settings.clearAllDataDesc')}
-              </Text>
-            </View>
-          </Pressable>
-
-          {/* Backup */}
-          <Pressable
-            onPress={handleBackup}
-            disabled={isBackingUp}
-            accessibilityRole="button"
-            accessibilityLabel={t('settings.backup')}
-            accessibilityState={{ disabled: isBackingUp, busy: isBackingUp }}
-            className="p-4 rounded-xl mb-3 flex-row items-center"
-            style={{
-              backgroundColor: colors.surface,
-              borderWidth: 1,
-              borderColor: colors.border,
-              opacity: isBackingUp ? 0.5 : 1,
-            }}
-          >
-            <Ionicons name="cloud-upload-outline" size={24} color={colors.action} />
-            <View className="flex-1 ml-3">
-              <Text
-                className="text-base"
-                style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
-              >
-                {t('settings.backup')}
-              </Text>
-              <Text
-                className="text-sm mt-1"
-                style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-              >
-                {t('settings.backupDesc')}
-              </Text>
-            </View>
-          </Pressable>
-
-          {/* About Section */}
-          <Text
-            accessibilityRole="header"
-            className="text-sm uppercase tracking-wide mb-3 mt-6"
-            style={{ color: colors.textSecondary, fontFamily: 'Inter_600SemiBold' }}
-          >
-            {t('settings.about')}
-          </Text>
-
-          <Pressable
-            onPress={handleVersionTap}
-            accessibilityRole="button"
-            accessibilityLabel={`${t('settings.version')} ${Constants.expoConfig?.version ?? '1.0.0'}`}
-            className="p-4 rounded-xl"
-            style={{
-              backgroundColor: colors.surface,
-              borderWidth: 1,
-              borderColor: colors.border,
-            }}
-          >
-            <View className="flex-row items-center justify-between">
-              <Text
-                className="text-base"
-                style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
-              >
-                {t('settings.version')}
-              </Text>
-              <Text
-                className="text-base"
-                style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-              >
-                {Constants.expoConfig?.version ?? '1.0.0'}
-              </Text>
-            </View>
-          </Pressable>
-
-          <Pressable
-            onPress={() => WebBrowser.openBrowserAsync('https://jbgsoft.com/cestapp/privacy')}
-            accessibilityRole="button"
-            accessibilityLabel={t('settings.privacyPolicy')}
-            className="p-4 rounded-xl mt-3 flex-row items-center"
-            style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }}
-          >
-            <Ionicons name="shield-checkmark-outline" size={22} color={colors.textSecondary} />
-            <Text
-              className="text-base flex-1 ml-3"
-              style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
-            >
-              {t('settings.privacyPolicy')}
-            </Text>
-            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
-          </Pressable>
-
-          <Pressable
-            onPress={openDiagnostics}
-            accessibilityRole="button"
-            accessibilityLabel={t('settings.diagnostics')}
-            className="p-4 rounded-xl mt-3 flex-row items-center"
-            style={{
-              backgroundColor: colors.surface,
-              borderWidth: 1,
-              borderColor: colors.border,
-            }}
-          >
-            <Ionicons name="bug-outline" size={22} color={colors.textSecondary} />
-            <Text
-              className="text-base flex-1 ml-3"
-              style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
-            >
-              {t('settings.diagnostics')}
-            </Text>
-            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
-          </Pressable>
+          {sectionLabel(t('settings.about'))}
+          <ListGroup>
+            <ListRow
+              title={t('settings.version')}
+              value={Constants.expoConfig?.version ?? '1.0.0'}
+              onPress={handleVersionTap}
+            />
+            <ListRow
+              title={t('settings.privacyPolicy')}
+              icon="shield-checkmark-outline"
+              chevron
+              onPress={() => WebBrowser.openBrowserAsync('https://jbgsoft.com/cestapp/privacy')}
+            />
+            <ListRow
+              title={t('settings.diagnostics')}
+              icon="bug-outline"
+              chevron
+              onPress={openDiagnostics}
+            />
+          </ListGroup>
         </ReadingColumn>
       </ScrollView>
 
@@ -529,37 +306,15 @@ export default function SettingsScreen() {
               {t('settings.devMenuDesc')}
             </Text>
 
-            <Pressable
-              onPress={handleSeedDemoData}
-              disabled={isLoading}
-              accessibilityRole="button"
-              accessibilityLabel={t('settings.addDemoData')}
-              accessibilityState={{ disabled: isLoading, busy: isLoading }}
-              className="flex-row items-center p-4 rounded-xl mb-3"
-              style={{
-                backgroundColor: `${colors.primary}15`,
-                borderWidth: 1,
-                borderColor: colors.action,
-                opacity: isLoading ? 0.5 : 1,
-              }}
-            >
-              <Ionicons name="add-circle-outline" size={24} color={colors.action} />
-              <View className="flex-1 ml-3">
-                <Text style={{ color: colors.text, fontFamily: 'Inter_600SemiBold', fontSize: 16 }}>
-                  {t('settings.addDemoData')}
-                </Text>
-                <Text
-                  style={{
-                    color: colors.textSecondary,
-                    fontFamily: 'Inter_400Regular',
-                    fontSize: 13,
-                    marginTop: 2,
-                  }}
-                >
-                  {t('settings.addDemoDataDesc')}
-                </Text>
-              </View>
-            </Pressable>
+            <ListGroup>
+              <ListRow
+                title={t('settings.addDemoData')}
+                description={t('settings.addDemoDataDesc')}
+                icon="add-circle-outline"
+                disabled={isLoading}
+                onPress={handleSeedDemoData}
+              />
+            </ListGroup>
           </ScrollView>
         </View>
       </Modal>
