@@ -38,7 +38,7 @@ export interface TruthItem {
 /** A ticket's real contents, checked by hand against the paper. */
 export interface TruthTicket {
   ticket: string;
-  /** A chainId from src/config/spanishChains.ts. */
+  /** A chainId from a template in src/config/countries/. */
   chain: string;
   /** YYYY-MM-DD. */
   date: string;

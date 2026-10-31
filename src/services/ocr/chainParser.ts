@@ -3,7 +3,7 @@
  * Chain-specific receipt parsing using templates
  */
 
-import type { ChainTemplate, ItemPattern } from '../../config/spanishChains';
+import type { ChainTemplate, ItemPattern } from '../../config/countries/types';
 import type { ParsedItem, ParsedReceipt } from './parser';
 import { ChainDetectionResult, applyChainOcrCorrectionsToLines } from './chainDetector';
 import { containsKeyword, parsePrice, parseTime } from './parseUtils';

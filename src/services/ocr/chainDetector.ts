@@ -9,12 +9,7 @@
  * 4. Keyword heuristics (fallback)
  */
 
-import {
-  ChainTemplate,
-  CHAIN_TEMPLATES,
-  NIF_TO_CHAIN,
-  getAllTemplates,
-} from '../../config/spanishChains';
+import { getAllTemplates, type ChainTemplate } from '../../config/countries';
 import { createScopedLogger } from '../../utils/debug';
 
 const logger = createScopedLogger('ChainDetector');
@@ -65,6 +60,14 @@ function extractTextFromBlocks(blocks: OcrBlock[]): string {
  * Handles both formats: A12345678 and A-12345678 (with hyphen)
  */
 function detectByNif(text: string): ChainDetectionResult | null {
+  const nifLookup = new Map<string, ChainTemplate>();
+  for (const template of getAllTemplates()) {
+    for (const nif of template.nifPatterns) {
+      nifLookup.set(nif.toUpperCase(), template);
+      nifLookup.set(nif.toUpperCase().replace('-', ''), template);
+    }
+  }
+
   // NIF patterns: Letter + optional hyphen + 8 digits, or 8 digits + letter
   const nifPatterns = [
     /\b([A-Z]-?\d{8})\b/gi, // A12345678 or A-12345678
@@ -83,14 +86,13 @@ function detectByNif(text: string): ChainDetectionResult | null {
       const nifWithHyphen = nif.includes('-') ? nif : `${nif[0]}-${nif.slice(1)}`;
       const nifWithoutHyphen = nif.replace('-', '');
 
-      const chainId =
-        NIF_TO_CHAIN[nif] || NIF_TO_CHAIN[nifWithHyphen] || NIF_TO_CHAIN[nifWithoutHyphen];
+      const chain =
+        nifLookup.get(nif) || nifLookup.get(nifWithHyphen) || nifLookup.get(nifWithoutHyphen);
 
-      if (chainId) {
-        const chain = CHAIN_TEMPLATES[chainId];
+      if (chain) {
         return {
           chain,
-          chainId,
+          chainId: chain.chainId,
           confidence: 98,
           detectionMethod: 'nif',
           matchedPattern: nif,

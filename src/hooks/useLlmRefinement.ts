@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
-import { getChainTemplate } from '@/src/config/spanishChains';
+import { getChainTemplate } from '@/src/config/countries';
 import { recordLlmAutoApplied, recordLlmFeedback } from '@/src/db/queries/parsingFeedback';
 import { isLlmAvailable, mergeParsedReceipts, structureReceipt } from '@/src/services/llm';
 import { decideOutcome, shouldRefine } from '@/src/services/llm/trigger';
@@ -80,7 +80,9 @@ export function useLlmRefinement({
     hasRun.current = true;
     setStatus('running');
 
-    const chainTemplate = initial.chainId ? getChainTemplate(initial.chainId) : null;
+    const chainTemplate = initial.chainId
+      ? getChainTemplate(initial.countryCode ?? 'ES', initial.chainId)
+      : null;
     const hint = initial.chainId
       ? {
           chainId: initial.chainId,
