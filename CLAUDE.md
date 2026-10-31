@@ -268,6 +268,9 @@ src/
     currencyTotals.ts          # Picks the headline currency; never sums across them
     toast.ts                   # Toast notification helper
     debug.ts                   # Scoped debug logging
+
+modules/
+  qr-decoder/                  # Local Expo module: QR decoding (ZXing on Android, Vision on iOS)
 ```
 
 ## UI Components

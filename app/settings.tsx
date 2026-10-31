@@ -1,7 +1,7 @@
 /**
  * Settings Screen
- * Simplified: Only language selection
- * Spanish defaults for currency, date format, and number format
+ * Language, appearance, smart reading and data. Currency and number format
+ * follow each receipt and the UI language, so there is nothing to set here.
  */
 
 import { View, Text, Pressable, ScrollView, Modal, Platform, Switch, Share } from 'react-native';
