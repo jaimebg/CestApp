@@ -15,6 +15,13 @@
       "when": 1787587084206,
       "tag": "0001_calm_nehzno",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1793451311112,
+      "tag": "0002_faulty_slipstream",
+      "breakpoints": true
     }
   ]
 }

@@ -5,13 +5,15 @@ import { Amount } from '../ui/Amount';
 import { fonts } from '../../theme/type';
 
 interface ReceiptSummaryProps {
+  /** ISO 4217 code the amounts are in. */
+  currency: string;
   subtotal?: number | null;
   tax?: number | null;
   discount?: number | null;
   total: number | null;
 }
 
-export function ReceiptSummary({ subtotal, tax, discount, total }: ReceiptSummaryProps) {
+export function ReceiptSummary({ subtotal, tax, discount, total, currency }: ReceiptSummaryProps) {
   const { t } = useTranslation();
   const { formatPrice } = useFormatPrice();
 
@@ -29,7 +31,7 @@ export function ReceiptSummary({ subtotal, tax, discount, total }: ReceiptSummar
               >
                 {t('receipt.subtotal')}
               </Text>
-              <Amount size="base">{formatPrice(subtotal / 100)}</Amount>
+              <Amount size="base">{formatPrice(subtotal / 100, currency)}</Amount>
             </View>
           )}
 
@@ -41,7 +43,7 @@ export function ReceiptSummary({ subtotal, tax, discount, total }: ReceiptSummar
               >
                 {t('receipt.tax')}
               </Text>
-              <Amount size="base">{formatPrice(tax / 100)}</Amount>
+              <Amount size="base">{formatPrice(tax / 100, currency)}</Amount>
             </View>
           )}
 
@@ -54,7 +56,7 @@ export function ReceiptSummary({ subtotal, tax, discount, total }: ReceiptSummar
                 {t('receipt.discount')}
               </Text>
               <Amount size="base" tone="action">
-                -{formatPrice(discount / 100)}
+                -{formatPrice(discount / 100, currency)}
               </Amount>
             </View>
           )}
@@ -71,7 +73,7 @@ export function ReceiptSummary({ subtotal, tax, discount, total }: ReceiptSummar
         >
           {t('receipt.total')}
         </Text>
-        <Amount size="xl">{formatPrice(total ? total / 100 : null)}</Amount>
+        <Amount size="xl">{formatPrice(total ? total / 100 : null, currency)}</Amount>
       </View>
     </View>
   );

@@ -10,13 +10,21 @@ import { categoryLabel } from '../../utils/categoryLabel';
 
 interface ItemRowProps {
   item: Item;
+  /** ISO 4217 code of the receipt the item belongs to. */
+  currency: string;
   category?: Category | null;
   showCategory?: boolean;
   /** Hides the bottom rule on the last row of a list. */
   isLast?: boolean;
 }
 
-function ItemRowComponent({ item, category, showCategory = true, isLast = false }: ItemRowProps) {
+function ItemRowComponent({
+  item,
+  currency,
+  category,
+  showCategory = true,
+  isLast = false,
+}: ItemRowProps) {
   const { t } = useTranslation();
   const { formatPrice } = useFormatPrice();
   const colors = useAppColors();
@@ -69,7 +77,7 @@ function ItemRowComponent({ item, category, showCategory = true, isLast = false 
               className="text-text-secondary dark:text-text-dark-secondary text-sm ml-1"
               style={{ fontFamily: 'Inter_400Regular' }}
             >
-              @ {formatPrice(item.unitPrice / 100)}
+              @ {formatPrice(item.unitPrice / 100, currency)}
               {unitDisplay}
             </Text>
           )}
@@ -85,7 +93,7 @@ function ItemRowComponent({ item, category, showCategory = true, isLast = false 
       </View>
 
       {/* Price */}
-      <Amount size="base">{formatPrice(item.price / 100)}</Amount>
+      <Amount size="base">{formatPrice(item.price / 100, currency)}</Amount>
     </View>
   );
 }

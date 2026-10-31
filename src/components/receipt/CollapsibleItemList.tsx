@@ -23,9 +23,11 @@ export const COLLAPSE_THRESHOLD = 25;
 
 interface CollapsibleItemListProps {
   items: { item: Item; category: Category | null }[];
+  /** ISO 4217 code of the receipt the items belong to. */
+  currency: string;
 }
 
-export function CollapsibleItemList({ items }: CollapsibleItemListProps) {
+export function CollapsibleItemList({ items, currency }: CollapsibleItemListProps) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
 
@@ -39,6 +41,7 @@ export function CollapsibleItemList({ items }: CollapsibleItemListProps) {
         <ItemRow
           key={item.id}
           item={item}
+          currency={currency}
           category={category}
           isLast={index === visible.length - 1 && !isCollapsed}
         />

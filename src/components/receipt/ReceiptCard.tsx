@@ -39,7 +39,10 @@ function ReceiptCardComponent({ receipt, store, itemCount = 0, onPress }: Receip
     : '';
 
   const storeName = store?.name || t('scan.unknownStore');
-  const formattedTotal = formatPrice(receipt.totalAmount ? receipt.totalAmount / 100 : null);
+  const formattedTotal = formatPrice(
+    receipt.totalAmount ? receipt.totalAmount / 100 : null,
+    receipt.currency
+  );
 
   return (
     <Pressable

@@ -240,7 +240,8 @@
     "backToHistory": "Back to history",
     "photoOf": "Photo of the receipt from {{store}}",
     "showAllItems_one": "Show 1 more item",
-    "showAllItems_other": "Show {{count}} more items"
+    "showAllItems_other": "Show {{count}} more items",
+    "currency": "Currency"
   },
   "item": {
     "name": "Item name",
@@ -288,8 +289,6 @@
     "deleteTemplate": "Delete Template",
     "deleteTemplateConfirm": "Delete the parsing template for {{store}}? This cannot be undone.",
     "confidence": "Confidence",
-    "spanishDefaults": "Spanish Region Settings",
-    "spanishDefaultsDesc": "Date format DD/MM/YYYY, decimal comma, and Euro (€) are set automatically.",
     "devMenu": "Developer Options",
     "devMenuDesc": "These options are for development and testing.",
     "addDemoData": "Add Demo Data",

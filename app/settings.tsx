@@ -328,34 +328,6 @@ export default function SettingsScreen() {
             </View>
           )}
 
-          {/* Spanish Defaults Info */}
-          <View
-            className="p-4 rounded-xl mb-3"
-            style={{
-              backgroundColor: `${colors.primary}10`,
-              borderWidth: 1,
-              borderColor: `${colors.primary}30`,
-            }}
-          >
-            <View className="flex-row items-start">
-              <Ionicons name="information-circle-outline" size={20} color={colors.action} />
-              <View className="flex-1 ml-2">
-                <Text
-                  className="text-sm"
-                  style={{ color: colors.text, fontFamily: 'Inter_500Medium' }}
-                >
-                  {t('settings.spanishDefaults')}
-                </Text>
-                <Text
-                  className="text-sm mt-1"
-                  style={{ color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}
-                >
-                  {t('settings.spanishDefaultsDesc')}
-                </Text>
-              </View>
-            </View>
-          </View>
-
           {/* Data */}
           <Text
             accessibilityRole="header"

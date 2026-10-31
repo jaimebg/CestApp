@@ -538,6 +538,7 @@ export default function ScanReviewScreen() {
         rawText: parsedData.rawText || lines.join('\n'),
         processingStatus: 'completed',
         confidence: isManualEntry ? 100 : parsedData.confidence,
+        currency: parsedData.currency ?? 'EUR',
       };
 
       const categorizedItems = await Promise.all(
@@ -815,8 +816,10 @@ export default function ScanReviewScreen() {
       name={item.name}
       quantity={item.quantity}
       unit={item.unit}
-      unitPriceLabel={item.unitPrice != null ? formatPrice(item.unitPrice) : null}
-      totalPriceLabel={formatPrice(item.totalPrice)}
+      unitPriceLabel={
+        item.unitPrice != null ? formatPrice(item.unitPrice, parsedData?.currency) : null
+      }
+      totalPriceLabel={formatPrice(item.totalPrice, parsedData?.currency)}
       categoryName={getCategoryName(item.categoryId)}
       colors={colors}
       onEdit={openItemEdit}
@@ -1139,7 +1142,10 @@ export default function ScanReviewScreen() {
               {duplicateReceipt && (
                 <DuplicateBanner
                   dateLabel={formatLocalizedDate(new Date(duplicateReceipt.dateTime), language)}
-                  totalLabel={formatPrice(duplicateReceipt.totalAmount / 100)}
+                  totalLabel={formatPrice(
+                    duplicateReceipt.totalAmount / 100,
+                    duplicateReceipt.currency
+                  )}
                   onView={() => router.push(`/receipt/${duplicateReceipt.id}`)}
                 />
               )}
@@ -1206,7 +1212,7 @@ export default function ScanReviewScreen() {
                   >
                     {t('scan.itemsSum')}
                   </Text>
-                  <Amount size="sm">{formatPrice(itemsSum)}</Amount>
+                  <Amount size="sm">{formatPrice(itemsSum, parsedData?.currency)}</Amount>
                 </View>
 
                 {parsedData.subtotal !== null && (
@@ -1217,7 +1223,9 @@ export default function ScanReviewScreen() {
                     >
                       {t('receipt.subtotal')}
                     </Text>
-                    <Amount size="sm">{formatPrice(parsedData.subtotal)}</Amount>
+                    <Amount size="sm">
+                      {formatPrice(parsedData.subtotal, parsedData?.currency)}
+                    </Amount>
                   </View>
                 )}
 
@@ -1230,7 +1238,7 @@ export default function ScanReviewScreen() {
                       {t('receipt.discount')}
                     </Text>
                     <Amount size="sm" tone="action">
-                      -{formatPrice(parsedData.discount)}
+                      -{formatPrice(parsedData.discount, parsedData?.currency)}
                     </Amount>
                   </View>
                 )}
@@ -1243,7 +1251,7 @@ export default function ScanReviewScreen() {
                     >
                       {t('receipt.tax')}
                     </Text>
-                    <Amount size="sm">{formatPrice(parsedData.tax)}</Amount>
+                    <Amount size="sm">{formatPrice(parsedData.tax, parsedData?.currency)}</Amount>
                   </View>
                 )}
 
@@ -1267,7 +1275,7 @@ export default function ScanReviewScreen() {
                       className="mr-2"
                       style={{ color: totalsDiffer ? colors.error : colors.text }}
                     >
-                      {formatPrice(parsedData.total)}
+                      {formatPrice(parsedData.total, parsedData?.currency)}
                     </Amount>
                     <Ionicons name="pencil" size={14} color={colors.textSecondary} />
                   </View>
@@ -1431,7 +1439,11 @@ export default function ScanReviewScreen() {
         onSave={saveTotalEdit}
         value={editTotal}
         onChangeText={setEditTotal}
-        itemsSumLabel={formatPrice(itemsSum)}
+        itemsSumLabel={formatPrice(itemsSum, parsedData?.currency)}
+        currency={parsedData?.currency ?? 'EUR'}
+        onCurrencyChange={(code) =>
+          setParsedData((prev) => (prev ? { ...prev, currency: code } : prev))
+        }
         colors={colors}
       />
 

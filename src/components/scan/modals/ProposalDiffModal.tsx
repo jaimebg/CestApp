@@ -112,7 +112,7 @@ function Column({ receipt, title, differingIndices, totalDiffers }: ColumnProps)
                 fontSize: 12,
               }}
             >
-              {formatPrice(item.totalPrice)}
+              {formatPrice(item.totalPrice, receipt.currency)}
             </Text>
           </View>
         );
@@ -125,7 +125,7 @@ function Column({ receipt, title, differingIndices, totalDiffers }: ColumnProps)
             fontSize: 13,
           }}
         >
-          {formatPrice(receipt.total)}
+          {formatPrice(receipt.total, receipt.currency)}
         </Text>
       </View>
     </View>

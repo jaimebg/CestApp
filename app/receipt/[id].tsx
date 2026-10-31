@@ -690,7 +690,7 @@ export default function ReceiptDetailScreen() {
                         key={item.id || `new-${index}`}
                         onPress={() => openItemEditor(item, index)}
                         accessibilityRole="button"
-                        accessibilityLabel={`${item.name || t('receipt.itemName')}, ${formatPrice(item.price / 100)}`}
+                        accessibilityLabel={`${item.name || t('receipt.itemName')}, ${formatPrice(item.price / 100, receipt.currency)}`}
                         accessibilityHint={t('receipt.editItem')}
                         className="flex-row items-center py-3 border-b border-border/50 dark:border-border-dark/50"
                       >
@@ -724,7 +724,7 @@ export default function ReceiptDetailScreen() {
                           )}
                         </View>
                         <Amount size="base" className="mr-2">
-                          {formatPrice(item.price / 100)}
+                          {formatPrice(item.price / 100, receipt.currency)}
                         </Amount>
                         <Pressable
                           onPress={() => deleteItemFromList(index)}
@@ -748,7 +748,7 @@ export default function ReceiptDetailScreen() {
                   </View>
                 )
               ) : items.length > 0 ? (
-                <CollapsibleItemList items={items} />
+                <CollapsibleItemList items={items} currency={receipt.currency} />
               ) : (
                 <View className="py-8 items-center">
                   <Text
@@ -770,6 +770,7 @@ export default function ReceiptDetailScreen() {
                 tax={receipt.taxAmount}
                 discount={receipt.discountAmount}
                 total={receipt.totalAmount}
+                currency={receipt.currency}
               />
             </View>
           )}
@@ -784,7 +785,10 @@ export default function ReceiptDetailScreen() {
                   {t('receipt.total')}
                 </Text>
                 <Amount size="xl">
-                  {formatPrice(editedItems.reduce((sum, item) => sum + item.price, 0) / 100)}
+                  {formatPrice(
+                    editedItems.reduce((sum, item) => sum + item.price, 0) / 100,
+                    receipt.currency
+                  )}
                 </Amount>
               </View>
             </View>
