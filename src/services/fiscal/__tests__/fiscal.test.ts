@@ -44,3 +44,9 @@ test('rejects an Austrian payload missing its amounts', () => {
 test('takes the first payload any parser accepts', () => {
   expect(parseFiscalQr(['https://club.example.com', AT, PT])?.source).toBe('at-rksv');
 });
+
+test('rejects an Austrian date that does not exist', () => {
+  expect(
+    parseAustriaQr('_R1-AT1_KASSE-01_83469_2026-13-45T18:42:07_7,50_2,00_0,00_0,00_0,00_x_y_z')
+  ).toBeNull();
+});

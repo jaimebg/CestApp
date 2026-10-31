@@ -16,6 +16,9 @@ export function parseAustriaQr(payload: string): FiscalReceipt | null {
   if (!stamp || !amounts.every((amount) => AMOUNT.test(amount))) return null;
 
   const [, year, month, day, hour, minute] = stamp;
+  const saleDate = new Date(Number(year), Number(month) - 1, Number(day));
+  if (saleDate.getMonth() !== Number(month) - 1 || saleDate.getDate() !== Number(day)) return null;
+  if (Number(hour) > 23 || Number(minute) > 59) return null;
   const cents = amounts.reduce(
     (sum, amount) => sum + Math.round(Number(amount.replace(',', '.')) * 100),
     0
@@ -25,7 +28,7 @@ export function parseAustriaQr(payload: string): FiscalReceipt | null {
     source: 'at-rksv',
     countryCode: 'AT',
     total: cents / 100,
-    date: new Date(Number(year), Number(month) - 1, Number(day)),
+    date: saleDate,
     time: `${hour}:${minute}`,
     merchantTaxId: null,
   };
