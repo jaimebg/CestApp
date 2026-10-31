@@ -5,7 +5,7 @@
  */
 
 import type { CountryCode } from '../../config/countries/types';
-import { type RegionalPreset, SPAIN_PRESET } from '../../config/regionalPresets';
+import { type RegionalPreset, detectRegionFromText } from '../../config/regionalPresets';
 import { createScopedLogger } from '../../utils/debug';
 import { detectChainFromLines } from './chainDetector';
 import { parseWithChainTemplate, shouldUseChainParsing } from './chainParser';
@@ -1237,8 +1237,7 @@ export function parseReceipt(lines: string[], options?: ParserOptions): ParsedRe
   }
 
   // Step 2: Fall back to generic parsing
-  // Always use Spain preset for Spanish-focused app
-  let preset = options?.regionalPreset || SPAIN_PRESET;
+  let preset = options?.regionalPreset || detectRegionFromText(rawText);
 
   const format = detectReceiptFormat(processedLines);
 

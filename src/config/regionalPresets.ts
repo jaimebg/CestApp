@@ -3,7 +3,9 @@
  * A country's keywords and number format, shared by the zone, spatial and generic parsers
  */
 
+import { getCountry } from './countries';
 import { SPAIN } from './countries/es/country';
+import { detectCountry } from '../services/ocr/countryDetector';
 import type { RegionalKeywords, RegionalPreset } from './countries/types';
 
 export type { RegionalKeywords, RegionalPreset };
@@ -26,11 +28,10 @@ export function getPresetByCountryCode(_countryCode?: string): RegionalPreset {
 }
 
 /**
- * Detect region from text
- * Simplified: Always returns Spain preset
+ * The country definition a receipt's text points at, Spain when nothing does
  */
-export function detectRegionFromText(_text: string): RegionalPreset {
-  return SPAIN_PRESET;
+export function detectRegionFromText(text: string): RegionalPreset {
+  return getCountry(detectCountry(text).code);
 }
 
 /**
