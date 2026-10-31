@@ -72,9 +72,12 @@ function ErrorFallback({ error, onRetry }: ErrorFallbackProps) {
       className="flex-1 justify-center items-center p-6"
       style={{ backgroundColor: colors.background }}
     >
-      <View className="rounded-full p-4 mb-4" style={{ backgroundColor: colors.error + '20' }}>
-        <Ionicons name="alert-circle" size={48} color={colors.error} />
-      </View>
+      <Ionicons
+        name="alert-circle-outline"
+        size={32}
+        color={colors.textSecondary}
+        style={{ marginBottom: 12 }}
+      />
 
       <Text
         accessibilityRole="header"

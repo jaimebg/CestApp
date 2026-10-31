@@ -1,5 +1,5 @@
-import { View } from 'react-native';
-import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
+import { Text } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from './Button';
 import { useAppColors } from '@/src/hooks/useAppColors';
@@ -20,36 +20,30 @@ export function EmptyState({ icon, title, description, actionLabel, onAction }: 
   const entering = useEntering();
 
   return (
-    <View className="flex-1 justify-center items-center px-8 py-12">
-      <Animated.View
-        entering={entering(FadeIn, 100, 400)}
-        className="bg-primary/20 dark:bg-primary/30 rounded-full p-6 mb-4"
-      >
-        <Ionicons name={icon} size={48} color={colors.action} />
-      </Animated.View>
-      <Animated.Text
-        entering={entering(FadeInUp, 200, 400)}
+    <Animated.View
+      entering={entering(FadeIn, 0, 300)}
+      className="flex-1 justify-center items-center px-8 py-12"
+    >
+      <Ionicons name={icon} size={32} color={colors.textSecondary} style={{ marginBottom: 12 }} />
+      <Text
         accessibilityRole="header"
-        className="text-lg text-text dark:text-text-dark text-center"
-        style={{ fontFamily: 'Inter_600SemiBold' }}
+        className="text-text dark:text-text-dark text-center"
+        style={{ fontFamily: 'Inter_600SemiBold', fontSize: 17 }}
       >
         {title}
-      </Animated.Text>
-      <Animated.Text
-        entering={entering(FadeInUp, 300, 400)}
+      </Text>
+      <Text
         className="text-base text-text-secondary dark:text-text-dark-secondary text-center mt-2"
         style={{ fontFamily: 'Inter_400Regular' }}
       >
         {description}
-      </Animated.Text>
+      </Text>
       {actionLabel && onAction && (
-        <Animated.View entering={entering(FadeInUp, 400, 400)}>
-          <Button onPress={onAction} className="mt-6">
-            {actionLabel}
-          </Button>
-        </Animated.View>
+        <Button onPress={onAction} className="mt-6">
+          {actionLabel}
+        </Button>
       )}
-    </View>
+    </Animated.View>
   );
 }
 
@@ -66,35 +60,34 @@ export function ErrorState({ title, description, onRetry, retryLabel }: ErrorSta
   const entering = useEntering();
 
   return (
-    <View className="flex-1 justify-center items-center px-8 py-12">
-      <Animated.View
-        entering={entering(FadeIn, 100, 400)}
-        className="bg-error/20 rounded-full p-6 mb-4"
-      >
-        <Ionicons name="alert-circle-outline" size={48} color={colors.error} />
-      </Animated.View>
-      <Animated.Text
-        entering={entering(FadeInUp, 200, 400)}
+    <Animated.View
+      entering={entering(FadeIn, 0, 300)}
+      className="flex-1 justify-center items-center px-8 py-12"
+    >
+      <Ionicons
+        name="alert-circle-outline"
+        size={32}
+        color={colors.textSecondary}
+        style={{ marginBottom: 12 }}
+      />
+      <Text
         accessibilityRole="header"
-        className="text-lg text-text dark:text-text-dark text-center"
-        style={{ fontFamily: 'Inter_600SemiBold' }}
+        className="text-text dark:text-text-dark text-center"
+        style={{ fontFamily: 'Inter_600SemiBold', fontSize: 17 }}
       >
         {title}
-      </Animated.Text>
-      <Animated.Text
-        entering={entering(FadeInUp, 300, 400)}
+      </Text>
+      <Text
         className="text-base text-text-secondary dark:text-text-dark-secondary text-center mt-2"
         style={{ fontFamily: 'Inter_400Regular' }}
       >
         {description}
-      </Animated.Text>
+      </Text>
       {onRetry && (
-        <Animated.View entering={entering(FadeInUp, 400, 400)}>
-          <Button variant="destructive" onPress={onRetry} className="mt-6">
-            {retryLabel}
-          </Button>
-        </Animated.View>
+        <Button onPress={onRetry} className="mt-6">
+          {retryLabel}
+        </Button>
       )}
-    </View>
+    </Animated.View>
   );
 }

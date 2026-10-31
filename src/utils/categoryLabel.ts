@@ -21,13 +21,3 @@ export function categoryLabel(name: string | null | undefined, t: TFunction): st
   const key = KEY_BY_NAME.get(name);
   return key ? t(`categories.${key}`) : name;
 }
-
-/** `🥬 Frutas y verduras`, or just the label when the category has no icon. */
-export function categoryLabelWithIcon(
-  category: { name: string; icon?: string | null } | null | undefined,
-  t: TFunction
-): string | null {
-  if (!category) return null;
-  const label = categoryLabel(category.name, t);
-  return category.icon ? `${category.icon} ${label}` : label;
-}

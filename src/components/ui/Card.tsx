@@ -1,7 +1,7 @@
 import { View, Pressable, StyleProp, ViewStyle } from 'react-native';
 import type { ViewProps, PressableProps } from 'react-native';
 
-type CardVariant = 'elevated' | 'outlined' | 'filled';
+type CardVariant = 'elevated' | 'outlined';
 type CardPadding = 'none' | 'sm' | 'md' | 'lg';
 
 interface CardProps extends ViewProps {
@@ -13,9 +13,8 @@ interface CardProps extends ViewProps {
 }
 
 const variantClasses: Record<CardVariant, string> = {
-  elevated: 'bg-surface dark:bg-surface-dark shadow-sm',
+  elevated: 'bg-surface dark:bg-surface-dark border border-border dark:border-border-dark',
   outlined: 'bg-surface dark:bg-surface-dark border border-border dark:border-border-dark',
-  filled: 'bg-primary/10 dark:bg-primary/20',
 };
 
 const paddingClasses: Record<CardPadding, string> = {

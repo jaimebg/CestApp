@@ -46,6 +46,18 @@ const GUARDS: Guard[] = [
   },
   { name: 'no pie chart', pattern: /PieChart/, roots: ['app'] },
   {
+    name: 'no tinted icon circles',
+    pattern:
+      /bg-(primary|error|accent)\/\d+[^"]*rounded-full|rounded-full p-\d" style=\{\{ backgroundColor/,
+    roots: ['app', 'src/components'],
+  },
+  {
+    name: 'no filled card',
+    pattern: /variant="filled"|filled: '/,
+    roots: ['app', 'src/components'],
+  },
+  { name: 'no emoji category labels', pattern: /categoryLabelWithIcon/, roots: ['app', 'src'] },
+  {
     name: 'no uppercase tracked labels',
     pattern: /\buppercase\b|tracking-(wide|wider|widest)/,
     roots: ['app', 'src/components'],
@@ -53,7 +65,7 @@ const GUARDS: Guard[] = [
   {
     name: 'no emoji in UI',
     pattern: /\p{Extended_Pictographic}/u,
-    roots: ['app/receipt', 'src/components/receipt', 'app/scan', 'src/components/scan'],
+    roots: ['app', 'src/components', 'src/utils'],
   },
 ];
 
