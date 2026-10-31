@@ -35,13 +35,8 @@ export function CollapsibleItemList({ items }: CollapsibleItemListProps) {
 
   return (
     <View>
-      {visible.map(({ item, category }, index) => (
-        <ItemRow
-          key={item.id}
-          item={item}
-          category={category}
-          isLast={index === visible.length - 1 && !isCollapsed}
-        />
+      {visible.map(({ item, category }) => (
+        <ItemRow key={item.id} item={item} category={category} />
       ))}
 
       {isCollapsed && (

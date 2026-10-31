@@ -238,7 +238,8 @@
     "backToHistory": "Back to history",
     "photoOf": "Photo of the receipt from {{store}}",
     "showAllItems_one": "Show 1 more item",
-    "showAllItems_other": "Show {{count}} more items"
+    "showAllItems_other": "Show {{count}} more items",
+    "originalPhoto": "Original photo"
   },
   "item": {
     "name": "Item name",

@@ -39,6 +39,11 @@ const GUARDS: Guard[] = [
     roots: ['app', 'src/components'],
   },
   { name: 'no ReceiptCard', pattern: /ReceiptCard/, roots: ['app', 'src'] },
+  {
+    name: 'no emoji in UI',
+    pattern: /\p{Extended_Pictographic}/u,
+    roots: ['app/receipt', 'src/components/receipt'],
+  },
 ];
 
 const ROOT = path.resolve(__dirname, '../../..');

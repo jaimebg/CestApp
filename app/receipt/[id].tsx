@@ -34,11 +34,15 @@ import {
 } from '../../src/utils/dateTime';
 import { deleteReceiptFile } from '../../src/services/storage';
 import { ReceiptSummary } from '../../src/components/receipt/ReceiptSummary';
+import { Ticket } from '../../src/components/receipt/Ticket';
+import { TicketLine, TicketRule } from '../../src/components/receipt/TicketLine';
+import { Chip } from '../../src/components/ui/Chip';
+import { ListGroup, ListRow } from '../../src/components/ui/ListGroup';
+import { SectionHeader } from '../../src/components/ui/SectionHeader';
 import { CollapsibleItemList } from '../../src/components/receipt/CollapsibleItemList';
 import { ConfirmationModal } from '../../src/components/ui/ConfirmationModal';
 import { ModalHeader } from '../../src/components/ui/ModalHeader';
 import { ReadingColumn } from '../../src/components/ui/ReadingColumn';
-import { Amount } from '../../src/components/ui/Amount';
 import { Button } from '../../src/components/ui/Button';
 import { useAppColors } from '../../src/hooks/useAppColors';
 import { ICON_HIT_SLOP, MIN_TARGET } from '../../src/theme/a11y';
@@ -87,6 +91,7 @@ export default function ReceiptDetailScreen() {
   const [isSaving, setIsSaving] = useState(false);
 
   const [isEditing, setIsEditing] = useState(false);
+  const [showPhoto, setShowPhoto] = useState(false);
   const [editedStoreName, setEditedStoreName] = useState('');
   const [editedItems, setEditedItems] = useState<EditableItem[]>([]);
 
@@ -418,7 +423,7 @@ export default function ReceiptDetailScreen() {
         >
           {isEditing ? (
             <Text
-              className="text-error dark:text-error-light text-base"
+              className="text-text-secondary dark:text-text-dark-secondary text-base"
               style={{ fontFamily: 'Inter_400Regular' }}
             >
               {t('common.cancel')}
@@ -497,327 +502,179 @@ export default function ReceiptDetailScreen() {
         showsVerticalScrollIndicator={false}
       >
         <ReadingColumn>
-          {/* Receipt image preview (if available) */}
-          {receipt.imagePath && !isEditing && (
+          {!isEditing ? (
             <View className="mx-4 mt-4">
-              <Image
-                source={{ uri: receipt.imagePath }}
-                style={{ width: '100%', height: 192, borderRadius: 12 }}
-                contentFit="cover"
-                transition={150}
-                cachePolicy="memory-disk"
-                accessible
-                accessibilityRole="image"
-                accessibilityLabel={t('receipt.photoOf', {
-                  store: store?.name || t('scan.unknownStore'),
-                })}
-              />
-            </View>
-          )}
+              <Ticket
+                header={{
+                  title: store?.name || t('scan.unknownStore'),
+                  lines: [
+                    store?.address,
+                    formattedTime ? `${formattedDate} · ${formattedTime}` : formattedDate,
+                    receipt.paymentMethod ? t(`receipt.${receipt.paymentMethod}`) : null,
+                  ].filter((line): line is string => !!line),
+                }}
+              >
+                {items.length > 0 ? (
+                  <CollapsibleItemList items={items} />
+                ) : (
+                  <Text
+                    className="py-6 text-center"
+                    style={{ fontFamily: fonts.regular, color: colors.textSecondary }}
+                  >
+                    {t('scan.noItemsFound')}
+                  </Text>
+                )}
+                <ReceiptSummary
+                  subtotal={receipt.subtotal}
+                  tax={receipt.taxAmount}
+                  discount={receipt.discountAmount}
+                  total={receipt.totalAmount}
+                />
+              </Ticket>
 
-          {/* Store and date info */}
-          <View className="mx-4 mt-4 bg-surface dark:bg-surface-dark rounded-2xl p-4">
-            <View className="flex-row items-center mb-4">
-              <View className="w-12 h-12 bg-primary/20 dark:bg-primary/30 rounded-full items-center justify-center mr-4">
-                <Ionicons name="storefront-outline" size={24} color={colors.action} />
-              </View>
-              <View className="flex-1">
-                {isEditing ? (
+              {receipt.confidence != null && receipt.confidence < 80 && (
+                <View className="flex-row items-center mt-4 px-1">
+                  <Ionicons name="alert-circle-outline" size={20} color={colors.warning} />
+                  <Text
+                    className="ml-2 flex-1"
+                    style={{ fontFamily: fonts.regular, fontSize: 14, color: colors.warning }}
+                  >
+                    {t('scan.lowConfidence')}
+                  </Text>
+                </View>
+              )}
+
+              {receipt.notes ? (
+                <View className="mt-8">
+                  <SectionHeader title={t('receipt.notes')} />
+                  <Text style={{ fontFamily: fonts.regular, fontSize: 15, color: colors.text }}>
+                    {receipt.notes}
+                  </Text>
+                </View>
+              ) : null}
+
+              {receipt.imagePath ? (
+                <View className="mt-8">
+                  <ListGroup>
+                    <ListRow
+                      title={t('receipt.originalPhoto')}
+                      icon="image-outline"
+                      onPress={() => setShowPhoto((shown) => !shown)}
+                      accessory={
+                        <Image
+                          source={{ uri: receipt.imagePath }}
+                          style={{ width: 40, height: 40, borderRadius: 8 }}
+                          contentFit="cover"
+                          cachePolicy="memory-disk"
+                        />
+                      }
+                    />
+                  </ListGroup>
+                  {showPhoto ? (
+                    <Image
+                      source={{ uri: receipt.imagePath }}
+                      style={{ width: '100%', aspectRatio: 0.6, borderRadius: 16, marginTop: 12 }}
+                      contentFit="contain"
+                      transition={150}
+                      cachePolicy="memory-disk"
+                      accessible
+                      accessibilityRole="image"
+                      accessibilityLabel={t('receipt.photoOf', {
+                        store: store?.name || t('scan.unknownStore'),
+                      })}
+                    />
+                  ) : null}
+                </View>
+              ) : null}
+            </View>
+          ) : (
+            <View className="mx-4 mt-4">
+              <ListGroup>
+                <View className="px-4 py-3">
                   <TextInput
-                    className="text-xl text-text dark:text-text-dark bg-background dark:bg-background-dark rounded-lg px-3 py-2 border border-border dark:border-border-dark"
-                    style={{ fontFamily: 'Inter_600SemiBold' }}
+                    className="text-text dark:text-text-dark bg-background dark:bg-background-dark px-3 py-2 border border-border dark:border-border-dark"
+                    style={{ fontFamily: fonts.semibold, fontSize: 17, borderRadius: 10 }}
                     value={editedStoreName}
                     onChangeText={setEditedStoreName}
                     placeholder={t('receipt.store')}
                     placeholderTextColor={colors.textTertiary}
                     accessibilityLabel={t('receipt.store')}
                   />
-                ) : (
-                  <>
-                    <Text
-                      className="text-xl text-text dark:text-text-dark"
-                      style={{ fontFamily: 'Inter_600SemiBold' }}
-                    >
-                      {store?.name || t('scan.unknownStore')}
-                    </Text>
-                    {store?.address && (
-                      <Text
-                        className="text-sm text-text-secondary dark:text-text-dark-secondary mt-0.5"
-                        style={{ fontFamily: 'Inter_400Regular' }}
-                      >
-                        {store.address}
-                      </Text>
-                    )}
-                  </>
-                )}
-              </View>
-            </View>
-
-            {!isEditing && (
-              <View className="border-t border-border dark:border-border-dark pt-4">
-                <View className="flex-row items-center mb-3">
-                  <Ionicons name="calendar-outline" size={18} color={colors.textSecondary} />
-                  <Text
-                    className="text-text-secondary dark:text-text-dark-secondary ml-2 flex-1"
-                    style={{ fontFamily: 'Inter_400Regular' }}
-                  >
-                    {t('receipt.date')}
-                  </Text>
-                  <Text
-                    className="text-text dark:text-text-dark"
-                    style={{ fontFamily: 'Inter_400Regular' }}
-                  >
-                    {formattedDate}
-                  </Text>
                 </View>
-
-                {formattedTime && (
-                  <View className="flex-row items-center mb-3">
-                    <Ionicons name="time-outline" size={18} color={colors.textSecondary} />
-                    <Text
-                      className="text-text-secondary dark:text-text-dark-secondary ml-2 flex-1"
-                      style={{ fontFamily: 'Inter_400Regular' }}
-                    >
-                      {t('scan.time')}
-                    </Text>
-                    <Text
-                      className="text-text dark:text-text-dark"
-                      style={{ fontFamily: 'Inter_400Regular' }}
-                    >
-                      {formattedTime}
-                    </Text>
-                  </View>
-                )}
-
-                {receipt.paymentMethod && (
-                  <View className="flex-row items-center">
-                    <Ionicons
-                      name={
-                        receipt.paymentMethod === 'card'
-                          ? 'card-outline'
-                          : receipt.paymentMethod === 'digital'
-                            ? 'phone-portrait-outline'
-                            : 'cash-outline'
-                      }
-                      size={18}
-                      color={colors.textSecondary}
-                    />
-                    <Text
-                      className="text-text-secondary dark:text-text-dark-secondary ml-2 flex-1"
-                      style={{ fontFamily: 'Inter_400Regular' }}
-                    >
-                      {t('receipt.paymentMethod')}
-                    </Text>
-                    <Text
-                      className="text-text dark:text-text-dark capitalize"
-                      style={{ fontFamily: 'Inter_400Regular' }}
-                    >
-                      {t(`receipt.${receipt.paymentMethod}`)}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            )}
-
-            {isEditing && (
-              <View className="border-t border-border dark:border-border-dark pt-4">
-                <Pressable
+                <ListRow
+                  title={formattedTime ? `${formattedDate} · ${formattedTime}` : formattedDate}
+                  icon="calendar-outline"
+                  chevron
                   onPress={() => setShowDateModal(true)}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('receipt.editDate')}
-                  style={{ minHeight: MIN_TARGET }}
-                  className="flex-row items-center justify-between"
-                >
-                  <View className="flex-row items-center">
-                    <Ionicons name="calendar-outline" size={18} color={colors.textSecondary} />
-                    <Text
-                      className="text-text dark:text-text-dark ml-2"
-                      style={{ fontFamily: 'Inter_400Regular' }}
-                    >
-                      {formattedDate}
-                    </Text>
-                    {formattedTime && (
-                      <Text
-                        className="text-text-secondary dark:text-text-dark-secondary ml-2"
-                        style={{ fontFamily: 'Inter_400Regular' }}
-                      >
-                        {formattedTime}
-                      </Text>
-                    )}
-                  </View>
-                  <Ionicons name="pencil" size={16} color={colors.textSecondary} />
-                </Pressable>
-              </View>
-            )}
-          </View>
+                />
+              </ListGroup>
 
-          {/* Items */}
-          <View className="mx-4 mt-4">
-            <View className="flex-row items-center justify-between mb-3">
-              <Text
-                className="text-lg text-text dark:text-text-dark"
-                style={{ fontFamily: 'Inter_600SemiBold' }}
-              >
-                {t('receipt.items')} ({isEditing ? editedItems.length : items.length})
-              </Text>
-              {isEditing && (
-                <Pressable
-                  onPress={() => openItemEditor(null, null)}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('receipt.addItem')}
-                  hitSlop={ICON_HIT_SLOP}
-                  style={{ minHeight: MIN_TARGET, justifyContent: 'center' }}
-                  className="flex-row items-center bg-primary/20 px-3 py-1.5 rounded-full"
-                >
-                  <Ionicons name="add" size={18} color={colors.action} />
-                  <Text
-                    className="text-action dark:text-action-dark text-sm ml-1"
-                    style={{ fontFamily: 'Inter_400Regular' }}
-                  >
-                    {t('receipt.addItem')}
-                  </Text>
-                </Pressable>
-              )}
-            </View>
-
-            <View className="bg-surface dark:bg-surface-dark rounded-2xl px-4">
-              {isEditing ? (
-                editedItems.length > 0 ? (
-                  editedItems.map((item, index) => {
-                    const category = getCategoryForItem(item.categoryId);
-                    return (
-                      <Pressable
-                        key={item.id || `new-${index}`}
-                        onPress={() => openItemEditor(item, index)}
-                        accessibilityRole="button"
-                        accessibilityLabel={`${item.name || t('receipt.itemName')}, ${formatPrice(item.price / 100)}`}
-                        accessibilityHint={t('receipt.editItem')}
-                        className="flex-row items-center py-3 border-b border-border/50 dark:border-border-dark/50"
-                      >
-                        <View
-                          className="w-8 h-8 rounded-full items-center justify-center mr-3"
-                          style={{
-                            backgroundColor: category?.color
-                              ? `${category.color}20`
-                              : `${colors.textTertiary}20`,
-                          }}
-                        >
-                          <Text className="text-sm" style={{ fontFamily: 'Inter_400Regular' }}>
-                            {category?.icon || '📦'}
-                          </Text>
-                        </View>
-                        <View className="flex-1 mr-3">
-                          <Text
-                            className="text-text dark:text-text-dark text-base"
-                            numberOfLines={1}
-                            style={{ fontFamily: 'Inter_400Regular' }}
-                          >
-                            {item.name || t('receipt.itemName')}
-                          </Text>
-                          {item.quantity > 1 && (
-                            <Text
-                              className="text-text-secondary dark:text-text-dark-secondary text-sm"
-                              style={{ fontFamily: 'Inter_400Regular' }}
+              <View className="mt-8">
+                <SectionHeader
+                  title={`${t('receipt.items')} (${editedItems.length})`}
+                  action={{
+                    label: t('receipt.addItem'),
+                    onPress: () => openItemEditor(null, null),
+                  }}
+                />
+                <Ticket>
+                  {editedItems.length > 0 ? (
+                    editedItems.map((item, index) => {
+                      const category = getCategoryForItem(item.categoryId);
+                      const meta = [
+                        item.quantity > 1 ? `${item.quantity}x` : null,
+                        category ? categoryLabel(category.name, t) : null,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ');
+                      return (
+                        <TicketLine
+                          key={item.id || `new-${index}`}
+                          label={item.name || t('receipt.itemName')}
+                          amount={formatPrice(item.price / 100)}
+                          meta={meta || undefined}
+                          onPress={() => openItemEditor(item, index)}
+                          trailing={
+                            <Pressable
+                              onPress={() => deleteItemFromList(index)}
+                              hitSlop={ICON_HIT_SLOP}
+                              accessibilityRole="button"
+                              accessibilityLabel={`${t('common.delete')}: ${item.name || t('receipt.itemName')}`}
+                              style={{
+                                minWidth: MIN_TARGET,
+                                minHeight: MIN_TARGET,
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
                             >
-                              {item.quantity}x
-                            </Text>
-                          )}
-                        </View>
-                        <Amount size="base" className="mr-2">
-                          {formatPrice(item.price / 100)}
-                        </Amount>
-                        <Pressable
-                          onPress={() => deleteItemFromList(index)}
-                          hitSlop={ICON_HIT_SLOP}
-                          accessibilityRole="button"
-                          accessibilityLabel={`${t('common.delete')}: ${item.name || t('receipt.itemName')}`}
-                        >
-                          <Ionicons name="close-circle" size={22} color={colors.error} />
-                        </Pressable>
-                      </Pressable>
-                    );
-                  })
-                ) : (
-                  <View className="py-8 items-center">
+                              <Ionicons
+                                name="close-circle-outline"
+                                size={20}
+                                color={colors.textTertiary}
+                              />
+                            </Pressable>
+                          }
+                        />
+                      );
+                    })
+                  ) : (
                     <Text
-                      className="text-text-secondary dark:text-text-dark-secondary"
-                      style={{ fontFamily: 'Inter_400Regular' }}
+                      className="py-6 text-center"
+                      style={{ fontFamily: fonts.regular, color: colors.textSecondary }}
                     >
                       {t('scan.noItemsFound')}
                     </Text>
-                  </View>
-                )
-              ) : items.length > 0 ? (
-                <CollapsibleItemList items={items} />
-              ) : (
-                <View className="py-8 items-center">
-                  <Text
-                    className="text-text-secondary dark:text-text-dark-secondary"
-                    style={{ fontFamily: 'Inter_400Regular' }}
-                  >
-                    {t('scan.noItemsFound')}
-                  </Text>
-                </View>
-              )}
-            </View>
-          </View>
-
-          {/* Summary */}
-          {!isEditing && (
-            <View className="mx-4">
-              <ReceiptSummary
-                subtotal={receipt.subtotal}
-                tax={receipt.taxAmount}
-                discount={receipt.discountAmount}
-                total={receipt.totalAmount}
-              />
-            </View>
-          )}
-
-          {isEditing && (
-            <View className="mx-4 mt-4 bg-surface dark:bg-surface-dark rounded-2xl p-4">
-              <View className="flex-row justify-between py-2">
-                <Text
-                  className="text-text dark:text-text-dark text-lg"
-                  style={{ fontFamily: fonts.semibold }}
-                >
-                  {t('receipt.total')}
-                </Text>
-                <Amount size="xl">
-                  {formatPrice(editedItems.reduce((sum, item) => sum + item.price, 0) / 100)}
-                </Amount>
+                  )}
+                  <TicketRule />
+                  <TicketLine
+                    variant="total"
+                    label={t('receipt.total')}
+                    amount={formatPrice(
+                      editedItems.reduce((sum, item) => sum + item.price, 0) / 100
+                    )}
+                  />
+                </Ticket>
               </View>
-            </View>
-          )}
-
-          {/* Notes */}
-          {receipt.notes && !isEditing && (
-            <View className="mx-4 mt-4 bg-surface dark:bg-surface-dark rounded-2xl p-4">
-              <Text
-                className="text-base text-text dark:text-text-dark mb-2"
-                style={{ fontFamily: 'Inter_600SemiBold' }}
-              >
-                {t('receipt.notes')}
-              </Text>
-              <Text
-                className="text-text-secondary dark:text-text-dark-secondary"
-                style={{ fontFamily: 'Inter_400Regular' }}
-              >
-                {receipt.notes}
-              </Text>
-            </View>
-          )}
-
-          {/* Confidence indicator */}
-          {receipt.confidence != null && receipt.confidence < 80 && !isEditing && (
-            <View className="mx-4 mt-4 bg-accent/20 dark:bg-accent/30 rounded-2xl p-4 flex-row items-center">
-              <Ionicons name="warning-outline" size={20} color={colors.warning} />
-              <Text
-                className="text-text dark:text-text-dark ml-2 flex-1"
-                style={{ fontFamily: 'Inter_400Regular' }}
-              >
-                {t('scan.lowConfidence')}
-              </Text>
             </View>
           )}
         </ReadingColumn>
@@ -906,35 +763,14 @@ export default function ReceiptDetailScreen() {
             </Text>
             <View className="flex-row flex-wrap gap-2">
               {categories.map((cat) => (
-                <Pressable
+                <Chip
                   key={cat.id}
+                  label={categoryLabel(cat.name, t)}
+                  selected={editingItem?.categoryId === cat.id}
                   onPress={() =>
                     setEditingItem((prev) => (prev ? { ...prev, categoryId: cat.id } : null))
                   }
-                  accessibilityRole="button"
-                  accessibilityLabel={categoryLabel(cat.name, t)}
-                  accessibilityState={{ selected: editingItem?.categoryId === cat.id }}
-                  style={{ minHeight: MIN_TARGET }}
-                  className={`flex-row items-center px-3 py-2 rounded-full border ${
-                    editingItem?.categoryId === cat.id
-                      ? 'bg-primary-deep border-primary-deep'
-                      : 'bg-surface dark:bg-surface-dark border-border dark:border-border-dark'
-                  }`}
-                >
-                  <Text className="mr-1" style={{ fontFamily: 'Inter_400Regular' }}>
-                    {cat.icon}
-                  </Text>
-                  <Text
-                    className={
-                      editingItem?.categoryId === cat.id
-                        ? 'text-white'
-                        : 'text-text-secondary dark:text-text-dark-secondary'
-                    }
-                    style={{ fontFamily: 'Inter_400Regular' }}
-                  >
-                    {categoryLabel(cat.name, t)}
-                  </Text>
-                </Pressable>
+                />
               ))}
             </View>
           </ScrollView>

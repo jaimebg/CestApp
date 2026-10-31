@@ -238,7 +238,8 @@
     "backToHistory": "Volver al historial",
     "photoOf": "Foto del ticket de {{store}}",
     "showAllItems_one": "Ver 1 artículo más",
-    "showAllItems_other": "Ver {{count}} artículos más"
+    "showAllItems_other": "Ver {{count}} artículos más",
+    "originalPhoto": "Foto original"
   },
   "item": {
     "name": "Nombre del artículo",
