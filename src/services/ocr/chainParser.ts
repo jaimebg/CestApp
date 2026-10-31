@@ -702,6 +702,7 @@ export function parseWithChainTemplate(
     chainName: chain.name,
     chainConfidence: detection.confidence,
     parsingMethod: 'chain',
+    countryCode: chain.country,
   };
 }
 

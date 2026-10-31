@@ -1,4 +1,5 @@
-import { detectChainFromText, detectChainFromLines } from '../chainDetector';
+import { getAllTemplates, getChainTemplate, type ChainTemplate } from '../../../config/countries';
+import { detectChainFromText, detectChainFromLines, findTemplateByTaxId } from '../chainDetector';
 
 describe('detectChainFromText', () => {
   it('detects Mercadona by NIF with highest confidence', () => {
@@ -36,5 +37,40 @@ describe('detectChainFromLines', () => {
   it('detects chain from line array', () => {
     const result = detectChainFromLines(['MERCADONA, S.A.', 'NIF: A-46103834']);
     expect(result.chainId).toBe('mercadona');
+  });
+});
+
+describe('chain and country together', () => {
+  const lidlPt: ChainTemplate = {
+    ...getChainTemplate('ES', 'lidl')!,
+    country: 'PT',
+    nifPatterns: ['503340855'],
+  };
+  const templates = [...getAllTemplates(), lidlPt];
+
+  it('a Spanish NIF yields chain and country', () => {
+    expect(detectChainFromText('MERCADONA\nA-46103834', { templates })).toMatchObject({
+      chainId: 'mercadona',
+      countryCode: 'ES',
+    });
+  });
+
+  it('a Portuguese NIF picks the Portuguese template of the same chain', () => {
+    expect(detectChainFromText('LIDL\nNIF 503340855', { templates }).chain?.country).toBe('PT');
+  });
+
+  it('a name shared across countries is settled by country signals', () => {
+    expect(detectChainFromText('LIDL\nOBRIGADO\nTROCO 0,50', { templates }).countryCode).toBe('PT');
+    expect(detectChainFromText('LIDL\nGRACIAS\nEFECTIVO', { templates }).countryCode).toBe('ES');
+  });
+
+  it('a tax id hint wins over the text', () => {
+    expect(detectChainFromText('TICKET', { templates, taxIdHint: '503340855' }).countryCode).toBe(
+      'PT'
+    );
+  });
+
+  it('a NIF inside a longer number does not match', () => {
+    expect(findTemplateByTaxId('REF 15033408559', templates)).toBeNull();
   });
 });

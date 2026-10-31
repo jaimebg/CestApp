@@ -1004,6 +1004,8 @@ export interface ParserOptions {
   preferredDateFormat?: 'DMY' | 'MDY' | 'YMD';
   preferredDecimalSeparator?: '.' | ',';
   regionalPreset?: RegionalPreset;
+  /** A merchant tax ID read outside OCR (a fiscal QR), tried before the text. */
+  taxIdHint?: string | null;
 }
 
 /**
@@ -1210,7 +1212,7 @@ export function parseReceipt(lines: string[], options?: ParserOptions): ParsedRe
   const rawText = processedLines.join('\n');
 
   // Step 1: Try chain-specific parsing first
-  const chainDetection = detectChainFromLines(processedLines);
+  const chainDetection = detectChainFromLines(processedLines, { taxIdHint: options?.taxIdHint });
 
   if (shouldUseChainParsing(chainDetection)) {
     logger.log(

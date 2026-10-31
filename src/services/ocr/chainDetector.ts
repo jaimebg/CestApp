@@ -9,7 +9,8 @@
  * 4. Keyword heuristics (fallback)
  */
 
-import { getAllTemplates, type ChainTemplate } from '../../config/countries';
+import { getAllTemplates, type ChainTemplate, type CountryCode } from '../../config/countries';
+import { detectCountry } from './countryDetector';
 import { createScopedLogger } from '../../utils/debug';
 
 const logger = createScopedLogger('ChainDetector');
@@ -23,6 +24,14 @@ export interface ChainDetectionResult {
   confidence: number;
   detectionMethod: 'nif' | 'name' | 'fingerprint' | 'heuristic' | 'none';
   matchedPattern?: string;
+  countryCode: CountryCode | null;
+}
+
+export interface DetectionOptions {
+  /** Templates to choose from; all registered templates when omitted. */
+  templates?: ChainTemplate[];
+  /** A merchant tax ID read from somewhere more reliable than OCR, such as a fiscal QR. */
+  taxIdHint?: string | null;
 }
 
 /**
@@ -54,229 +63,218 @@ function extractTextFromBlocks(blocks: OcrBlock[]): string {
   return lines.join('\n');
 }
 
+function normalizeTaxIds(text: string): string {
+  return text.toUpperCase().replace(/([A-Z0-9])[.-](?=[A-Z0-9])/g, '$1');
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 /**
- * Strategy 1: Detect chain by NIF/CIF
- * Most reliable method (98% confidence)
- * Handles both formats: A12345678 and A-12345678 (with hyphen)
+ * The template whose tax ID is printed in the text, matched as a whole token so
+ * a NIF inside a longer number (a barcode, an ATCUD) does not count.
  */
-function detectByNif(text: string): ChainDetectionResult | null {
-  const nifLookup = new Map<string, ChainTemplate>();
-  for (const template of getAllTemplates()) {
+export function findTemplateByTaxId(
+  text: string,
+  templates: ChainTemplate[] = getAllTemplates()
+): ChainTemplate | null {
+  const normalized = normalizeTaxIds(text);
+
+  for (const template of templates) {
     for (const nif of template.nifPatterns) {
-      nifLookup.set(nif.toUpperCase(), template);
-      nifLookup.set(nif.toUpperCase().replace('-', ''), template);
-    }
-  }
-
-  // NIF patterns: Letter + optional hyphen + 8 digits, or 8 digits + letter
-  const nifPatterns = [
-    /\b([A-Z]-?\d{8})\b/gi, // A12345678 or A-12345678
-    /\b(\d{8}[A-Z])\b/gi, // 12345678A
-    /NIF[:\s]*([A-Z]-?\d{8})/gi, // NIF: A12345678 or A-12345678
-    /CIF[:\s]*([A-Z]-?\d{8})/gi, // CIF: A12345678
-    /N\.?I\.?F\.?[:\s]*([A-Z]-?\d{8})/gi,
-    /C\.?I\.?F\.?[:\s]*([A-Z]-?\d{8})/gi,
-  ];
-
-  for (const pattern of nifPatterns) {
-    const matches = text.matchAll(pattern);
-    for (const match of matches) {
-      const nif = match[1].toUpperCase();
-      // Try both with and without hyphen
-      const nifWithHyphen = nif.includes('-') ? nif : `${nif[0]}-${nif.slice(1)}`;
-      const nifWithoutHyphen = nif.replace('-', '');
-
-      const chain =
-        nifLookup.get(nif) || nifLookup.get(nifWithHyphen) || nifLookup.get(nifWithoutHyphen);
-
-      if (chain) {
-        return {
-          chain,
-          chainId: chain.chainId,
-          confidence: 98,
-          detectionMethod: 'nif',
-          matchedPattern: nif,
-        };
+      const id = normalizeTaxIds(nif);
+      if (new RegExp(`(^|[^A-Z0-9])${escapeRegExp(id)}(?![A-Z0-9])`).test(normalized)) {
+        return template;
       }
     }
   }
 
   return null;
+}
+
+/**
+ * Strategy 1: Detect chain by tax ID (98% confidence)
+ */
+function detectByNif(
+  text: string,
+  templates: ChainTemplate[],
+  taxIdHint?: string | null
+): ChainDetectionResult | null {
+  const chain =
+    (taxIdHint ? findTemplateByTaxId(taxIdHint, templates) : null) ??
+    findTemplateByTaxId(text, templates);
+  if (!chain) return null;
+
+  return {
+    chain,
+    chainId: chain.chainId,
+    confidence: 98,
+    detectionMethod: 'nif',
+    matchedPattern: chain.nifPatterns[0],
+    countryCode: chain.country,
+  };
+}
+
+/**
+ * Of several templates that matched equally well, the one from the receipt's
+ * country; the first by tier when none is.
+ */
+function pickByCountry(candidates: ChainTemplate[], text: string): ChainTemplate {
+  const countries = new Set(candidates.map((t) => t.country));
+  if (countries.size === 1) return candidates[0];
+
+  const country = detectCountry(text).code;
+  return candidates.find((t) => t.country === country) ?? candidates[0];
 }
 
 /**
  * Strategy 2: Detect chain by exact name matching
  * High confidence (90%)
  */
-function detectByName(text: string): ChainDetectionResult | null {
+function detectByName(text: string, templates: ChainTemplate[]): ChainDetectionResult | null {
   const upperText = text.toUpperCase();
-  const templates = getAllTemplates();
+  const candidates = templates.filter((template) =>
+    template.namePatterns.some((pattern) => pattern.test(upperText))
+  );
+  if (candidates.length === 0) return null;
 
-  // Check each template's name patterns
-  for (const template of templates) {
-    for (const pattern of template.namePatterns) {
-      if (pattern.test(upperText)) {
-        const match = upperText.match(pattern);
-        return {
-          chain: template,
-          chainId: template.chainId,
-          confidence: 90,
-          detectionMethod: 'name',
-          matchedPattern: match?.[0] || template.name,
-        };
-      }
-    }
-  }
-
-  return null;
+  const chain = pickByCountry(candidates, text);
+  const pattern = chain.namePatterns.find((p) => p.test(upperText));
+  return {
+    chain,
+    chainId: chain.chainId,
+    confidence: 90,
+    detectionMethod: 'name',
+    matchedPattern: (pattern && upperText.match(pattern)?.[0]) || chain.name,
+    countryCode: chain.country,
+  };
 }
 
 /**
  * Strategy 3: Detect chain by fingerprint patterns
  * Medium confidence (70-85%)
  */
-function detectByFingerprint(text: string): ChainDetectionResult | null {
+function detectByFingerprint(
+  text: string,
+  templates: ChainTemplate[]
+): ChainDetectionResult | null {
   const upperText = text.toUpperCase();
-  const templates = getAllTemplates();
+  const counts = templates.map((template) => ({
+    template,
+    matched: template.fingerprints.filter((fingerprint) => fingerprint.test(upperText)),
+  }));
 
-  let bestMatch: ChainDetectionResult | null = null;
-  let maxMatches = 0;
+  const best = Math.max(0, ...counts.map((c) => c.matched.length));
+  if (best === 0) return null;
 
-  for (const template of templates) {
-    let matchCount = 0;
-    let lastMatchedPattern = '';
+  const leaders = counts.filter((c) => c.matched.length === best);
+  const chain = pickByCountry(
+    leaders.map((c) => c.template),
+    text
+  );
+  const matched = leaders.find((c) => c.template === chain)!.matched;
+  const lastMatched = matched[matched.length - 1];
 
-    for (const fingerprint of template.fingerprints) {
-      if (fingerprint.test(upperText)) {
-        matchCount++;
-        const match = upperText.match(fingerprint);
-        lastMatchedPattern = match?.[0] || '';
-      }
-    }
-
-    if (matchCount > maxMatches) {
-      maxMatches = matchCount;
-      // Confidence scales with number of fingerprints matched
-      const confidence = Math.min(70 + matchCount * 5, 85);
-      bestMatch = {
-        chain: template,
-        chainId: template.chainId,
-        confidence,
-        detectionMethod: 'fingerprint',
-        matchedPattern: lastMatchedPattern,
-      };
-    }
-  }
-
-  return bestMatch;
+  return {
+    chain,
+    chainId: chain.chainId,
+    confidence: Math.min(70 + best * 5, 85),
+    detectionMethod: 'fingerprint',
+    matchedPattern: (lastMatched && upperText.match(lastMatched)?.[0]) || '',
+    countryCode: chain.country,
+  };
 }
 
 /**
  * Strategy 4: Heuristic detection based on keywords
  * Lower confidence (50-65%)
  */
-function detectByHeuristic(text: string): ChainDetectionResult | null {
-  const upperText = text.toUpperCase();
+function detectByHeuristic(text: string, templates: ChainTemplate[]): ChainDetectionResult | null {
+  const headerText = text.toUpperCase().split('\n').slice(0, 10).join('\n');
 
-  // Common store name keywords to look for in header
-  const headerText = upperText.split('\n').slice(0, 10).join('\n');
+  const matches = templates
+    .map((template) => ({
+      template,
+      word: template.name
+        .toUpperCase()
+        .split(/\s+/)
+        .find((w) => w.length >= 4 && headerText.includes(w)),
+    }))
+    .filter((m): m is { template: ChainTemplate; word: string } => m.word !== undefined);
+  if (matches.length === 0) return null;
 
-  const templates = getAllTemplates();
-
-  for (const template of templates) {
-    // Check if any part of the store name appears
-    const nameWords = template.name.toUpperCase().split(/\s+/);
-    for (const word of nameWords) {
-      if (word.length >= 4 && headerText.includes(word)) {
-        return {
-          chain: template,
-          chainId: template.chainId,
-          confidence: 60,
-          detectionMethod: 'heuristic',
-          matchedPattern: word,
-        };
-      }
-    }
-  }
-
-  return null;
+  const chain = pickByCountry(
+    matches.map((m) => m.template),
+    text
+  );
+  return {
+    chain,
+    chainId: chain.chainId,
+    confidence: 60,
+    detectionMethod: 'heuristic',
+    matchedPattern: matches.find((m) => m.template === chain)!.word,
+    countryCode: chain.country,
+  };
 }
+
+const NO_CHAIN: ChainDetectionResult = {
+  chain: null,
+  chainId: null,
+  confidence: 0,
+  detectionMethod: 'none',
+  countryCode: null,
+};
 
 /**
  * Main detection function
  * Tries all strategies in order of reliability
  *
  * @param blocks - OCR blocks from ML Kit
- * @returns Detection result with chain template and confidence
+ * @returns Detection result with chain template, its country and confidence
  */
-export function detectChain(blocks: OcrBlock[]): ChainDetectionResult {
+export function detectChain(blocks: OcrBlock[], options?: DetectionOptions): ChainDetectionResult {
   const text = extractTextFromBlocks(blocks);
+  const templates = options?.templates ?? getAllTemplates();
 
-  if (!text || text.trim().length === 0) {
-    return {
-      chain: null,
-      chainId: null,
-      confidence: 0,
-      detectionMethod: 'none',
-    };
+  if ((!text || text.trim().length === 0) && !options?.taxIdHint) {
+    return NO_CHAIN;
   }
 
-  // Strategy 1: NIF/CIF matching (98% confidence)
-  const nifResult = detectByNif(text);
-  if (nifResult) {
-    logger.log('Detected by NIF:', nifResult.chainId, nifResult.matchedPattern);
-    return nifResult;
+  const result =
+    detectByNif(text, templates, options?.taxIdHint) ??
+    detectByName(text, templates) ??
+    detectByFingerprint(text, templates) ??
+    detectByHeuristic(text, templates);
+
+  if (!result) {
+    logger.log('No chain detected');
+    return NO_CHAIN;
   }
 
-  // Strategy 2: Exact name matching (90% confidence)
-  const nameResult = detectByName(text);
-  if (nameResult) {
-    logger.log('Detected by name:', nameResult.chainId, nameResult.matchedPattern);
-    return nameResult;
-  }
-
-  // Strategy 3: Fingerprint matching (70-85% confidence)
-  const fingerprintResult = detectByFingerprint(text);
-  if (fingerprintResult) {
-    logger.log(
-      'Detected by fingerprint:',
-      fingerprintResult.chainId,
-      fingerprintResult.matchedPattern
-    );
-    return fingerprintResult;
-  }
-
-  // Strategy 4: Heuristic detection (50-65% confidence)
-  const heuristicResult = detectByHeuristic(text);
-  if (heuristicResult) {
-    logger.log('Detected by heuristic:', heuristicResult.chainId, heuristicResult.matchedPattern);
-    return heuristicResult;
-  }
-
-  // No chain detected
-  logger.log('No chain detected');
-  return {
-    chain: null,
-    chainId: null,
-    confidence: 0,
-    detectionMethod: 'none',
-  };
+  logger.log(`Detected by ${result.detectionMethod}:`, result.chainId, result.matchedPattern);
+  return result;
 }
 
 /**
  * Detect chain from text lines (alternative input)
  */
-export function detectChainFromLines(lines: string[]): ChainDetectionResult {
+export function detectChainFromLines(
+  lines: string[],
+  options?: DetectionOptions
+): ChainDetectionResult {
   const blocks: OcrBlock[] = lines.map((text) => ({ text }));
-  return detectChain(blocks);
+  return detectChain(blocks, options);
 }
 
 /**
  * Detect chain from raw text
  */
-export function detectChainFromText(text: string): ChainDetectionResult {
-  const lines = text.split('\n');
-  return detectChainFromLines(lines);
+export function detectChainFromText(
+  text: string,
+  options?: DetectionOptions
+): ChainDetectionResult {
+  return detectChainFromLines(text.split('\n'), options);
 }
 
 /**
