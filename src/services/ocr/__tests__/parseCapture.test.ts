@@ -110,3 +110,18 @@ describe('parseCapture', () => {
     expect(result!.total).toBeCloseTo(1.95, 2);
   });
 });
+
+describe('parseCapture keeps the chain', () => {
+  it('keeps the detected chain and its country when reading through zones', () => {
+    const result = parseCapture({
+      lines: MERCADONA_PHOTO_BLOCKS.map((b) => b.text),
+      blocks: MERCADONA_PHOTO_BLOCKS,
+      ocrText: MERCADONA_PHOTO_BLOCKS.map((b) => b.text).join('\n'),
+      dimensions: PHOTO_DIMS,
+      zones: zonesForPhoto(),
+      detectedTotal: null,
+    });
+
+    expect(result).toMatchObject({ chainId: 'mercadona', countryCode: 'ES' });
+  });
+});

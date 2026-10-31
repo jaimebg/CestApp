@@ -755,6 +755,11 @@ export function parseWithTemplate(
     paymentMethod: null,
     rawText,
     confidence,
+    chainId: textBasedResult.chainId,
+    chainName: textBasedResult.chainName,
+    chainConfidence: textBasedResult.chainConfidence,
+    parsingMethod: textBasedResult.parsingMethod,
+    countryCode: textBasedResult.countryCode,
   };
 }
 
