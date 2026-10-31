@@ -1,28 +1,20 @@
 /**
  * Typography tokens.
  *
- * The app loads Inter as five separate families, one per weight. Tailwind's
+ * The app loads Inter as three separate families, one per weight (400, 500, 600). Tailwind's
  * `font-semibold` sets `fontWeight` instead, which leaves `fontFamily` unset
  * and silently renders that text in the system font — so weight always goes
  * through `fonts`, never through a utility class.
  */
 
 import type { TextStyle } from 'react-native';
-import {
-  Inter_300Light,
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
-} from '@expo-google-fonts/inter';
+import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold } from '@expo-google-fonts/inter';
 import { IBMPlexMono_400Regular, IBMPlexMono_600SemiBold } from '@expo-google-fonts/ibm-plex-mono';
 
 export const fonts = {
-  light: 'Inter_300Light',
   regular: 'Inter_400Regular',
   medium: 'Inter_500Medium',
   semibold: 'Inter_600SemiBold',
-  bold: 'Inter_700Bold',
 } as const;
 
 export type FontWeight = keyof typeof fonts;
@@ -33,7 +25,7 @@ export type FontWeight = keyof typeof fonts;
  * Thermal printers set receipts in monospace, so the app's figures read as
  * receipt figures — and every digit shares an advance width, so a column of
  * prices lines up down the screen. Two weights only: each is a separate file
- * loaded before first paint, and five Inter weights already load.
+ * loaded before first paint, and three Inter weights already load.
  */
 export const mono = {
   regular: 'IBMPlexMono_400Regular',
@@ -52,11 +44,9 @@ export type MonoWeight = keyof typeof mono;
  * stubs all assets to the same value — so they must be caught by reading the map.
  */
 export const fontModules = {
-  [fonts.light]: Inter_300Light,
   [fonts.regular]: Inter_400Regular,
   [fonts.medium]: Inter_500Medium,
   [fonts.semibold]: Inter_600SemiBold,
-  [fonts.bold]: Inter_700Bold,
   [mono.regular]: IBMPlexMono_400Regular,
   [mono.semibold]: IBMPlexMono_600SemiBold,
 };

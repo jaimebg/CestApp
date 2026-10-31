@@ -360,7 +360,7 @@ export default function HistoryScreen() {
           <View className="px-6 pt-4 pb-2">
             <Text
               className="text-3xl text-text dark:text-text-dark"
-              style={{ fontFamily: 'Inter_700Bold' }}
+              style={{ fontFamily: 'Inter_600SemiBold' }}
             >
               {t('history.title')}
             </Text>
@@ -389,7 +389,7 @@ export default function HistoryScreen() {
         <View className="px-6 pt-4 pb-2">
           <Text
             className="text-3xl text-text dark:text-text-dark"
-            style={{ fontFamily: 'Inter_700Bold' }}
+            style={{ fontFamily: 'Inter_600SemiBold' }}
           >
             {t('history.title')}
           </Text>
@@ -470,7 +470,7 @@ export default function HistoryScreen() {
               </Text>
               {hasActiveFilters && (
                 <View className="ml-1 w-5 h-5 rounded-full bg-primary-deep items-center justify-center">
-                  <Text className="text-white text-xs" style={{ fontFamily: 'Inter_700Bold' }}>
+                  <Text className="text-white text-xs" style={{ fontFamily: 'Inter_600SemiBold' }}>
                     {(selectedStoreId ? 1 : 0) +
                       (selectedDatePreset !== 'all' ? 1 : 0) +
                       (selectedCategoryId ? 1 : 0)}

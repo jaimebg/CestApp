@@ -138,7 +138,7 @@ export default function OnboardingScreen() {
           />
           <Text
             className="text-3xl text-center"
-            style={{ color: colors.text, fontFamily: 'Inter_700Bold' }}
+            style={{ color: colors.text, fontFamily: 'Inter_600SemiBold' }}
           >
             {t('onboarding.welcome')}
           </Text>

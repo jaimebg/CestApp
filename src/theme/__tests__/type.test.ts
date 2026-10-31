@@ -15,6 +15,10 @@ describe('font registry', () => {
     }
   });
 
+  it('declares only weights 400 to 600', () => {
+    expect(Object.keys(fonts).sort()).toEqual(['medium', 'regular', 'semibold']);
+  });
+
   it('loads no font it cannot name', () => {
     const named = new Set<string>([...Object.values(fonts), ...Object.values(mono)]);
     for (const family of Object.keys(fontModules)) {

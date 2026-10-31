@@ -121,7 +121,7 @@ function Column({ receipt, title, differingIndices, totalDiffers }: ColumnProps)
         <Text
           style={{
             color: totalDiffers ? colors.action : colors.text,
-            fontFamily: 'Inter_700Bold',
+            fontFamily: 'Inter_600SemiBold',
             fontSize: 13,
           }}
         >

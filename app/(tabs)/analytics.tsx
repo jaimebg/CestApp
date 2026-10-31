@@ -286,7 +286,7 @@ export default function AnalyticsScreen() {
           <View className="px-6 pt-4 pb-2">
             <Text
               className="text-3xl text-text dark:text-text-dark"
-              style={{ fontFamily: 'Inter_700Bold' }}
+              style={{ fontFamily: 'Inter_600SemiBold' }}
             >
               {t('analytics.title')}
             </Text>

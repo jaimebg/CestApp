@@ -134,7 +134,7 @@ export default function ScanScreen() {
       <ReadingColumn className="flex-1 px-6 pt-4">
         <Text
           className="text-3xl text-text dark:text-text-dark"
-          style={{ fontFamily: 'Inter_700Bold' }}
+          style={{ fontFamily: 'Inter_600SemiBold' }}
         >
           {t('scan.title')}
         </Text>

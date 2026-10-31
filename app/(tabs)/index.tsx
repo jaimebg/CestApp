@@ -130,7 +130,7 @@ export default function DashboardScreen() {
           <View className="px-6 pt-4">
             <Text
               className="text-3xl text-text dark:text-text-dark"
-              style={{ fontFamily: 'Inter_700Bold' }}
+              style={{ fontFamily: 'Inter_600SemiBold' }}
             >
               {t('dashboard.title')}
             </Text>
@@ -183,7 +183,7 @@ export default function DashboardScreen() {
               <Animated.Text
                 entering={entering(FadeIn, 0, 400)}
                 className="text-3xl text-text dark:text-text-dark"
-                style={{ fontFamily: 'Inter_700Bold' }}
+                style={{ fontFamily: 'Inter_600SemiBold' }}
               >
                 {t('dashboard.title')}
               </Animated.Text>
