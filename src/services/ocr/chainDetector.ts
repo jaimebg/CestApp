@@ -64,7 +64,7 @@ function extractTextFromBlocks(blocks: OcrBlock[]): string {
 }
 
 function normalizeTaxIds(text: string): string {
-  return text.toUpperCase().replace(/([A-Z0-9])[.-](?=[A-Z0-9])/g, '$1');
+  return text.toUpperCase().replace(/([A-Z0-9])[.-](?=\d)/g, '$1');
 }
 
 function escapeRegExp(value: string): string {

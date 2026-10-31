@@ -87,3 +87,17 @@ describe('a chain from another country', () => {
     expect(detectChainFromText('MERCADONA, S.A.\nGRACIAS POR SU VISITA').chainId).toBe('mercadona');
   });
 });
+
+describe('tax IDs touching punctuation', () => {
+  it('finds a NIF glued to a dotted label', () => {
+    expect(detectChainFromText('C.I.F.A-46103834').chainId).toBe('mercadona');
+  });
+
+  it('finds a NIF followed by a dot', () => {
+    expect(detectChainFromText('A46103834.TEL 900').chainId).toBe('mercadona');
+  });
+
+  it('finds a NIF printed with thousands dots', () => {
+    expect(findTemplateByTaxId('NIF A-46.103.834')?.chainId).toBe('mercadona');
+  });
+});
