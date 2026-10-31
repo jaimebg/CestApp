@@ -464,6 +464,7 @@ export default function ScanReviewScreen() {
   const [editItemQuantity, setEditItemQuantity] = useState('1');
   const [editItemCategoryId, setEditItemCategoryId] = useState<number | null>(null);
   const [editTotal, setEditTotal] = useState('');
+  const [editCurrency, setEditCurrency] = useState(homeCurrency.code);
 
   const itemsSum = useMemo(() => {
     if (!parsedData) return 0;
@@ -630,6 +631,7 @@ export default function ScanReviewScreen() {
 
   const openTotalEdit = () => {
     setEditTotal(formatAmountInput(parsedData?.total || 0, 2));
+    setEditCurrency(parsedData?.currency ?? homeCurrency.code);
     setShowTotalModal(true);
   };
 
@@ -639,6 +641,7 @@ export default function ScanReviewScreen() {
     updateParsedData({
       ...parsedData,
       total: newTotal,
+      currency: editCurrency,
     });
     markEdited();
     setShowTotalModal(false);
@@ -1442,10 +1445,8 @@ export default function ScanReviewScreen() {
         value={editTotal}
         onChangeText={setEditTotal}
         itemsSumLabel={formatPrice(itemsSum, parsedData?.currency)}
-        currency={parsedData?.currency ?? 'EUR'}
-        onCurrencyChange={(code) =>
-          setParsedData((prev) => (prev ? { ...prev, currency: code } : prev))
-        }
+        currency={editCurrency}
+        onCurrencyChange={setEditCurrency}
         colors={colors}
       />
 
