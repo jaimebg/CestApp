@@ -10,9 +10,9 @@ import type { MlkitText } from '../ocr/imageOcr';
 export const SCRUB_VERSION = 'cestapp-scrub/1';
 
 const CARD_RUN = /\d(?:[ -]?\d){12,18}/g;
-const MASKED_CARD_END = /([*Xx•.·]{4,}[\s-]*)(\d{4})\b/g;
+const MASKED_CARD_END = /([*Xx•.·]{3,}[\s-]*)(\d{4})\b/g;
 const CODE_KEYWORD =
-  /(^|[^\p{L}\p{N}])(N\.?\s?AUT|N\.?\s?OPER|AUTORIZACI[OÓ]N|AUTORIZ|AUTH|AUT|TERMINAL|TERM|TPV|COMERCIO|MERCHANT|AID|ARC|NRC|OPERACI[OÓ]N|TRANSACCI[OÓ]N|TRANS|REF|SESI[OÓ]N)(?![\p{L}\p{N}])[.:]?/iu;
+  /(^|[^\p{L}\p{N}])(N\.?\s?AUT|N\.?\s?OPER|AUTORIZACI[OÓ]N|AUTORIZ|AUTH|AUT|TERMINAL|TERM|TPV|COMERCIO|MERCHANT|AID|ARC|NRC|OPERACI[OÓ]N|TRANSACCI[OÓ]N|TRANS|REF|SESI[OÓ]N|TITULAR|CARDHOLDER|CAJER[OA]|LE\s+ATENDI[OÓ]|ATENDID[OA]\s+POR|OPERADORA?|VENDEDORA?)(?![\p{L}\p{N}])[.:]?/iu;
 const TIME = /\b([01]?\d|2[0-3]):[0-5]\d(:[0-5]\d)?\b/g;
 const TIME_H = /\b([01]?\d|2[0-3])[hH][0-5]\d\b/g;
 const ENDS_WITH_KEYWORD = new RegExp(`${CODE_KEYWORD.source}\\s*$`, 'iu');

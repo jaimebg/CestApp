@@ -83,3 +83,17 @@ test('masks letters too when elements cannot be matched to the scrubbed line', (
   raw.blocks[0].lines[0].elements = [{ text: 'AUT:0A12B3', frame } as never];
   expect(scrubRaw(raw).blocks[0].lines[0].elements.map((e) => e.text)).toEqual(['AUT:******']);
 });
+
+test('masks a card ending after three dots', () => {
+  expect(scrubLine('TARJ. ...1234')).toBe('TARJ. *******');
+});
+
+test('masks cardholder and cashier names', () => {
+  expect(scrubLine('TITULAR: JUAN PEREZ GARCIA')).toBe('TITULAR: **** ***** ******');
+  expect(scrubLine('LE ATENDIÓ: ANA')).toBe('LE ATENDIÓ: ***');
+  expect(scrubLine('CAJERO 12 MARIA')).toBe('CAJERO ** *****');
+});
+
+test('leaves the till number alone', () => {
+  expect(scrubLine('CAJA 03 - TICKET 001234')).toBe('CAJA 03 - TICKET 001234');
+});
