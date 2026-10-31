@@ -106,7 +106,7 @@ src/
   theme/       # Palette & type
   i18n/        # Translations
 scripts/
-  store-screenshots/  # Frames raw captures into the store graphics
+  store-screenshots/  # Captures, frames and lays out the store screenshots
   fixtures/           # Scrubs a recorded capture into a chain fixture
 modules/
   qr-decoder/         # Native QR decoding for fiscal codes
@@ -121,6 +121,14 @@ npm run check      # ESLint + Prettier
 ```
 
 CI runs all three on every push. If you change the parser, extend the fixtures in `src/services/ocr/__tests__/`. Chain fixtures under `src/config/countries/*/__tests__/fixtures/` test themselves; `npm run fixture` makes one from a recorded capture (see [CONTRIBUTING.md](CONTRIBUTING.md)).
+
+**Store screenshots** regenerate end to end with `npm run shots:all`, with no manual step. It
+renders the sample ticket and boots two dedicated Android emulators (a phone and a tablet, created
+upright on first use so your development AVDs are never touched). It builds a release APK in
+screenshot mode (`EXPO_PUBLIC_SCREENSHOTS=1`, wiped from `android/` when the run ends so no store
+build can pick it up), seeds demo data, opens each screen through `cestapp:///screenshots` deep
+links and captures it once the screen stops moving. Finally it frames the captures for the App
+Store and Google Play in English and Spanish, and lays out the panorama at the top of this README.
 
 Releases build locally and ship through fastlane. The `fastlane/` folder holds credentials and store assets, so it stays out of the repo.
 

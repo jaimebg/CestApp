@@ -134,6 +134,7 @@ app/                           # Screens (Expo Router)
   _layout.tsx                  # Root layout with providers
   onboarding.tsx               # First-time user setup
   settings.tsx                 # App settings screen
+  screenshots.tsx              # Store screenshot steps; inert unless EXPO_PUBLIC_SCREENSHOTS=1
   (tabs)/                      # Main tab navigation
     _layout.tsx                # Tab bar configuration
     index.tsx                  # Dashboard screen
@@ -689,6 +690,7 @@ npx tsc --noEmit
 | `npm run check`        | Run both lint and format:check                        |
 | `npm test`             | Run Jest unit tests                                   |
 | `npm run bench`        | Score reading on real captures (`BENCH_DIR=<folder>`) |
+| `npm run shots:all`    | Regenerate store screenshots and the README panorama  |
 
 ### Pre-commit Hook
 
