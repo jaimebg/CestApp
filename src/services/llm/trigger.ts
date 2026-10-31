@@ -1,5 +1,6 @@
 import { validateReceipt, type ParsedReceipt } from '../ocr/parser';
 import type { MergeOutcome } from './merge';
+import { canRefineCountry } from './prompt';
 
 const MIN_CONFIDENCE = 70;
 
@@ -10,6 +11,7 @@ export type RefinementDecision = 'apply' | 'propose' | 'discard';
  * strictness that protects the data lives in mergeParsedReceipts.
  */
 export function shouldRefine(receipt: ParsedReceipt): boolean {
+  if (!canRefineCountry(receipt.countryCode)) return false;
   if (receipt.items.length === 0) return true;
   if (receipt.confidence < MIN_CONFIDENCE) return true;
   return !validateReceipt(receipt).itemsSumMatchesTotal;
