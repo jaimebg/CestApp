@@ -7,10 +7,7 @@
  * `primary` is a fill and fails contrast as ink on a light ground.
  */
 
-import { colors as palette, chartSeries } from './palette';
-
-/** Fallback colour order for chart series without a category colour. */
-export { chartSeries };
+import { colors as palette } from './palette';
 
 export const lightColors = {
   background: palette.background.DEFAULT,

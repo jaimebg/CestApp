@@ -40,6 +40,12 @@ const GUARDS: Guard[] = [
   },
   { name: 'no ReceiptCard', pattern: /ReceiptCard/, roots: ['app', 'src'] },
   {
+    name: 'no chart rainbow or category colours in UI',
+    pattern: /chartSeries|categoryColor|category\.color/,
+    roots: ['app', 'src/components'],
+  },
+  { name: 'no pie chart', pattern: /PieChart/, roots: ['app'] },
+  {
     name: 'no emoji in UI',
     pattern: /\p{Extended_Pictographic}/u,
     roots: ['app/receipt', 'src/components/receipt', 'app/scan', 'src/components/scan'],

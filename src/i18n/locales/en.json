@@ -189,7 +189,6 @@
   },
   "analytics": {
     "title": "Analytics",
-    "subtitle": "Your spending insights",
     "noData": "No data yet",
     "noDataDesc": "Analytics will appear here once you start scanning receipts",
     "spendingOverTime": "Spending Over Time",
@@ -201,7 +200,8 @@
     "total": "Total",
     "average": "Average",
     "receipts": "receipts",
-    "receipt": "receipt"
+    "receipt": "receipt",
+    "averagePerReceipt": "Average per receipt: {{amount}}"
   },
   "receipt": {
     "details": "Receipt Details",

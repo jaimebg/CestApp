@@ -1,174 +1,75 @@
 import { useState, useCallback, useRef } from 'react';
-import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useFocusEffect } from 'expo-router';
-import { BarChart, PieChart, type pieDataItem } from 'react-native-gifted-charts';
+import { BarChart } from 'react-native-gifted-charts';
 import { useDatabaseReady } from '@/src/db/provider';
-import { getAnalyticsSummary, TimePeriod } from '@/src/db/queries/analytics';
+import { getAnalyticsSummary, getPeriodComparison } from '@/src/db/queries/analytics';
 import { useFormatPrice, usePreferencesStore } from '@/src/store/preferences';
-import { useAppColors } from '@/src/hooks/useAppColors';
+import { useAppColors, useIsDarkMode } from '@/src/hooks/useAppColors';
 import { useLayout } from '@/src/hooks/useLayout';
-import { chartSeries } from '@/src/theme/colors';
 import { EmptyState } from '@/src/components/ui/EmptyState';
 import { Amount } from '@/src/components/ui/Amount';
 import { ReadingColumn } from '@/src/components/ui/ReadingColumn';
-import { MIN_TARGET } from '@/src/theme/a11y';
+import { ScreenHeader } from '@/src/components/ui/ScreenHeader';
+import { SectionHeader } from '@/src/components/ui/SectionHeader';
+import { SegmentedControl } from '@/src/components/ui/SegmentedControl';
+import { RankedList } from '@/src/components/analytics/RankedList';
+import { fonts } from '@/src/theme/type';
+import { DEFAULT_CURRENCY, getCurrency } from '@/src/config/currency';
 import { createScopedLogger } from '@/src/utils/debug';
-import { formatDayLabel } from '@/src/utils/dateTime';
+import { formatMonthName } from '@/src/utils/dateTime';
 import { categoryLabel } from '@/src/utils/categoryLabel';
+import { fillBuckets, formatAxisAmount, niceScale, type Bucket } from '@/src/utils/charts';
+import { describeChange, type ComparablePeriod } from '@/src/utils/periods';
 
 const logger = createScopedLogger('Analytics');
 
-const MONTH_SHORT: Record<'en' | 'es', string[]> = {
-  en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-  es: ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'],
-};
-
-function monthLabel(language: 'en' | 'es', monthKey: string): string {
-  const index = parseInt(monthKey.split('-')[1], 10) - 1;
-  return MONTH_SHORT[language][index] || monthKey;
-}
+const CURRENCY = getCurrency(DEFAULT_CURRENCY);
+const CHART_HEIGHT = 180;
+/** Wide enough for `31` or a narrow weekday, centred under a bar narrower than it. */
+const X_LABEL_WIDTH = 24;
 
 type AnalyticsData = Awaited<ReturnType<typeof getAnalyticsSummary>>;
 
-interface AnalyticsCardProps {
-  data: AnalyticsData;
-  colors: ReturnType<typeof useAppColors>;
-  formatPrice: ReturnType<typeof useFormatPrice>['formatPrice'];
-  t: ReturnType<typeof useTranslation>['t'];
-}
-
-function CategoryCard({
-  data,
-  colors,
-  formatPrice,
-  t,
-  pieChartData,
-}: AnalyticsCardProps & { pieChartData: pieDataItem[] }) {
-  return (
-    <>
-      <Text
-        className="text-base text-text dark:text-text-dark mb-4"
-        style={{ fontFamily: 'Inter_600SemiBold' }}
-      >
-        {t('analytics.byCategory')}
-      </Text>
-      <View className="flex-row items-center">
-        <View className="items-center" style={{ flex: 1 }}>
-          <PieChart
-            data={pieChartData}
-            donut
-            radius={70}
-            innerRadius={45}
-            innerCircleColor={colors.surface}
-            centerLabelComponent={() => (
-              <View className="items-center">
-                <Text
-                  className="text-xs text-text-secondary dark:text-text-dark-secondary"
-                  style={{ fontFamily: 'Inter_400Regular' }}
-                >
-                  {t('analytics.total')}
-                </Text>
-                <Amount size="sm" weight="semibold">
-                  {formatPrice(data.total)}
-                </Amount>
-              </View>
-            )}
-          />
-        </View>
-        <View className="flex-1 pl-2">
-          {data.spendingByCategory.slice(0, 5).map((category, index) => (
-            <View key={category.categoryId} className="flex-row items-center mb-2">
-              <View
-                className="w-3 h-3 rounded-full mr-2"
-                style={{
-                  backgroundColor:
-                    category.categoryColor || chartSeries[index % chartSeries.length],
-                }}
-              />
-              <Text
-                className="flex-1 text-xs text-text dark:text-text-dark"
-                style={{ fontFamily: 'Inter_400Regular' }}
-                numberOfLines={1}
-              >
-                {category.categoryIcon} {categoryLabel(category.categoryName, t)}
-              </Text>
-              <Text
-                className="text-xs text-text-secondary dark:text-text-dark-secondary ml-1"
-                style={{ fontFamily: 'Inter_500Medium' }}
-              >
-                {category.percentage.toFixed(0)}%
-              </Text>
-            </View>
-          ))}
-        </View>
-      </View>
-    </>
-  );
-}
-
-function StoreCard({ data, formatPrice, t }: AnalyticsCardProps) {
-  return (
-    <>
-      <Text
-        className="text-base text-text dark:text-text-dark mb-4"
-        style={{ fontFamily: 'Inter_600SemiBold' }}
-      >
-        {t('analytics.byStore')}
-      </Text>
-      {data.spendingByStore.slice(0, 5).map((store, index) => (
-        <View key={store.storeId} className="mb-3">
-          <View className="flex-row justify-between mb-1">
-            <Text
-              className="text-sm text-text dark:text-text-dark flex-1"
-              style={{ fontFamily: 'Inter_500Medium' }}
-              numberOfLines={1}
-            >
-              {store.storeName || t('scan.unknownStore')}
-            </Text>
-            <Amount size="sm" weight="semibold">
-              {formatPrice(store.amount)}
-            </Amount>
-          </View>
-          <View className="h-2 bg-border dark:bg-border-dark rounded-full overflow-hidden">
-            <View
-              className="h-full rounded-full"
-              style={{
-                width: `${store.percentage}%`,
-                backgroundColor: chartSeries[index % chartSeries.length],
-              }}
-            />
-          </View>
-          <Text
-            className="text-xs text-text-secondary dark:text-text-dark-secondary mt-1"
-            style={{ fontFamily: 'Inter_400Regular' }}
-          >
-            {store.receiptCount}{' '}
-            {store.receiptCount === 1 ? t('analytics.receipt') : t('analytics.receipts')}
-          </Text>
-        </View>
-      ))}
-    </>
-  );
+function bucketLabel(
+  bucket: Bucket,
+  period: ComparablePeriod,
+  language: 'en' | 'es',
+  today: number
+): string {
+  const [year, month, day] = bucket.key.split('-').map(Number);
+  if (period === 'year') {
+    return new Date(year, month - 1, 1).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-GB', {
+      month: 'narrow',
+    });
+  }
+  if (period === 'week') {
+    return new Date(year, month - 1, day).toLocaleDateString(
+      language === 'es' ? 'es-ES' : 'en-GB',
+      { weekday: 'narrow' }
+    );
+  }
+  const roundDay = day % 5 === 0 && today - day >= 3;
+  return day === 1 || roundDay || bucket.isCurrent ? String(day) : '';
 }
 
 export default function AnalyticsScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const colors = useAppColors();
+  const isDark = useIsDarkMode();
   const { isReady } = useDatabaseReady();
   const { formatPrice } = useFormatPrice();
   const language = usePreferencesStore((state) => state.language);
   const layout = useLayout();
 
-  // The chart card is mx-4 (32) inside p-4 (32). A fixed 280 clipped its right
-  // edge on a 320pt phone and left ~86pt of dead card on a Pro Max. It follows
-  // contentWidth, so the card and the chart in it widen together.
-  const chartWidth = Math.max(240, layout.contentWidth - 64 - 24);
+  const chartWidth = Math.max(240, layout.contentWidth - 40 - 56);
 
-  const [period, setPeriod] = useState<TimePeriod>('month');
+  const [period, setPeriod] = useState<ComparablePeriod>('month');
   const [data, setData] = useState<AnalyticsData | null>(null);
+  const [previousTotal, setPreviousTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const hasDataRef = useRef(false);
@@ -183,9 +84,13 @@ export default function AnalyticsScreen() {
         setIsLoading(true);
       }
       try {
-        const analyticsData = await getAnalyticsSummary(period);
+        const [analyticsData, comparison] = await Promise.all([
+          getAnalyticsSummary(period),
+          getPeriodComparison(period),
+        ]);
         hasDataRef.current = true;
         setData(analyticsData);
+        setPreviousTotal(comparison.previous);
       } catch (error) {
         logger.error('Failed to load analytics:', error);
       } finally {
@@ -202,55 +107,12 @@ export default function AnalyticsScreen() {
     }, [loadAnalytics])
   );
 
-  const periodOptions: { key: TimePeriod; label: string }[] = [
-    { key: 'week', label: t('analytics.thisWeek') },
-    { key: 'month', label: t('analytics.thisMonth') },
-    { key: 'year', label: t('analytics.thisYear') },
+  const periodOptions: { value: ComparablePeriod; label: string }[] = [
+    { value: 'week', label: t('analytics.thisWeek') },
+    { value: 'month', label: t('analytics.thisMonth') },
+    { value: 'year', label: t('analytics.thisYear') },
   ];
-
-  const barChartData =
-    data?.spendingByDay.map((item) => {
-      const dayLabel = formatDayLabel(new Date(item.date), language);
-
-      const label =
-        period === 'year'
-          ? monthLabel(language, item.date)
-          : period === 'week'
-            ? dayLabel.split(' ')[0]
-            : new Date(item.date).getDate().toString();
-
-      return {
-        value: item.amount,
-        label,
-        frontColor: colors.primary,
-        topLabelComponent: () => null,
-      };
-    }) || [];
-
-  const pieChartData =
-    data?.spendingByCategory
-      .filter((item) => item.amount > 0)
-      .slice(0, 8)
-      .map((item, index) => ({
-        value: item.amount,
-        color: item.categoryColor || chartSeries[index % chartSeries.length],
-        text: `${item.percentage.toFixed(0)}%`,
-        textColor: colors.text,
-        shiftTextX: -8,
-        shiftTextY: 0,
-      })) || [];
-
-  const maxValue = Math.max(...barChartData.map((bar) => bar.value), 1);
-
-  // Fit the bars to the width we actually have rather than to the period.
-  const barLayout = (() => {
-    const count = Math.max(barChartData.length, 1);
-    const slot = chartWidth / count;
-    const barWidth = Math.max(2, Math.min(28, Math.floor(slot * 0.7)));
-    return { barWidth, spacing: Math.max(1, Math.floor(slot - barWidth)) };
-  })();
-
-  const hasData = data && data.receiptCount > 0;
+  const periodLabel = periodOptions.find((option) => option.value === period)?.label ?? '';
 
   if (!isReady || isLoading) {
     return (
@@ -262,6 +124,48 @@ export default function AnalyticsScreen() {
       </View>
     );
   }
+
+  const hasData = !!data && data.receiptCount > 0;
+  const buckets = data ? fillBuckets(period, data.spendingByDay) : [];
+  const scale = niceScale(Math.max(0, ...buckets.map((bucket) => bucket.amount)));
+  const restingBar = isDark ? colors.textTertiary : colors.border;
+  const barSlot = chartWidth / Math.max(buckets.length, 1);
+  const barWidth = Math.max(3, Math.min(24, Math.floor(barSlot * 0.6)));
+  const barData = buckets.map((bucket) => ({
+    value: bucket.amount,
+    label: bucketLabel(bucket, period, language, new Date().getDate()),
+    frontColor: bucket.isCurrent ? colors.action : restingBar,
+  }));
+
+  const now = new Date();
+  const change = data ? describeChange(data.total, previousTotal) : null;
+  const comparisonText = change
+    ? t(`comparison.${period}.${change.direction}`, {
+        amount: formatPrice(change.delta),
+        month: formatMonthName(new Date(now.getFullYear(), now.getMonth() - 1, 1), language),
+        year: now.getFullYear() - 1,
+      })
+    : null;
+
+  const secondary = { fontFamily: fonts.regular, fontSize: 13, color: colors.textSecondary };
+  const categoryRows =
+    data?.spendingByCategory
+      .filter((item) => item.amount > 0)
+      .slice(0, 6)
+      .map((item) => ({
+        key: String(item.categoryId),
+        label: categoryLabel(item.categoryName, t),
+        amount: formatPrice(item.amount),
+        share: item.percentage,
+      })) ?? [];
+  const storeRows =
+    data?.spendingByStore.slice(0, 5).map((store) => ({
+      key: String(store.storeId),
+      label: store.storeName || t('scan.unknownStore'),
+      amount: formatPrice(store.amount),
+      share: store.percentage,
+      meta: t('common.receiptCount', { count: store.receiptCount }),
+    })) ?? [];
 
   return (
     <View
@@ -282,52 +186,14 @@ export default function AnalyticsScreen() {
         }
       >
         <ReadingColumn>
-          {/* Header */}
-          <View className="px-6 pt-4 pb-2">
-            <Text
-              className="text-3xl text-text dark:text-text-dark"
-              style={{ fontFamily: 'Inter_600SemiBold' }}
-            >
-              {t('analytics.title')}
-            </Text>
-            <Text
-              className="text-base text-text-secondary dark:text-text-dark-secondary mt-1"
-              style={{ fontFamily: 'Inter_400Regular' }}
-            >
-              {t('analytics.subtitle')}
-            </Text>
-          </View>
-
-          {/* Period Selector */}
-          <View className="px-4 py-3">
-            <View className="flex-row bg-surface dark:bg-surface-dark rounded-xl p-1">
-              {periodOptions.map((option) => (
-                <Pressable
-                  key={option.key}
-                  onPress={() => setPeriod(option.key)}
-                  accessibilityRole="button"
-                  accessibilityLabel={option.label}
-                  accessibilityState={{ selected: period === option.key }}
-                  style={{ minHeight: MIN_TARGET, justifyContent: 'center' }}
-                  className={`flex-1 py-2.5 rounded-lg items-center ${
-                    period === option.key ? 'bg-primary-deep' : ''
-                  }`}
-                >
-                  <Text
-                    className={`text-sm ${
-                      period === option.key
-                        ? 'text-white'
-                        : 'text-text-secondary dark:text-text-dark-secondary'
-                    }`}
-                    style={{
-                      fontFamily: period === option.key ? 'Inter_600SemiBold' : 'Inter_500Medium',
-                    }}
-                  >
-                    {option.label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
+          <ScreenHeader title={t('analytics.title')} />
+          <View className="px-5 py-3">
+            <SegmentedControl
+              options={periodOptions}
+              value={period}
+              onChange={setPeriod}
+              accessibilityLabel={t('analytics.title')}
+            />
           </View>
         </ReadingColumn>
 
@@ -342,98 +208,75 @@ export default function AnalyticsScreen() {
             </View>
           </ReadingColumn>
         ) : (
-          <View className="w-full mx-auto" style={{ maxWidth: layout.contentWidth }}>
-            {/* Summary Cards */}
-            <View className="flex-row px-4 gap-3 mb-4">
-              <View className="flex-1 bg-surface dark:bg-surface-dark rounded-2xl p-4">
-                <Text
-                  className="text-xs text-text-secondary dark:text-text-dark-secondary mb-1"
-                  style={{ fontFamily: 'Inter_500Medium' }}
-                >
-                  {t('analytics.total')}
-                </Text>
-                <Amount size="xl">{formatPrice(data.total)}</Amount>
-              </View>
-              <View className="flex-1 bg-surface dark:bg-surface-dark rounded-2xl p-4">
-                <Text
-                  className="text-xs text-text-secondary dark:text-text-dark-secondary mb-1"
-                  style={{ fontFamily: 'Inter_500Medium' }}
-                >
-                  {t('analytics.average')}
-                </Text>
-                <Amount size="xl">{formatPrice(data.average)}</Amount>
+          <View className="w-full mx-auto px-5" style={{ maxWidth: layout.contentWidth }}>
+            <View className="mt-3">
+              <Text style={{ ...secondary, fontSize: 15 }}>{periodLabel}</Text>
+              <Amount size="hero" className="mt-1">
+                {formatPrice(data.total)}
+              </Amount>
+              {comparisonText ? (
+                <Text style={{ ...secondary, marginTop: 6 }}>{comparisonText}</Text>
+              ) : null}
+              <Text style={{ ...secondary, marginTop: comparisonText ? 2 : 6 }}>
+                {t('analytics.averagePerReceipt', { amount: formatPrice(data.average) })}
+              </Text>
+            </View>
+
+            <View className="mt-8">
+              <SectionHeader title={t('analytics.spendingOverTime')} />
+              <View style={{ marginLeft: -8 }}>
+                <BarChart
+                  data={barData}
+                  width={chartWidth}
+                  height={CHART_HEIGHT}
+                  barWidth={barWidth}
+                  spacing={Math.max(1, Math.floor(barSlot - barWidth))}
+                  initialSpacing={Math.max(1, Math.floor((barSlot - barWidth) / 2))}
+                  barBorderRadius={2}
+                  labelWidth={X_LABEL_WIDTH}
+                  maxValue={scale.top}
+                  noOfSections={scale.sections}
+                  stepValue={scale.step}
+                  yAxisThickness={0}
+                  xAxisThickness={1}
+                  xAxisColor={colors.border}
+                  rulesColor={colors.border}
+                  rulesType="solid"
+                  yAxisLabelWidth={52}
+                  yAxisTextStyle={{
+                    color: colors.textTertiary,
+                    fontSize: 12,
+                    fontFamily: fonts.regular,
+                  }}
+                  xAxisLabelTextStyle={{
+                    color: colors.textTertiary,
+                    fontSize: 12,
+                    fontFamily: fonts.regular,
+                    width: X_LABEL_WIDTH,
+                    marginLeft: (barWidth - X_LABEL_WIDTH) / 2,
+                    textAlign: 'center',
+                  }}
+                  formatYLabel={(label) => formatAxisAmount(Number(label), CURRENCY)}
+                  isAnimated={false}
+                  disablePress
+                />
               </View>
             </View>
 
-            {/* Spending Over Time Chart */}
-            {barChartData.length > 0 && (
-              <View className="mx-4 mb-4 bg-surface dark:bg-surface-dark rounded-2xl p-4">
-                <Text
-                  className="text-base text-text dark:text-text-dark mb-4"
-                  style={{ fontFamily: 'Inter_600SemiBold' }}
-                >
-                  {t('analytics.spendingOverTime')}
-                </Text>
-                <View style={{ marginLeft: -10 }}>
-                  <BarChart
-                    data={barChartData}
-                    width={chartWidth}
-                    height={180}
-                    barWidth={barLayout.barWidth}
-                    spacing={barLayout.spacing}
-                    barBorderRadius={4}
-                    noOfSections={4}
-                    yAxisThickness={0}
-                    xAxisThickness={1}
-                    xAxisColor={colors.border}
-                    yAxisTextStyle={{
-                      color: colors.textSecondary,
-                      fontSize: 10,
-                      fontFamily: 'Inter_400Regular',
-                    }}
-                    xAxisLabelTextStyle={{
-                      color: colors.textSecondary,
-                      fontSize: 9,
-                      fontFamily: 'Inter_400Regular',
-                    }}
-                    hideRules
-                    maxValue={Math.ceil(maxValue)}
-                    formatYLabel={(label) => formatPrice(Number(label))}
-                    isAnimated={barChartData.length <= 31}
-                    animationDuration={500}
-                  />
+            <View className={layout.columns === 2 ? 'flex-row gap-8 mt-8' : 'mt-8'}>
+              {categoryRows.length > 0 && (
+                <View className={layout.columns === 2 ? 'flex-1' : 'mb-8'}>
+                  <SectionHeader title={t('analytics.byCategory')} />
+                  <RankedList rows={categoryRows} />
                 </View>
-              </View>
-            )}
-
-            {(pieChartData.length > 0 || data.spendingByStore.length > 0) && (
-              <View className={layout.columns === 2 ? 'flex-row mx-2 mb-4' : ''}>
-                {pieChartData.length > 0 && (
-                  <View
-                    className={`bg-surface dark:bg-surface-dark rounded-2xl p-4 ${
-                      layout.columns === 2 ? 'flex-1 mx-2' : 'mx-4 mb-4'
-                    }`}
-                  >
-                    <CategoryCard
-                      data={data}
-                      colors={colors}
-                      formatPrice={formatPrice}
-                      t={t}
-                      pieChartData={pieChartData}
-                    />
-                  </View>
-                )}
-                {data.spendingByStore.length > 0 && (
-                  <View
-                    className={`bg-surface dark:bg-surface-dark rounded-2xl p-4 ${
-                      layout.columns === 2 ? 'flex-1 mx-2' : 'mx-4 mb-4'
-                    }`}
-                  >
-                    <StoreCard data={data} colors={colors} formatPrice={formatPrice} t={t} />
-                  </View>
-                )}
-              </View>
-            )}
+              )}
+              {storeRows.length > 0 && (
+                <View className={layout.columns === 2 ? 'flex-1' : ''}>
+                  <SectionHeader title={t('analytics.byStore')} />
+                  <RankedList rows={storeRows} />
+                </View>
+              )}
+            </View>
           </View>
         )}
       </ScrollView>

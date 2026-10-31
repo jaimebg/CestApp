@@ -189,7 +189,6 @@
   },
   "analytics": {
     "title": "Estadísticas",
-    "subtitle": "Información de tus gastos",
     "noData": "Aún no hay datos",
     "noDataDesc": "Las estadísticas aparecerán aquí cuando empieces a escanear tickets",
     "spendingOverTime": "Gasto en el tiempo",
@@ -201,7 +200,8 @@
     "total": "Total",
     "average": "Media",
     "receipts": "tickets",
-    "receipt": "ticket"
+    "receipt": "ticket",
+    "averagePerReceipt": "Media por ticket: {{amount}}"
   },
   "receipt": {
     "details": "Detalles del ticket",

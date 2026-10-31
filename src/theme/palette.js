@@ -83,34 +83,6 @@ const colors = {
   },
 
   border: { DEFAULT: '#E8E4D9', dark: '#4A4640' },
-
-  category: {
-    produce: '#93BD57',
-    dairy: '#5BA4D9',
-    meat: '#980404',
-    bakery: '#FBE580',
-    beverages: '#8B7EC8',
-    frozen: '#4DB6AC',
-    pantry: '#E8976C',
-    household: '#8D8680',
-  },
 };
 
-/**
- * Chart series order, used when a category has no colour of its own.
- * Ordered so neighbouring slices stay distinguishable rather than by hue.
- */
-const chartSeries = [
-  colors.category.produce,
-  colors.category.dairy,
-  colors.category.meat,
-  colors.category.bakery,
-  colors.category.beverages,
-  colors.category.frozen,
-  colors.category.pantry,
-  colors.category.household,
-  '#D4A574',
-  colors.primary.light,
-];
-
-module.exports = { colors, chartSeries };
+module.exports = { colors };
